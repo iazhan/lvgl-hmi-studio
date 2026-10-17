@@ -76,61 +76,78 @@ public static class KinSealSdkBootstrapper
     {
         var logs = new List<string>();
 
-        if (KinSealSdkInstaller.IsInstalled())
-        {
-            var state = KinSealSdkInstaller.ReadState();
-            logs.Add($"[sdk] 已安装 {state?.Version ?? "?"}（{KinSealSdkInstaller.SdkRoot}）");
-            return new KinSealSdkInstallResult
-            {
-                Success = true,
-                Installed = false,
-                Version = state?.Version,
-                Root = KinSealSdkInstaller.SdkRoot,
-                Logs = logs,
-            };
-        }
-
+        // 先读随包清单：它决定"已装的那份是不是就是这一份"（换字体/升级 SDK 后必须能换掉旧的）
         var archive = FindBundledArchive(installDir);
+        KinSealSdkManifest? bundled = null;
+        string? manifestError = null;
         if (archive is not null)
         {
             var manifestPath = ManifestPathFor(archive);
             if (!File.Exists(manifestPath))
             {
-                var msg = $"SDK 归档缺少清单，无法校验：{manifestPath}";
-                logs.Add($"[sdk] ✗ {msg}");
-                return new KinSealSdkInstallResult { Success = false, Error = msg, Logs = logs };
+                manifestError = $"SDK 归档缺少清单，无法校验：{manifestPath}";
+            }
+            else
+            {
+                try
+                {
+                    bundled = KinSealSdkManifest.Parse(
+                        await File.ReadAllTextAsync(manifestPath, ct).ConfigureAwait(false));
+                }
+                catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
+                {
+                    manifestError = ex.Message;
+                }
+            }
+        }
+
+        if (KinSealSdkInstaller.IsInstalled())
+        {
+            var state = KinSealSdkInstaller.ReadState();
+            // 清单读不出来时不动已装的那份：宁可用旧的，也不要把能用的删掉换个来路不明的
+            var sameAsBundled = bundled is null
+                || string.Equals(state?.Sha256, bundled.Sha256, StringComparison.OrdinalIgnoreCase);
+            if (sameAsBundled)
+            {
+                logs.Add($"[sdk] 已安装 {state?.Version ?? "?"}（{KinSealSdkInstaller.SdkRoot}）");
+                return new KinSealSdkInstallResult
+                {
+                    Success = true,
+                    Installed = false,
+                    Version = state?.Version,
+                    Root = KinSealSdkInstaller.SdkRoot,
+                    Logs = logs,
+                };
             }
 
-            KinSealSdkManifest manifest;
-            try
-            {
-                manifest = KinSealSdkManifest.Parse(await File.ReadAllTextAsync(manifestPath, ct).ConfigureAwait(false));
-            }
-            catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
-            {
-                logs.Add($"[sdk] ✗ {ex.Message}");
-                return new KinSealSdkInstallResult { Success = false, Error = ex.Message, Logs = logs };
-            }
+            logs.Add($"[sdk] 安装包内归档与已装版本不一致（已装 {state?.Version ?? "?"} → {bundled?.Version}），重新安装");
+        }
+        else if (manifestError is not null)
+        {
+            logs.Add($"[sdk] ✗ {manifestError}");
+            return new KinSealSdkInstallResult { Success = false, Error = manifestError, Logs = logs };
+        }
 
-            logs.Add($"[sdk] 使用安装包自带归档（{manifest.Version}）：{archive}");
-            var installer = new KinSealSdkInstaller();
-            var result = await installer
-                .InstallFromArchiveAsync(archive, manifest.Sha256, manifest.Version, progress, ct)
+        if (archive is not null && bundled is not null)
+        {
+            logs.Add($"[sdk] 使用安装包自带归档（{bundled.Version}）：{archive}");
+            var result = await new KinSealSdkInstaller()
+                .InstallFromArchiveAsync(archive, bundled.Sha256, bundled.Version, progress, ct)
                 .ConfigureAwait(false);
             return Merge(result, logs);
         }
 
         if (!string.IsNullOrWhiteSpace(manifestUrl))
         {
-            logs.Add($"[sdk] 安装包未附带 SDK，改用下载清单：{manifestUrl}");
+            logs.Add($"[sdk] 安装包未附带可用的 SDK，改用下载清单：{manifestUrl}");
             var result = await new KinSealSdkInstaller()
                 .InstallAsync(manifestUrl, progress, ct)
                 .ConfigureAwait(false);
             return Merge(result, logs);
         }
 
-        const string notFound =
-            $"未找到 kinseal SDK：安装包未附带 {ArchivePrefix}*.tar.gz，也未配置下载清单地址";
+        var notFound = manifestError
+            ?? $"未找到 kinseal SDK：安装包未附带 {ArchivePrefix}*.tar.gz，也未配置下载清单地址";
         logs.Add($"[sdk] ✗ {notFound}");
         return new KinSealSdkInstallResult { Success = false, Error = notFound, Logs = logs };
     }

@@ -55,9 +55,11 @@ public partial class MainWindow
 
         // 2. 探测 LVGL 源码目录（用户配置 → 环境变量 LVGL_DIR → 安装包内置 SDK → 工程同级 ../lvgl）
         var lvglDir = SimulatorBuildService.FindLvglDirectory(_settingsService.Simulator.LvglDir, workDir);
-        if (string.IsNullOrEmpty(lvglDir))
+
+        // 只要这棵 LVGL 树来自 SDK（或压根找不到），就必须先确认 SDK 是最新的：
+        // 否则换装新 SDK（例如字体修正）后，旧 SDK 里的 LVGL 仍会被探到，安装检查永远走不到。
+        if (string.IsNullOrEmpty(lvglDir) || IsInsideKinSealSdk(lvglDir))
         {
-            // SDK 里带着 LVGL 树：首次使用先装，装完再探测一次
             if (!await EnsureKinSealSdkAsync()) return;
             lvglDir = SimulatorBuildService.FindLvglDirectory(_settingsService.Simulator.LvglDir, workDir);
             if (string.IsNullOrEmpty(lvglDir))
@@ -72,8 +74,16 @@ public partial class MainWindow
         _ = dialog.ShowDialog(this);
     }
 
+    /// <summary>该路径是否落在 SDK 安装根内（用于判断这棵 LVGL 树是不是 SDK 带的）。</summary>
+    private static bool IsInsideKinSealSdk(string path)
+    {
+        var root = KinSealSdkInstaller.SdkRoot;
+        var prefix = root.EndsWith(Path.DirectorySeparatorChar) ? root : root + Path.DirectorySeparatorChar;
+        return path.StartsWith(prefix, StringComparison.Ordinal);
+    }
+
     /// <summary>
-    /// 确保 kinseal SDK 可用（只对该目标生效；已安装时只是一次目录检查，无重活）。
+    /// 确保 kinseal SDK 可用（只对该目标生效；已安装且与随包一致时只是一次目录检查，无重活）。
     /// 失败返回 false 并把原因写到状态栏 —— 调用方直接放弃，不去编一个必然失败的工程。
     /// </summary>
     private async Task<bool> EnsureKinSealSdkAsync()

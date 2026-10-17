@@ -224,6 +224,31 @@ public class MockFontLoadingTests
         }
     }
 
+    // ── lv_conf.h 必须开浮点格式化（数值绑定标签靠它）──
+
+    [Fact]
+    public void LvConf_EnablesFloatFormatting()
+    {
+        // 绑定到数值变量的标签用 lv_label_set_text_fmt("%.2f", …) 输出小数；LVGL 的 printf
+        // 在 LV_USE_FLOAT=0 时不支持 %f，会原样吐出格式串尾部（屏幕上是孤零零一个 "f"）。
+        // 板端 chenge-rt/config/lv_conf.h 取 1，模拟器不同值就会与实机显示不一致。
+        var project = new HmiProject { LvglVersion = "9.5" };
+        project.Screens.Add(new HmiScreen { Id = "s1", Name = "Main", Width = 100, Height = 100 });
+        var code = new CodeGenerator().GenerateSimulatorModule(project);
+
+        var dir = NewTempDir();
+        try
+        {
+            SimulatorProjectExporter.Export(project, code, dir, assetLibrary: null);
+            var conf = File.ReadAllText(Path.Combine(dir, "lv_conf.h"));
+            Assert.Contains("#define LV_USE_FLOAT 1", conf);
+        }
+        finally
+        {
+            TestTempDir.DeleteDir(dir);
+        }
+    }
+
     // ── main.c 有字体资源 → 调用 init_font_assets ──
 
     [Fact]

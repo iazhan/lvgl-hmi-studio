@@ -61,9 +61,13 @@ public class KinSealSdkInstallerTests : IDisposable
     }
 
     /// <summary>造一个"内容合格"的 SDK 归档；<paramref name="wrapper"/> 模拟单层包裹目录。</summary>
-    private static string BuildArchive(string workDir, string? wrapper = null, Action<TarWriter>? extra = null)
+    private static string BuildArchive(
+        string workDir,
+        string? wrapper = null,
+        Action<TarWriter>? extra = null,
+        string fileName = "kinseal-sdk-1.0.0.tar.gz")
     {
-        var path = Path.Combine(workDir, "kinseal-sdk-1.0.0.tar.gz");
+        var path = Path.Combine(workDir, fileName);
         var prefix = string.IsNullOrEmpty(wrapper) ? "" : wrapper!.TrimEnd('/') + "/";
 
         using (var file = File.Create(path))
@@ -334,6 +338,48 @@ public class KinSealSdkInstallerTests : IDisposable
             var second = await KinSealSdkBootstrapper.EnsureAsync(installDir);
             Assert.True(second.Success);
             Assert.False(second.Installed);   // 已装：不再解压
+        }
+        finally
+        {
+            Cleanup();
+            TestTempDir.DeleteDir(work);
+        }
+    }
+
+    [Fact]
+    public async Task Bootstrapper_InstalledWithDifferentSha_ReplacesIt()
+    {
+        // 换字体 / 升级 SDK 后，已装的那份不能被"已安装"永久短路
+        var work = TestTempDir.NewDir("sdk");
+        var installDir = Path.Combine(work, "app");
+        try
+        {
+            Cleanup();
+            var oldArchive = BuildArchive(work, fileName: "old.tar.gz",
+                extra: w => AddFile(w, "runtime/build-marker.txt", "old"));
+            var first = await new KinSealSdkInstaller()
+                .InstallFromArchiveAsync(oldArchive, Sha256Of(oldArchive), "0.9.0");
+            Assert.True(first.Success, first.Error);
+            Assert.Equal("old",
+                File.ReadAllText(Path.Combine(SdkRoot, "runtime", "build-marker.txt")));
+
+            var bundled = Path.Combine(installDir, "sdk");
+            Directory.CreateDirectory(bundled);
+            var newArchive = BuildArchive(work, fileName: "kinseal-sdk-1.1.0.tar.gz",
+                extra: w => AddFile(w, "runtime/build-marker.txt", "new"));
+            var target = Path.Combine(bundled, "kinseal-sdk-1.1.0.tar.gz");
+            File.Move(newArchive, target);
+            File.WriteAllText(KinSealSdkBootstrapper.ManifestPathFor(target), $$"""
+                { "schemaVersion": 1, "version": "1.1.0", "sha256": "{{Sha256Of(target)}}", "sizeBytes": 1 }
+                """);
+
+            var result = await KinSealSdkBootstrapper.EnsureAsync(installDir);
+
+            Assert.True(result.Success, result.Error);
+            Assert.True(result.Installed);                 // 真的重装了
+            Assert.Equal("1.1.0", result.Version);
+            Assert.Equal("new",
+                File.ReadAllText(Path.Combine(SdkRoot, "runtime", "build-marker.txt")));
         }
         finally
         {

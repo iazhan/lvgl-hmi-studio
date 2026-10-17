@@ -260,6 +260,12 @@ public static partial class SimulatorProjectExporter
                /* 颜色深度: 与生成代码的 ARGB8888 canvas 匹配 */
                #define LV_COLOR_DEPTH 32
 
+               /* 浮点格式化: 绑定到数值变量的标签用 lv_label_set_text_fmt("%.2f", …) 输出小数。
+                * LVGL 的 printf 实现在 LV_USE_FLOAT=0 时不支持 %f，会原样吐出格式串尾部（屏幕上是
+                * 一个孤零零的 "f"）。板端 chenge-rt/config/lv_conf.h 取 1，模拟器必须同值，
+                * 否则预览与实机显示的数值不同。 */
+               #define LV_USE_FLOAT 1
+
                /* 日志 */
                #define LV_USE_LOG 1
                #define LV_LOG_LEVEL LV_LOG_LEVEL_WARN
