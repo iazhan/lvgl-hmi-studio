@@ -128,7 +128,7 @@ public class NlToScreenGeneratorTests
     {
         // 核心回归钉子：LLM 没给 width/height 时必须反序列化成 null。
         // 曾经 AiScreen.Width/Height 是带默认值 800/480 的 int，
-        // 导致「没给」与「给了 800」不可区分，工程默认（1024×600）永远被压掉。
+        // 导致「没给」与「给了 800」不可区分，工程默认屏幕尺寸永远被压掉。
         var parsed = NlToScreenGenerator.ParseResponse("""{"screen":{"name":"X"}}""");
 
         Assert.NotNull(parsed);
@@ -153,7 +153,7 @@ public class NlToScreenGeneratorTests
     [Fact]
     public void MapToHmiScreen_ExplicitSizeFromLlm_WinsOverProjectDefaults()
     {
-        var project = new HmiProject(); // 默认 1024×600
+        var project = new HmiProject();
 
         var screen = NlToScreenGenerator.MapToHmiScreen(
             new AiGeneratedScreen { Screen = new AiScreen { Name = "监控", Width = 320, Height = 240 } },

@@ -12,12 +12,8 @@ namespace HmiEditor.Core.Tests;
 /// <summary>
 /// <see cref="ScreenFactory"/> 的行为契约 + 「所有新建屏幕路径都必须走它」的结构守卫。
 ///
-/// <para><b>背景（为什么要这个文件）：</b>此前工程内有 6 处各自造屏幕，尺寸来源互不相同 ——
-/// 屏幕管理器读 <see cref="ScreenDefaultsConfig"/>、工具栏与新建工程硬编码 1024×600、
-/// AI Agent 工具默认 1024×600、AI 自然语言生成默认 <b>800×480</b>、
-/// 模拟器导出器兜底硬编码。于是「屏幕默认模板」这个分组在界面上摆着，
-/// 实际只有 1/6 的路径听它的话，而剩下 5 条里还有一个数字（800×480）
-/// 跟运行时目标（1024×600）都对不上。</para>
+/// <para>尺寸的唯一来源是 <see cref="ScreenDefaultsConfig"/>（工程默认模板）；
+/// 本 fork 的默认模板对齐目标板 kinseal（F1C100S 800×480）。</para>
 /// </summary>
 public class ScreenFactoryTests
 {
@@ -41,20 +37,19 @@ public class ScreenFactoryTests
     }
 
     [Fact]
-    public void Create_MissingDimensions_FallToProjectDefaults_NotHardcoded800x480()
+    public void Create_MissingDimensions_FallToProjectDefaults_NotHardcodedSizes()
     {
         // 回归钉子：AI 两条路径曾经在「LLM 没给尺寸」时写死 800×480，
-        // 把工程默认（1024×600）静默压掉。判据是「缺参 → 等于工程默认」，
-        // 而不是任何具体数字。
+        // 把工程默认静默压掉。判据是「缺参 → 等于工程默认」，
+        // 与工程默认的具体数值无关 —— 用一个不会与任何硬编码值撞车的尺寸。
         var project = new HmiProject();
-        Assert.Equal(1024, project.ScreenDefaultsConfig.DefaultWidth);
+        project.ScreenDefaultsConfig.DefaultWidth = 1234;
+        project.ScreenDefaultsConfig.DefaultHeight = 567;
 
         var screen = ScreenFactory.Create(project, name: "AI 生成屏幕");
 
-        Assert.Equal(project.ScreenDefaultsConfig.DefaultWidth, screen.Width);
-        Assert.Equal(project.ScreenDefaultsConfig.DefaultHeight, screen.Height);
-        Assert.NotEqual(800, screen.Width);
-        Assert.NotEqual(480, screen.Height);
+        Assert.Equal(1234, screen.Width);
+        Assert.Equal(567, screen.Height);
     }
 
     // ── 显式参数优先级 ──
@@ -101,7 +96,7 @@ public class ScreenFactoryTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Create_NonPositiveProjectDefault_FallsBackToT113Size(int bad)
+    public void Create_NonPositiveProjectDefault_FallsBackToBoardFallbackSize(int bad)
     {
         // 工程设置面板允许手输，0 / 负数在 JSON 里是合法值，
         // 但会生成 lv_obj_set_size(screen, 0, 0) —— 一个看不见的屏幕。

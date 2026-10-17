@@ -390,8 +390,8 @@ public class ProjectSerializerTests
         Assert.Equal(8, project.EditorConfig.GridSize);
 
         Assert.NotNull(project.ScreenDefaultsConfig);
-        // 默认屏宽对齐固件型号（T113 7寸 1024×600），见 ScreenDefaultsConfig.DefaultWidth 默认值
-        Assert.Equal(1024, project.ScreenDefaultsConfig.DefaultWidth);
+        // 默认屏宽对齐本 fork 的目标板 kinseal（F1C100S 800×480），见 ScreenDefaultsConfig.DefaultWidth 默认值
+        Assert.Equal(800, project.ScreenDefaultsConfig.DefaultWidth);
         Assert.Null(project.ScreenDefaultsConfig.SafeAreaPadding);
 
         // 元数据字段为 null（旧 JSON 不存在）

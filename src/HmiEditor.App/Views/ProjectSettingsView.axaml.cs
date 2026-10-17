@@ -172,7 +172,7 @@ public partial class ProjectSettingsView : ChromeWindow
             Tag = p
         }).ToArray();
         CmbScreenPreset.ItemsSource = presetItems;
-        CmbScreenPreset.SelectedIndex = 3; // 默认 1024×600（对齐固件型号 T113 7寸）
+        CmbScreenPreset.SelectedIndex = 2; // 默认 800×480（对齐本 fork 的目标板 kinseal）
 
         CmbLvglVersion.ItemsSource = BuildLvglVersionItems();
         // 色深候选项来自 Hmi.Hardware.Contracts.ColorDepth 枚举本身。
@@ -240,6 +240,10 @@ public partial class ProjectSettingsView : ChromeWindow
         {
             registry.Register(new AllwinnerT113Target());
         }
+
+        // kinseal 是内置目标（运行时在姊妹仓库 chenge-rt，无 firmware JSON，
+        // LVGL/ABI 契约版本由 C# 类声明；与 MainWindow.LoadHardwareTargets 同一路径）
+        registry.Register(new AllwinnerF1C100STarget());
 
         _loadedTargets.Clear();
         _loadedTargets.AddRange(registry.GetAllTargets());

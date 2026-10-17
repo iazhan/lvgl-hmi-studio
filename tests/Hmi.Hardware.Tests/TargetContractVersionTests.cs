@@ -100,7 +100,12 @@ public class TargetContractVersionTests
     {
         // 内置目标要么**不声明**（RK3506：仓库里没有它的固件可对照），要么声明一个认得的版本；
         // 不允许出现"填了个没验证过、编辑器也不认识"的版本号。
-        foreach (var target in new IHardwareTarget[] { new AllwinnerT113Target(), new RockchipRK3506Target() })
+        foreach (var target in new IHardwareTarget[]
+        {
+            new AllwinnerT113Target(),
+            new AllwinnerF1C100STarget(),
+            new RockchipRK3506Target()
+        })
         {
             var version = target.LvglConfig.LvglVersion;
             if (string.IsNullOrEmpty(version)) continue;

@@ -219,7 +219,8 @@ public class SimulatorProjectExporterTests
     [Fact]
     public void Export_CodeWithoutAnyProjectScreen_FallsBackToDefaultResolution()
     {
-        // 项目里没有屏幕、生成代码里却有工厂（导入/手写代码场景）：第四级兜底 1024×600。
+        // 项目里没有屏幕、生成代码里却有工厂（导入/手写代码场景）：第四级兜底取
+        // ScreenFactory 兜底尺寸（本 fork 对齐 kinseal 800×480）。
         // 这条同时钉住「兜底屏幕的 Id 与工厂名不匹配时不做重排」的现状。
         var project = new HmiProject();
         const string code = "lv_obj_t* create_screen_ghost(void) { return NULL; }";
@@ -227,8 +228,8 @@ public class SimulatorProjectExporterTests
         WithExport(project, (result, dir) =>
         {
             var config = ReadFile(dir, "sim_config.h");
-            CSource.AssertText(config, "SIM_WINDOW_WIDTH 1024");
-            CSource.AssertText(config, "SIM_WINDOW_HEIGHT 600");
+            CSource.AssertText(config, "SIM_WINDOW_WIDTH 800");
+            CSource.AssertText(config, "SIM_WINDOW_HEIGHT 480");
             Assert.Equal(new[] { "create_screen_ghost" }, result.ScreenFunctions);
         }, code: code);
     }

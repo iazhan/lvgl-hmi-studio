@@ -39,8 +39,10 @@ public class SingleFileSizeGuardTests
         // → 2992（阶段 121：解包收尾「缺资产告警 + 图库合并」也整块移进同一个 partial）。
         // → 2983（阶段 162：「面板」菜单那套"查找/激活/被关闭后按老家挂回来"的逻辑移进
         //   `HmiDockFactory.OpenDockable` —— 移进工厂才**够得着判据**，顺带本文件变小）。
-        // 三次都是**变小**，按本表纪律必须同步改小基线。
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2983 },
+        // → 2986（kinseal 目标接入：新建工程默认绑 F1C100S 目标 + LoadHardwareTargets
+        //   注册内置 kinseal 目标，三处各 +1 行，均为接线而非逻辑增长）。
+        // 前三次都是**变小**，按本表纪律必须同步改小基线。
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2986 },
     };
 
     /// <summary>

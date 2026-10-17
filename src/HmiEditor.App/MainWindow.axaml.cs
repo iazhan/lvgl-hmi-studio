@@ -35,7 +35,8 @@ public partial class MainWindow : Window
     {
         Name = "Untitled",
         LvglVersion = "9.5",
-        HardwareTargetId = "allwinner-t113" // 型号由固件决定（firmware/t113/firmware.json）
+        // 本 fork 默认目标板 = kinseal；ID 与运行时自报 ID 一致（chenge-rt board_profile.h）
+        HardwareTargetId = AllwinnerF1C100STarget.TargetId
     };
 
     /// <summary>硬件目标注册表（资源仪表盘取预算用；首次需要时加载一次）。</summary>
@@ -44,8 +45,8 @@ public partial class MainWindow : Window
     private HmiScreen _currentScreen = new()
     {
         Name = "Screen 1",
-        Width = 1024,
-        Height = 600
+        Width = 800,
+        Height = 480
     };
 
     private readonly AuthenticationService _authService = new();
@@ -1079,7 +1080,8 @@ public partial class MainWindow : Window
             }
         }
 
-        _currentProject = new HmiProject { Name = "Untitled", LvglVersion = "9.5" };
+        // 新工程默认绑 kinseal：缺省会丢目标 ⇒ 生成物 // Target: generic、仪表盘无 32 MiB 预算
+        _currentProject = new HmiProject { Name = "Untitled", LvglVersion = "9.5", HardwareTargetId = AllwinnerF1C100STarget.TargetId };
         // 应用工程安全配置到认证服务（会话超时/密码策略/锁定策略）
         _authService.ApplySecurityConfig(_currentProject.SecurityConfig);
         _currentScreen = ScreenFactory.Create(_currentProject, name: "Screen 1");
@@ -2518,6 +2520,7 @@ public partial class MainWindow : Window
         registry.LoadFirmwareTargets(Path.Combine(AppContext.BaseDirectory, "firmware"));
         if (!registry.GetAllTargets().Any())
             registry.Register(new AllwinnerT113Target());
+        registry.Register(new AllwinnerF1C100STarget());  // kinseal：内置目标，无 firmware JSON（LVGL/ABI 契约版本只能由 C# 类声明）
         return registry;
     }
 

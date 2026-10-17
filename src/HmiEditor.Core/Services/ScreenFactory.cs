@@ -25,12 +25,12 @@ public static class ScreenFactory
 {
     /// <summary>
     /// 工程完全没有屏幕、也没有可用的 <see cref="ScreenDefaultsConfig"/> 时的最后兜底尺寸。
-    /// 对齐 T113 7 寸屏（1024×600）。正常路径不应走到这里。
+    /// 对齐本 fork 的目标板 kinseal（F1C100S 800×480）。正常路径不应走到这里。
     /// </summary>
-    public const int FallbackWidth = 1024;
+    public const int FallbackWidth = 800;
 
     /// <summary>兜底高度。见 <see cref="FallbackWidth"/>。</summary>
-    public const int FallbackHeight = 600;
+    public const int FallbackHeight = 480;
 
     /// <summary>
     /// 按工程默认模板造一个新屏幕。

@@ -57,7 +57,7 @@ public class PluginTextLocalizationGuardTests
         }
 
         // ② 硬件目标校验结果：真的把两种规则**触发出来**再收 Code（不是抄源码里的字面量）
-        foreach (var target in new IHmiHardwareTargetProbe[] { new T113Probe(), new Rk3506Probe() })
+        foreach (var target in new IHmiHardwareTargetProbe[] { new T113Probe(), new F1C100SProbe(), new Rk3506Probe() })
         foreach (var code in target.TriggeredIssueCodes())
             keys.Add(("hw-issue", PluginTextKeys.IssueKey(code)));
 
@@ -442,7 +442,7 @@ public class PluginTextLocalizationGuardTests
     ///   这里的原文只作**回落**——按契约 <c>ConfigField.Label</c>/<c>Metadata.Description</c>
     ///   非空，删不掉。要把它们也搬走需要改**插件契约**（字段只带 Key 不带 Label），
     ///   属独立议题。</item>
-    ///   <item><b>校验回落文案</b>（T113/RK3506 各 1 条）：同上，<c>ValidationIssue.Message</c>
+    ///   <item><b>校验回落文案</b>（T113/RK3506/F1C100S 各 1 条）：同上，<c>ValidationIssue.Message</c>
     ///   是契约必填；界面显示的是 <c>hw.issue.*</c> 本地化模板（本轮已补齐，含占位符）。</item>
     ///   <item><b>运维日志 kind 标签</b>（<c>HardwareTargetRegistry</c> 2 条）：只在 <c>ILogger</c>
     ///   消息里当参数用，**非界面文案**，判据按语句判定时抓不到 sink 名 ⇒ 故意多报、锁定。</item>
@@ -462,6 +462,7 @@ public class PluginTextLocalizationGuardTests
         { "src/Hmi.Communication.Builtin/OpcUaRuntimeDriver.cs", 2 },
         { "src/Hmi.Hardware.Loader/HardwareTargetRegistry.cs", 2 },
         { "src/Hmi.Hardware.Builtin/AllwinnerT113Target.cs", 1 },
+        { "src/Hmi.Hardware.Builtin/AllwinnerF1C100STarget.cs", 1 },
         { "src/Hmi.Hardware.Builtin/RockchipRK3506Target.cs", 1 },
     };
 
@@ -581,6 +582,17 @@ public class PluginTextLocalizationGuardTests
         public IReadOnlyList<string> TriggeredIssueCodes()
         {
             var target = new AllwinnerT113Target();
+            var project = new HmiProject { LvglVersion = "8.3" }; // 与板载 9.5 主版本不同 → Error
+            project.Screens.Add(new HmiScreen { Name = "Big", Width = 4096, Height = 4096 });
+            return target.ValidateProject(project).Issues.Select(i => i.Code).Distinct().ToList();
+        }
+    }
+
+    private sealed class F1C100SProbe : IHmiHardwareTargetProbe
+    {
+        public IReadOnlyList<string> TriggeredIssueCodes()
+        {
+            var target = new AllwinnerF1C100STarget();
             var project = new HmiProject { LvglVersion = "8.3" }; // 与板载 9.5 主版本不同 → Error
             project.Screens.Add(new HmiScreen { Name = "Big", Width = 4096, Height = 4096 });
             return target.ValidateProject(project).Issues.Select(i => i.Code).Distinct().ToList();

@@ -93,14 +93,14 @@ public class ScreenPadding
 public class ScreenDefaultsConfig
 {
     /// <summary>
-    /// 新建屏幕的默认宽度（像素）。默认对齐固件型号（T113 7寸 1024×600）。
+    /// 新建屏幕的默认宽度（像素）。默认对齐本 fork 的目标板 kinseal（F1C100S 800×480）。
     /// </summary>
-    public int DefaultWidth { get; set; } = 1024;
+    public int DefaultWidth { get; set; } = 800;
 
     /// <summary>
-    /// 新建屏幕的默认高度（像素）。默认对齐固件型号（T113 7寸 1024×600）。
+    /// 新建屏幕的默认高度（像素）。默认对齐本 fork 的目标板 kinseal（F1C100S 800×480）。
     /// </summary>
-    public int DefaultHeight { get; set; } = 600;
+    public int DefaultHeight { get; set; } = 480;
 
     /// <summary>
     /// 新建屏幕的默认色深 —— 存 <c>Hmi.Hardware.Contracts.ColorDepth</c> 的<b>成员名</b>字符串
