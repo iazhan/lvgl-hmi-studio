@@ -340,12 +340,15 @@ public partial class SettingsDialog : ChromeWindow
         TxtSimWorkDir.Text = _settings.Simulator.WorkDir;
     }
 
-    // ── 真机部署设置（T113 SDK / 交叉工具链）──
+    // ── 真机部署设置（T113 SDK / 交叉工具链；kinseal 工具链 + chenge-rt）──
 
     private void PopulateDeviceControls()
     {
         TxtT113SdkRoot.Text = _settings.Device.T113SdkRoot;
         TxtT113Toolchain.Text = _settings.Device.T113ToolchainGcc;
+        TxtKinSealToolchain.Text = _settings.KinSeal.ToolchainGcc;
+        TxtKinSealRuntimeDir.Text = _settings.KinSeal.RuntimeDir;
+        TxtKinSealSdkManifestUrl.Text = _settings.KinSeal.SdkManifestUrl;
     }
 
     // ── 事件绑定 ──
@@ -427,6 +430,9 @@ public partial class SettingsDialog : ChromeWindow
         // 真机部署
         TxtT113SdkRoot.TextChanged += (_, _) => _settings.Device.SetT113SdkRoot(TxtT113SdkRoot.Text?.Trim() ?? "");
         TxtT113Toolchain.TextChanged += (_, _) => _settings.Device.SetT113ToolchainGcc(TxtT113Toolchain.Text?.Trim() ?? "");
+        TxtKinSealToolchain.TextChanged += (_, _) => _settings.KinSeal.SetToolchainGcc(TxtKinSealToolchain.Text?.Trim() ?? "");
+        TxtKinSealRuntimeDir.TextChanged += (_, _) => _settings.KinSeal.SetRuntimeDir(TxtKinSealRuntimeDir.Text?.Trim() ?? "");
+        TxtKinSealSdkManifestUrl.TextChanged += (_, _) => _settings.KinSeal.SetSdkManifestUrl(TxtKinSealSdkManifestUrl.Text?.Trim() ?? "");
     }
 
     // ── 按钮操作 ──

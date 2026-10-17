@@ -107,4 +107,21 @@ public static class CResourceDeclarations
     /// <summary><c>#define FONT_PXSIZE_X NN</c> —— FreeType 初始化像素尺寸。</summary>
     public static string FontPixelSizeMacroDefine(string fragment, int pixelSize)
         => $"#define {FontPixelSizeMacro(fragment)} {pixelSize}";
+
+    // ══════════════════ 保底字体表达式（无字体资产时） ══════════════════
+
+    /// <summary>
+    /// 工程没有字体资产时，主题 / 仪表盘数值 / 刻度标签所用的保底字体表达式。
+    ///
+    /// <para><b>为什么是它</b>：该字体是运行时 LVGL 树
+    /// （<c>f1c100s-project/chenge-rt/third_party/lvgl-9.5.0/src/font/</c>）自带的
+    /// Source Han Sans SC 14px 内嵌子集，由门控宏
+    /// <c>LV_FONT_SOURCE_HAN_SANS_SC_14_CJK</c> 编译 —— 板端
+    /// （<c>chenge-rt/config/lv_conf.h</c>）与模拟器 lv_conf 都启用它。
+    /// 固件与模拟器取同一个字体，模拟器预览的字形覆盖与实机一致。</para>
+    ///
+    /// <para><b>不要改用 <c>LV_FONT_DEFAULT</c></b>：其默认值是 Montserrat，
+    /// 没有任何中文字形，中文会整片渲染成占位方框。</para>
+    /// </summary>
+    public const string CjkFallbackFontExpr = "&lv_font_source_han_sans_sc_14_cjk";
 }

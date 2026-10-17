@@ -122,7 +122,7 @@ public static partial class SimulatorProjectExporter
         sb.AppendLine("ctest --test-dir build --output-on-failure");
         sb.AppendLine("```");
         sb.AppendLine();
-        sb.AppendLine("- 内置 `simulator_selftest`: 以 `SDL_VIDEODRIVER=dummy` 无头模式渲染并校验显示/活动屏幕, 供 CI 使用。");
+        sb.AppendLine("- 内置 `simulator_selftest`: 以 `SDL_VIDEODRIVER=dummy` + `SDL_RENDER_DRIVER=software` 无头模式渲染并校验显示/活动屏幕, 供 CI 使用。");
         sb.AppendLine("- 建议的验证协议: ① 构建通过 → ② `--selftest` PASS → ③ 人工预览各屏幕交互 → ④ 性能观察 (`LV_USE_PERF_MONITOR=1`)。");
         sb.AppendLine();
         sb.AppendLine("## 屏幕");
@@ -139,13 +139,14 @@ public static partial class SimulatorProjectExporter
         sb.AppendLine("  确认 `main.c` 中 `lv_sdl_mouse_create()` / `lv_sdl_keyboard_create()` 已调用(默认已注册); SDL 鼠标驱动会处理触摸事件 (SDL_FINGER*)。");
         sb.AppendLine();
         sb.AppendLine("**Q: 中文显示为方块?**");
-        sb.AppendLine("  需在 LVGL 中启用支持 CJK 的字体 (如 `NotoSansCJK`), 并将默认字体指向它 (`lv_conf.h` 或主题)。");
+        sb.AppendLine("  无字体资产时用的是 LVGL 树内嵌 CJK 子集 (约 1200 字, 偏繁体/日文用字 —— 「確認」「設定」在内, 「确认」「设置」不在), 子集外的字显示占位框;");
+        sb.AppendLine("  在资源库添加 TTF/OTF 字体资产即可用完整字形 (FreeType 运行时加载, 不受子集限制)。");
         sb.AppendLine();
         sb.AppendLine("**Q: 模拟器卡顿 / 帧率低?**");
         sb.AppendLine("  ① 检查 `--fps` 上限; ② `LV_USE_PERF_MONITOR=1` 观察实际 FPS 与内存; ③ 降低 `LV_COLOR_DEPTH` 至 16 或精简复杂控件; ④ 用 Release 构建 (`-O2`)。");
         sb.AppendLine();
         sb.AppendLine("**Q: 无头服务器 (CI) 上运行失败?**");
-        sb.AppendLine("  已自动设置 `SDL_VIDEODRIVER=dummy`; 如仍失败, 确认 SDL2 已安装且版本 ≥ 2.0.20。");
+        sb.AppendLine("  已自动设置 `SDL_VIDEODRIVER=dummy` 与 `SDL_RENDER_DRIVER=software` (dummy 视频驱动下没有加速渲染器, 缺后者 `lv_sdl_window_create` 取不到 renderer 会返回 NULL); 如仍失败, 确认 SDL2 已安装且版本 ≥ 2.0.20。");
         sb.AppendLine();
         sb.AppendLine("## 安全与更新");
         sb.AppendLine();

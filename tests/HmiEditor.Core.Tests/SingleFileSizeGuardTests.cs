@@ -41,8 +41,12 @@ public class SingleFileSizeGuardTests
         //   `HmiDockFactory.OpenDockable` —— 移进工厂才**够得着判据**，顺带本文件变小）。
         // → 2986（kinseal 目标接入：新建工程默认绑 F1C100S 目标 + LoadHardwareTargets
         //   注册内置 kinseal 目标，三处各 +1 行，均为接线而非逻辑增长）。
-        // 前三次都是**变小**，按本表纪律必须同步改小基线。
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2986 },
+        // → 2988（kinseal 的「编译转换」接线：BuildPipelineService 多两个必需回调
+        //   GetKinSealToolchainGcc / GetKinSealRuntimeDir，各一行委托赋值，无分支）。
+        // → 2961（kinseal SDK 前置这两段逻辑析出到 `MainWindow.KinSealSdk.cs`：
+        //   「编译转换」与「编译并运行」现在都要先备 SDK，属新职责，不该长在主文件里）。
+        // 本表纪律：变大要先想办法拆小，变小必须同步改小基线。
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2961 },
     };
 
     /// <summary>

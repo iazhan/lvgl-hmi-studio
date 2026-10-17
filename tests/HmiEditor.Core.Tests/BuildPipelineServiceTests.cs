@@ -60,6 +60,8 @@ public class BuildPipelineServiceTests
                 // 故意不给工具链：交叉编译应优雅降级而不是抛异常
                 GetT113SdkRoot = () => null,
                 GetT113ToolchainGcc = () => null,
+                GetKinSealToolchainGcc = () => null,
+                GetKinSealRuntimeDir = () => null,
             };
         }
     }

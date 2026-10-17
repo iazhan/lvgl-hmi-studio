@@ -386,6 +386,8 @@ public class SimulatorLoopTests
             CSource.AssertCode(cmake, "enable_testing()");
             Assert.Contains("simulator_selftest", cmake);
             Assert.Contains("SDL_VIDEODRIVER=dummy", cmake);
+            // dummy 视频驱动没有加速渲染器：缺软件渲染器则窗口创建失败，自检必红
+            Assert.Contains("SDL_RENDER_DRIVER=software", cmake);
         }
         finally
         {
@@ -754,12 +756,13 @@ public class SimulatorLoopTests
             SimulatorProjectExporter.Export(project, code, dir, assetLibrary: lib);
             var fontsC = File.ReadAllText(Path.Combine(dir, "generated_fonts.c"));
 
-            // 模拟器回退必须使用 LVGL 公共默认字体，避免依赖不存在的 SimSun 符号。
+            // 回退须按 size 在 14/16 内嵌子集里就近取；符号缺失时由 #else 兜底，
+            // 因此不会因 LVGL 树没有该子集而链接失败。
             Assert.Contains("sim_fallback_cjk_font", fontsC);
-            CSource.AssertCode(fontsC, "return lv_font_get_default();");
-            CSource.AssertCode(fontsC, "(void)size;");
-            // 旧的硬编码 fallback 不能再出现
-            Assert.DoesNotContain("= *lv_font_simsun_14_cjk;", fontsC);
+            Assert.Contains("#if LV_FONT_SOURCE_HAN_SANS_SC_14_CJK && LV_FONT_SOURCE_HAN_SANS_SC_16_CJK", fontsC);
+            Assert.Contains("&lv_font_source_han_sans_sc_16_cjk", fontsC);
+            Assert.Contains("&lv_font_source_han_sans_sc_14_cjk", fontsC);
+            Assert.Contains("lv_font_get_default()", fontsC);
         }
         finally { TestTempDir.DeleteDir(dir); }
     }
@@ -768,7 +771,7 @@ public class SimulatorLoopTests
     public void Export_FontsC_FallbackSize_PickedByRequest()
     {
         // D5 回归：生成代码在 FreeType 加载失败分支应调用 sim_fallback_cjk_font(实际 size)，
-        // 而不是直接用 lv_font_simsun_14_cjk（避免 32px 文本回退成 14px）。
+        // 而不是硬编码某个尺寸（避免 24px 文本回退成 14px）。
         var project = BuildCleanProject();
         var lib = new AssetLibrary();
         lib.AddAsset(new AssetItem { Id = "fnt-cjk", Name = "CJK", Type = AssetType.Font, FilePath = "/tmp/fake.ttf" });
@@ -782,7 +785,7 @@ public class SimulatorLoopTests
 
             // 加载失败分支必须调用 sim_fallback_cjk_font(24)，且 asset id 的 `-` 经 Sanitize 变成 `_`
             CSource.AssertCode(fontsC, "sim_fallback_cjk_font(FONT_PXSIZE_fnt_cjk)");
-            Assert.DoesNotContain("= *lv_font_simsun_14_cjk;", fontsC);
+            Assert.DoesNotContain("lv_font_simsun", fontsC);
         }
         finally { TestTempDir.DeleteDir(dir); }
     }

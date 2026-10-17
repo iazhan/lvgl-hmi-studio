@@ -200,6 +200,8 @@ public partial class MainWindow : Window
                 _authService.RecordAudit(AuditAction.DataExported, message, success),
             GetT113SdkRoot = () => _settingsService.Device.T113SdkRoot,
             GetT113ToolchainGcc = () => _settingsService.Device.T113ToolchainGcc,
+            GetKinSealToolchainGcc = () => _settingsService.KinSeal.ToolchainGcc,
+            GetKinSealRuntimeDir = () => _settingsService.KinSeal.RuntimeDir,
         };
 
         // 设计时数据预览运行时：宿主回调注入 UI/画布/模型解析依赖，
@@ -1413,7 +1415,7 @@ public partial class MainWindow : Window
         catch (Exception ex) { ReportOperationFailure(Lang.UiOpCompileProject, ex); }
     }
 
-    private Task CompileProjectCore() => _buildPipeline.CompileAsync();
+    private Task CompileProjectCore() => CompileProjectWithSdkAsync();
 
     /// <summary>
     /// 下载到 HMI —— 打开下载对话框，将编译产物传输到指定 HMI 设备。
@@ -1504,37 +1506,10 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 编译并运行 —— 一键将工程编译为 LVGL+SDL2 PC 模拟器并自动运行。
-    /// 打开 BuildRunDialog，由其内部完成 生成 → 编译 → 运行监控 的完整衔接。
+    /// 编译并运行 —— 一键编译为 LVGL+SDL2 PC 模拟器并自动运行。
+    /// 实现（含 kinseal SDK 首次安装与 LVGL 树探测）见 <c>MainWindow.KinSealSdk.cs</c>。
     /// </summary>
-    private void BuildAndRunSimulator()
-    {
-        if (_currentProject == null)
-        {
-            StatusText.Text = LocService["gen.create.or.open.project"];
-            return;
-        }
-
-        // 1. 确定模拟器工作目录（可配置，默认可清理临时根，支持增量编译复用）
-        var workDir = _settingsService.Simulator.WorkDir;
-        if (string.IsNullOrWhiteSpace(workDir))
-        {
-            var safeName = string.Concat(_currentProject.Name.Split(Path.GetInvalidFileNameChars()));
-            workDir = AppPaths.TempSubdir("sim", safeName);
-        }
-
-        // 2. 探测 LVGL 源码目录（用户配置 → 环境变量 → 工作目录上级 → 常用路径）
-        var lvglDir = SimulatorBuildService.FindLvglDirectory(_settingsService.Simulator.LvglDir, workDir);
-        if (string.IsNullOrEmpty(lvglDir))
-        {
-            StatusText.Text = LocService["buildrun.no.lvgl"];
-            return;
-        }
-
-        // 3. 打开编译并运行对话框（Load 后自动开始编译）
-        var dialog = new Views.BuildRunDialog(_currentProject, workDir, lvglDir, _assetLibrary);
-        dialog.ShowDialog(this);
-    }
+    private void BuildAndRunSimulator() => _ = BuildAndRunSimulatorAsync();
 
     private async void ExportSimulatorProject()
     {

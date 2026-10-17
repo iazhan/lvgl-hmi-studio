@@ -219,12 +219,11 @@ public partial class CodeGenerator
         // root_scr==NULL 时回退 apply_theme_styles()（默认屏/兼容旧宿主）。
         // .so 模式先解析工程字体（宿主 hmi_resolve_font），再应用主题样式。
         var themeTextColor = (project.Theme?.TextColor ?? "e2e8f0").TrimStart('#');
-        // 无自定义字体资产时，回退到嵌入的 CJK 子集字体（而非 LV_FONT_DEFAULT=Montserrat，
-        // 后者无中文字形会导致中文方框 —— 2026-08-18 对齐设计器默认字体与固件保底中文字体）。
-        // .so(固件) 用 Source Han Sans SC 嵌入子集；模拟器用 SimSun 嵌入子集。
+        // 无自定义字体资产时回退内嵌 CJK 子集，而不是 LV_FONT_DEFAULT=Montserrat
+        //（后者无中文字形，中文整片渲染成方框）。
         var themeFontExpr = fontAssets.Count > 0
             ? CResourceDeclarations.FontVariable(CIdentifier.ForAsset(fontAssets[0].Id))
-            : (_soMode ? "&lv_font_source_han_sans_sc_14_cjk" : "&lv_font_simsun_14_cjk");
+            : CResourceDeclarations.CjkFallbackFontExpr;
         // 设备端绑定值周期刷新（实机 .so 必须读真实缓存刷新 UI，模拟器专用 sim_refresh_bindings 不适用）
         var (refreshCode, hasBindingRefresh) = GenerateDeviceRefreshBindings(project, tags);
         sb.Append(refreshCode);
@@ -238,7 +237,10 @@ public partial class CodeGenerator
         sb.AppendLine("    } else {");
         sb.AppendLine("        apply_theme_styles();  /* 默认屏/兼容：内部用 lv_screen_active() */");
         sb.AppendLine("    }");
-        sb.AppendLine("    hmi_ui_start_binding_refresh();   /* 周期刷新绑定值（读 get_tag_value） */");
+        // 只有真的生成了这个函数才允许调用它：工程没有绑定时生成器不产出定义，
+        // 而无条件调用会留下未定义符号 —— .so 上板 dlopen(RTLD_NOW) 直接拒载。
+        if (hasBindingRefresh)
+            sb.AppendLine("    hmi_ui_start_binding_refresh();   /* 周期刷新绑定值（读 get_tag_value） */");
         sb.AppendLine("}");
         sb.AppendLine();
 

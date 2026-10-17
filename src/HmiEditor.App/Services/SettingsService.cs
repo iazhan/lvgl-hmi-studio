@@ -118,6 +118,11 @@ public sealed class SettingsService : IDisposable
     public DeviceSettings Device => new(this);
 
     /// <summary>
+    /// 获取 kinseal（F1C100S）真机部署（.so 交叉编译）设置。
+    /// </summary>
+    public KinSealSettings KinSeal => new(this);
+
+    /// <summary>
     /// 获取**报表模板**（阶段 182：每个数据源一份列布局模板）。
     /// </summary>
     public ReportTemplateSettings ReportTemplates => new(this);
@@ -443,7 +448,8 @@ public sealed class SettingsService : IDisposable
 
     /// <summary>
     /// PC 模拟器构建设置 —— LVGL 源码目录与模拟器工作目录。
-    /// LVGL 目录留空时自动探测（环境变量 LVGL_DIR / 工作目录上级 / 常用开发路径）。
+    /// LVGL 目录留空时按 SimulatorBuildService.FindLvglDirectory 的顺序探测
+    /// （环境变量 LVGL_DIR / 安装包内置 SDK / 工程工作目录同级的 ../lvgl）。
     /// </summary>
     public sealed class SimulatorSettings
     {
@@ -475,6 +481,32 @@ public sealed class SettingsService : IDisposable
         /// <summary>交叉编译器完整路径（arm-openwrt-linux-*-gcc）。空 = SDK 内自动查找。</summary>
         public string T113ToolchainGcc => _parent.Get(nameof(T113ToolchainGcc), "");
         public void SetT113ToolchainGcc(string value) => _parent.Set(nameof(T113ToolchainGcc), value);
+    }
+
+    /// <summary>
+    /// kinseal（F1C100S）真机部署设置 —— libhmi_ui.so 交叉编译。
+    /// 两项留空时只用安装包自带 SDK（&lt;安装目录&gt;/sdk/kinseal/{runtime, toolchain}）
+    /// 与环境变量（F1C100S_GCC / CHENGE_RT_DIR）—— 不猜机器上的其它工程目录。
+    /// </summary>
+    public sealed class KinSealSettings
+    {
+        private readonly SettingsService _parent;
+        internal KinSealSettings(SettingsService parent) => _parent = parent;
+
+        /// <summary>交叉编译器完整路径（arm-buildroot-linux-gnueabi-gcc）。空 = 自动探测。</summary>
+        public string ToolchainGcc => _parent.Get(nameof(ToolchainGcc), "");
+        public void SetToolchainGcc(string value) => _parent.Set(nameof(ToolchainGcc), value);
+
+        /// <summary>设备侧运行时目录（chenge-rt 根）。空 = 自动探测。</summary>
+        public string RuntimeDir => _parent.Get(nameof(RuntimeDir), "");
+        public void SetRuntimeDir(string value) => _parent.Set(nameof(RuntimeDir), value);
+
+        /// <summary>
+        /// SDK 下载清单地址（可选）。空 = 只认安装包自带的归档（默认分发方式）；
+        /// 填 http(s) 地址则在安装包未附带时按清单下载安装。
+        /// </summary>
+        public string SdkManifestUrl => _parent.Get(nameof(SdkManifestUrl), "");
+        public void SetSdkManifestUrl(string value) => _parent.Set(nameof(SdkManifestUrl), value);
     }
 
     /// <summary>

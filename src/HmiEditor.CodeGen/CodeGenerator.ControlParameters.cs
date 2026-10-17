@@ -353,8 +353,8 @@ public partial class CodeGenerator
             sb.AppendLine($"    lv_label_set_text({gaugeLbl}, \"{gaugeText}\");");
             sb.AppendLine($"    lv_obj_center({gaugeLbl});");
             sb.AppendLine($"    lv_obj_set_style_text_color({gaugeLbl}, {theme?.ToLvglColor(control.TextColor) ?? $"lv_color_hex(0x{PaletteDefaults.Text.TrimStart('#')})"}, 0);");
-            // 中心数值文本：使用嵌入 CJK 子集而非 LV_FONT_DEFAULT（默认 Montserrat 无中文字形 → 中文显示 tofu）
-            var gaugeFont = _soMode ? "&lv_font_source_han_sans_sc_14_cjk" : "&lv_font_simsun_14_cjk";
+            // 中心数值文本：使用内嵌 CJK 子集而非 LV_FONT_DEFAULT（默认 Montserrat 无中文字形 → 中文显示 tofu）
+            var gaugeFont = CResourceDeclarations.CjkFallbackFontExpr;
             sb.AppendLine($"    lv_obj_set_style_text_font({gaugeLbl}, {gaugeFont}, 0);");
             // 刻度线（MajorTickCount 主刻度）——LVGL 无弧刻度 API，以注释声明运行时绘制
             sb.AppendLine($"    // Gauge 主刻度: {Math.Max(2, control.MajorTickCount)} 段（运行时在 arc 上叠加）");

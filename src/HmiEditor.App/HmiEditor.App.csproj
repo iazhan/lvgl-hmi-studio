@@ -80,5 +80,17 @@
   <ItemGroup>
     <!-- 固件型号定义：每套固件（firmware/*/firmware.json）生成一个固定型号 -->
     <None Include="..\..\firmware\*\firmware.json" Link="firmware\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+
+    <!-- kinseal SDK：由 tools/package-kinseal-sdk.sh 生成到仓库根的 sdk/，随安装包分发。
+         首次用到交叉编译时由编辑器校验清单并解压到用户数据目录（解压用 tar，能保留可执行位；
+         直接铺文件进安装包在 Windows 上会丢权限）。目录不存在时无匹配文件，构建不受影响。 -->
+    <None Include="..\..\sdk\kinseal-sdk-*.tar.gz"
+          Link="sdk\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\sdk\kinseal-sdk-*.manifest.json"
+          Link="sdk\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

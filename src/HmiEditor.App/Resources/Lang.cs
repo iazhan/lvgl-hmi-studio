@@ -1779,6 +1779,11 @@ public static class Lang
     public const string CompileSoSuccess      = "compile.so.success";
     public const string CompileSoFailed       = "compile.so.failed";
     public const string CompileSoToolchainMissing = "compile.so.toolchain.missing";
+    /// <summary>kinseal（F1C100S）工程的工具链/运行时缺失提示 —— 与 Tina SDK 不是一回事，分开指路。</summary>
+    public const string CompileSoToolchainMissingKinSeal = "compile.so.toolchain.missing.kinseal";
+
+    /// <summary>kinseal SDK 首次安装失败（安装包未附带 / 校验不过 / 解压失败）。</summary>
+    public const string SdkKinSealUnavailable = "sdk.kinseal.unavailable";
     public const string DownloadNeedCompile   = "download.need.compile";
     public const string DownloadAutoSharedLib = "download.auto.sharedlibrary";
 

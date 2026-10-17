@@ -88,6 +88,20 @@ public class RefreshBindingsParityTests
     }
 
     [Fact]
+    public void DevicePath_WithoutBindings_DoesNotCallUndefinedRefresh()
+    {
+        // 工程没有绑定时生成器**不产出** hmi_ui_start_binding_refresh 的定义；
+        // 此时仍无条件调用它，.so 就带上了未定义符号 —— 宿主 dlopen(RTLD_NOW) 直接拒载，
+        // 表现是"编译转换明明成功，板上却加载不出来"。
+        var project = new HmiProject { Name = "NoBinding", LvglVersion = "9.5" };
+        project.Screens.Add(new HmiScreen { Id = "s1", Name = "Main", Width = 800, Height = 480 });
+
+        var device = new CodeGenerator().GenerateSharedLibraryProject(project);
+
+        Assert.DoesNotContain("hmi_ui_start_binding_refresh", device);
+    }
+
+    [Fact]
     public void BothPaths_DifferOnlyInValueSourceAndGuards()
     {
         var project = MakeProject();

@@ -96,7 +96,7 @@ public class SliderBarFeatureCodeGenTests
         CSource.AssertCode(code, "lv_label_set_text(_ticklbl_sl1_10, \"100\");");
         // 数值标签在刻度线上方、居中于刻度；使用嵌入 CJK 子集（montserrat_12 无中文字形 → 标题含中文时 tofu）
         CSource.AssertCode(code, "lv_obj_align(_ticklbl_sl1_0, LV_ALIGN_TOP_MID, -150, -16);");
-        CSource.AssertCode(code, "lv_obj_set_style_text_font(_ticklbl_sl1_0, &lv_font_simsun_14_cjk, 0);");
+        CSource.AssertCode(code, "lv_obj_set_style_text_font(_ticklbl_sl1_0, &lv_font_source_han_sans_sc_14_cjk, 0);");
     }
 
     [Fact]

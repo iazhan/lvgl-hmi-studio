@@ -2,6 +2,7 @@ using HmiEditor.App.Resources;
 using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Services;
+using Hmi.Hardware.Builtin;
 using HmiEditor.Device.Build;
 using System;
 using System.Collections.Generic;
@@ -65,6 +66,12 @@ public sealed class BuildPipelineService
 
     public required Func<string?> GetT113SdkRoot { get; init; }
     public required Func<string?> GetT113ToolchainGcc { get; init; }
+
+    /// <summary>kinseal 交叉编译器路径（空 = 自动探测）。</summary>
+    public required Func<string?> GetKinSealToolchainGcc { get; init; }
+
+    /// <summary>kinseal 设备侧运行时目录 chenge-rt（空 = 自动探测）。</summary>
+    public required Func<string?> GetKinSealRuntimeDir { get; init; }
 
     private static LocalizationService Loc => AppLocalization.Service;
 
@@ -190,9 +197,14 @@ public sealed class BuildPipelineService
             }
             else
             {
+                // 工具链缺失的提示按目标分文案：kinseal 找的是 buildroot 工具链 +
+                // chenge-rt 运行时目录，与 Tina SDK 不是一回事（指错地方比不指更糟）
+                var missingKey = project.HardwareTargetId == AllwinnerF1C100STarget.TargetId
+                    ? Lang.CompileSoToolchainMissingKinSeal
+                    : Lang.CompileSoToolchainMissing;
                 SetCompileStatusText(!string.IsNullOrEmpty(LastSoBuildError)
                     ? Loc.Format("compile.so.failed", LastSoBuildError)
-                    : Loc["compile.so.toolchain.missing"]);
+                    : Loc[missingKey]);
             }
 
             SetCompileBarValue(100);
@@ -286,7 +298,8 @@ public sealed class BuildPipelineService
     /// <summary>
     /// 交叉编译生成 libhmi_ui.so：
     ///   1) 导出工程标签契约头 tags.h（TAG_* 枚举与宿主一致，.so 才能编译/运行）；
-    ///   2) 用 T113 工具链把 SharedLibrary 源码编译为 libhmi_ui.so（写回 targetDir）。
+    ///   2) 按工程硬件目标选构建器把 SharedLibrary 源码编译为 libhmi_ui.so（写回 targetDir）。
+    ///      kinseal（F1C100S）走 buildroot 工具链 + chenge-rt 契约头；其余走 T113 Tina SDK。
     /// 成功返回 .so 路径；工具链缺失或编译失败返回 null 并记录原因（不抛异常）。
     /// </summary>
     private async Task<string?> BuildDeviceSharedLibraryAsync(HmiProject project, string sourcePath, string targetDir)
@@ -299,6 +312,22 @@ public sealed class BuildPipelineService
             bindingEngine.BuildRuntimeTags();
             await File.WriteAllTextAsync(tagsHeader,
                 new RuntimeTagsCodeGen().GenerateHeader(bindingEngine.Tags));
+
+            if (project.HardwareTargetId == AllwinnerF1C100STarget.TargetId)
+            {
+                var kinseal = new F1C100SSoBuilder();
+                kinseal.Log += msg => PostStatus(msg);
+                var kinsealResult = await kinseal.BuildAsync(new F1C100SSoBuildOptions
+                {
+                    SourcePath = sourcePath,
+                    OutputDir = targetDir,
+                    TagsHeaderPath = tagsHeader,
+                    ToolchainGcc = GetKinSealToolchainGcc(),
+                    RuntimeDir = GetKinSealRuntimeDir()
+                });
+                LastSoBuildError = kinsealResult.Error;
+                return kinsealResult.Success ? kinsealResult.OutputPath : null;
+            }
 
             var builder = new T113SoBuilder();
             builder.Log += msg => PostStatus(msg);

@@ -197,10 +197,10 @@ public class MockFontLoadingTests
         }
     }
 
-    // ── lv_conf.h 无字体资源 → 使用 SimSun CJK fallback ──
+    // ── lv_conf.h 无字体资源 → 启用内嵌 CJK 子集作保底中文字体 ──
 
     [Fact]
-    public void LvConf_WithoutFontAssets_UsesSimSunCjkFallback()
+    public void LvConf_WithoutFontAssets_EnablesEmbeddedCjkSubset()
     {
         var project = new HmiProject { LvglVersion = "9.5" };
         project.Screens.Add(new HmiScreen { Id = "s1", Name = "Main", Width = 100, Height = 100 });
@@ -211,9 +211,12 @@ public class MockFontLoadingTests
         {
             SimulatorProjectExporter.Export(project, code, dir, assetLibrary: null);
             var conf = File.ReadAllText(Path.Combine(dir, "lv_conf.h"));
-            Assert.Contains("LV_FONT_SIMSUN_16_CJK", conf);
-            Assert.Contains("LV_FONT_DEFAULT", conf);
+            // CodeGen 的保底字体表达式引用这两个符号，lv_conf 不启用就是未定义符号
+            Assert.Contains("#define LV_FONT_SOURCE_HAN_SANS_SC_14_CJK 1", conf);
+            Assert.Contains("#define LV_FONT_SOURCE_HAN_SANS_SC_16_CJK 1", conf);
             Assert.Contains("#define LV_USE_TEXT_UTF8 1", conf);
+            // 不覆盖 LV_FONT_DEFAULT：留空由 LVGL 内置兜底（montserrat_14）
+            Assert.DoesNotContain("#define LV_FONT_DEFAULT", conf);
         }
         finally
         {
@@ -297,7 +300,7 @@ public class MockFontLoadingTests
         CSource.AssertCode(code, "lv_obj_set_style_text_font(scr, &font_font_cjk, 0)");
     }
 
-    // ── CodeGen 主题代码：无字体资源 → 回退嵌入 CJK 子集（而非 LV_FONT_DEFAULT=Montserrat，无中文字形）──
+    // ── CodeGen 主题代码：无字体资源 → 回退内嵌 CJK 子集（而非无中文字形的 LVGL 默认字体）──
 
     [Fact]
     public void CodeGen_ThemeWithoutFontAsset_FallsBackToEmbeddedCjk()
@@ -305,8 +308,8 @@ public class MockFontLoadingTests
         var project = new HmiProject { LvglVersion = "9.5" };
         project.Screens.Add(new HmiScreen { Id = "s1", Name = "Main", Width = 100, Height = 100 });
         var code = new CodeGenerator().GenerateSimulatorModule(project);
-        // 模拟器模式：无字体资产回退 SimSun CJK 子集（保证中文不显示方框）
-        CSource.AssertCode(code, "lv_obj_set_style_text_font(scr, &lv_font_simsun_14_cjk, 0)");
+        // 无字体资产回退内嵌 CJK 子集（保证中文不显示方框）
+        CSource.AssertCode(code, "lv_obj_set_style_text_font(scr, &lv_font_source_han_sans_sc_14_cjk, 0)");
     }
 
     // ── 字体资产 ID 含特殊字符 → 清理 ──

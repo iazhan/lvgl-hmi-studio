@@ -14,6 +14,9 @@ TestResults/
 ## Build artifacts
 publish/
 artifacts/
+## kinseal SDK 归档：由 tools/package-kinseal-sdk.sh 从一次构建产物生成（约 90 MB），
+## 属发布物不属源；随安装包分发时由 csproj 从这里带上。
+/sdk/
 
 ## OS files
 Thumbs.db

@@ -523,7 +523,7 @@ if (foundSystemFont != null)
 else
 {
     Console.WriteLine("  ⚠ 未找到系统中文字体（Noto CJK / WenQuanYi），字体资产未添加。");
-    Console.WriteLine("    模拟器将 fallback 到内置 SimSun_16_CJK 子集（部分罕见字可能缺失）。");
+    Console.WriteLine("    模拟器将 fallback 到 LVGL 树内嵌 CJK 子集（部分罕见字可能缺失）。");
 }
 
 // =========================================

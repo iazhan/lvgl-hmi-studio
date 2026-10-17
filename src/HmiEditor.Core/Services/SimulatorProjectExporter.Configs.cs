@@ -125,7 +125,7 @@ public static partial class SimulatorProjectExporter
                    message(STATUS "FreeType 已找到，启用 LV_USE_FREETYPE 运行时字体加载")
                    set(HAVE_FREETYPE ON)
                else()
-                   message(WARNING "FreeType 未找到，中文字体将使用内置子集 SimSun_16_CJK（部分罕见字缺失）")
+                   message(WARNING "FreeType 未找到，中文字体将使用 LVGL 树内嵌 CJK 子集（部分罕见字缺失）")
                    set(HAVE_FREETYPE OFF)
                endif()
 
@@ -200,9 +200,11 @@ public static partial class SimulatorProjectExporter
                enable_testing()
                add_test(NAME simulator_selftest
                         COMMAND hmi_sim --selftest)
+               # SDL_RENDER_DRIVER=software 不能省: dummy 视频驱动下没有加速渲染器,
+               # lv_sdl_window_create 取不到 renderer 会返回 NULL, 自检必然失败。
                set_tests_properties(simulator_selftest PROPERTIES
                    TIMEOUT 60
-                   ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy")
+                   ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy;SDL_RENDER_DRIVER=software")
 
                """;
     }
@@ -220,12 +222,19 @@ public static partial class SimulatorProjectExporter
                #define LV_FONT_MONTSERRAT_12 1
                #define LV_FONT_MONTSERRAT_14 1
                #define LV_FONT_MONTSERRAT_16 1
-               #define LV_FONT_SIMSUN_14_CJK 1
-               #define LV_FONT_SIMSUN_16_CJK 1
+               /* 无字体资产时的保底中文字体：运行时 LVGL 树自带的内嵌子集（14/16px），
+                * 与板端 chenge-rt/config/lv_conf.h 同一组开关。不启用则 CodeGen 生成的
+                * 保底字体引用（CResourceDeclarations.CjkFallbackFontExpr）找不到符号。 */
+               #define LV_FONT_SOURCE_HAN_SANS_SC_14_CJK 1
+               #define LV_FONT_SOURCE_HAN_SANS_SC_16_CJK 1
+               /* LV_FONT_DEFAULT 不在此覆盖：留空即 LVGL 内置兜底（lv_conf_internal.h
+                * → &lv_font_montserrat_14，随 LV_FONT_MONTSERRAT_14 一并编入）。 */
                """ : """
 
                /* ── 字体 ──
-                * 默认使用内置字体, 如需中文支持请添加字体资源
+                * 未添加字体资源：中文由运行时 LVGL 树的内嵌 CJK 子集承担（常用字齐全），
+                * 子集外的生僻字显示占位框（LV_USE_FONT_PLACEHOLDER=1）；
+                * 完整字形请在资源库添加 TTF/OTF 字体资产。
                 * UTF-8 编码支持: 启用中文/多语言文本解析 */
                #define LV_USE_TEXT_UTF8 1
                #define LV_USE_FONT_PLACEHOLDER 1
@@ -233,11 +242,11 @@ public static partial class SimulatorProjectExporter
                #define LV_FONT_MONTSERRAT_12 1
                #define LV_FONT_MONTSERRAT_14 1
                #define LV_FONT_MONTSERRAT_16 1
-               /* 内置中文字体 (含常用 CJK 字符，用于模拟器 fallback) */
-               #define LV_FONT_SIMSUN_14_CJK 1
-               #define LV_FONT_SIMSUN_16_CJK 1
-               /* 将默认字体设置为 SimSun 16 CJK，以保证中文显示 */
-               #define LV_FONT_DEFAULT &lv_font_simsun_16_cjk
+               /* 无字体资产时的保底中文字体：运行时 LVGL 树自带的内嵌子集（14/16px），
+                * 与板端 chenge-rt/config/lv_conf.h 同一组开关。不启用则 CodeGen 生成的
+                * 保底字体引用（CResourceDeclarations.CjkFallbackFontExpr）找不到符号。 */
+               #define LV_FONT_SOURCE_HAN_SANS_SC_14_CJK 1
+               #define LV_FONT_SOURCE_HAN_SANS_SC_16_CJK 1
                """;
 
         return $$"""

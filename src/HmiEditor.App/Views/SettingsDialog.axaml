@@ -483,6 +483,37 @@
                                          Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                          CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
                                          Padding="10,8"/>
+
+                                <!-- kinseal（F1C100S）：工具链与设备侧运行时目录，均为空 = 用安装包内置 SDK -->
+                                <TextBlock Text="{res:Loc settings.device.kinseal.title}"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,0"/>
+                                <TextBlock Text="{res:Loc settings.device.kinseal.desc}"
+                                           Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
+
+                                <TextBlock Text="{res:Loc settings.device.kinseal.gcc.dir}"
+                                           Foreground="{StaticResource HmiTextPrimarySoftBrush}" FontSize="13" Margin="0,8,0,4"/>
+                                <TextBox x:Name="TxtKinSealToolchain"
+                                         PlaceholderText="{res:Loc settings.device.kinseal.gcc.hint}"
+                                         Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
+                                         Padding="10,8"/>
+
+                                <TextBlock Text="{res:Loc settings.device.kinseal.rt.dir}"
+                                           Foreground="{StaticResource HmiTextPrimarySoftBrush}" FontSize="13" Margin="0,8,0,4"/>
+                                <TextBox x:Name="TxtKinSealRuntimeDir"
+                                         PlaceholderText="{res:Loc settings.device.kinseal.rt.hint}"
+                                         Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
+                                         Padding="10,8"/>
+
+                                <!-- 可选：改为按清单下载（默认关闭，SDK 随安装包分发） -->
+                                <TextBlock Text="{res:Loc settings.device.kinseal.sdk.url}"
+                                           Foreground="{StaticResource HmiTextPrimarySoftBrush}" FontSize="13" Margin="0,8,0,4"/>
+                                <TextBox x:Name="TxtKinSealSdkManifestUrl"
+                                         PlaceholderText="{res:Loc settings.device.kinseal.sdk.hint}"
+                                         Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
+                                         Padding="10,8"/>
                             </StackPanel>
                         </Border>
                     </ScrollViewer>

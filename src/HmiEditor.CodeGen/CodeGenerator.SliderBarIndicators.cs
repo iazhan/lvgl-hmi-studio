@@ -61,8 +61,8 @@ public partial class CodeGenerator
             sb.AppendLine($"    lv_obj_t* {tickLblName}_{i} = lv_label_create({objName});");
             sb.AppendLine($"    lv_label_set_text({tickLblName}_{i}, \"{EscapeCString(label)}\");");
             sb.AppendLine($"    lv_obj_set_style_text_color({tickLblName}_{i}, {tickColor}, 0);");
-            // 刻度标签：使用嵌入 CJK 子集而非 montserrat_12（无中文字形 → 标题含中文时 tofu）
-            var tickFont = _soMode ? "&lv_font_source_han_sans_sc_14_cjk" : "&lv_font_simsun_14_cjk";
+            // 刻度标签：使用内嵌 CJK 子集而非 montserrat_12（无中文字形 → 标题含中文时 tofu）
+            var tickFont = CResourceDeclarations.CjkFallbackFontExpr;
             sb.AppendLine($"    lv_obj_set_style_text_font({tickLblName}_{i}, {tickFont}, 0);");
             sb.AppendLine($"    lv_obj_align({tickLblName}_{i}, LV_ALIGN_TOP_MID, {x - (int)(w / 2)}, -16);");
         }

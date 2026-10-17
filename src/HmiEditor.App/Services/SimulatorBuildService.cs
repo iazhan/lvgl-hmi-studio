@@ -39,15 +39,31 @@ public static class SimulatorBuildService
 
     /// <summary>
     /// 探测 LVGL 源码目录。返回 null 表示未找到。
-    /// 探测顺序：用户配置 → 环境变量 LVGL_DIR → 工作目录上级 → 常用开发路径。
+    /// 顺序：用户配置 → 环境变量 LVGL_DIR → 安装目录内置 SDK 的 LVGL
+    /// （<c>sdk/kinseal/lvgl</c>，或 SDK 运行时自带的 <c>third_party/lvgl-*</c>）→
+    /// 工程工作目录同级（生成模板默认的 <c>../lvgl</c>）。
+    /// 不猜安装包之外的目录：编辑器是独立安装的软件，别的机器上没有本项目的仓库布局。
     /// </summary>
-    public static string? FindLvglDirectory(string? configured, string workDir)
+    public static string? FindLvglDirectory(string? configured, string workDir) =>
+        FindLvglDirectory(configured, workDir, AppContext.BaseDirectory);
+
+    /// <summary>内部重载：指定安装目录（测试用）。</summary>
+    internal static string? FindLvglDirectory(string? configured, string workDir, string? installDir)
     {
         var candidates = new List<string?>();
         if (!string.IsNullOrWhiteSpace(configured)) candidates.Add(configured);
         candidates.Add(Environment.GetEnvironmentVariable("LVGL_DIR"));
 
-        // 工作目录上级的 lvgl（与生成模板默认 ../lvgl 对齐）
+        // 安装目录内置 SDK：独立 LVGL 目录，或 SDK 运行时自带的 third_party/lvgl-*
+        if (!string.IsNullOrWhiteSpace(installDir))
+        {
+            candidates.Add(Path.Combine(installDir, "sdk", "kinseal", "lvgl"));
+            var runtimeDir = F1C100SSoBuilder.FindRuntimeDir(null, installDir);
+            if (!string.IsNullOrEmpty(runtimeDir))
+                candidates.Add(F1C100SSoBuilder.FindLvglRoot(runtimeDir));
+        }
+
+        // 工程工作目录上级的 lvgl（与生成模板默认 ../lvgl 对齐，属用户自己的工程布局）
         var parent = string.IsNullOrEmpty(workDir)
             ? null
             : Path.GetDirectoryName(workDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
@@ -56,9 +72,6 @@ public static class SimulatorBuildService
             candidates.Add(Path.Combine(parent, "lvgl"));
             candidates.Add(Path.Combine(parent, "..", "lvgl"));
         }
-
-        // 常用开发路径兜底
-        candidates.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Git", "lvgl"));
 
         foreach (var candidate in candidates)
         {

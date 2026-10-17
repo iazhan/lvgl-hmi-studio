@@ -45,10 +45,9 @@ public partial class CodeGenerator
         }
         else
         {
-            // 无自定义字体时，回退到嵌入的 CJK 子集字体（而非 LV_FONT_DEFAULT=Montserrat，
-            // 后者无中文字形会导致中文方框）。
-            // .so(固件) 用 Source Han Sans SC 14px 嵌入子集；模拟器用 SimSun 14px 嵌入子集。
-            fontToUse = _soMode ? "&lv_font_source_han_sans_sc_14_cjk" : "&lv_font_simsun_14_cjk";
+            // 无自定义字体时回退内嵌 CJK 子集，而不是 LV_FONT_DEFAULT=Montserrat
+            //（后者无中文字形，中文整片渲染成方框）。
+            fontToUse = CResourceDeclarations.CjkFallbackFontExpr;
         }
         
         sb.AppendLine("void apply_theme_styles(void)");

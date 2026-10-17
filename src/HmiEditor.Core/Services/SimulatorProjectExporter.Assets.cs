@@ -135,16 +135,23 @@ public static partial class SimulatorProjectExporter
             sb.AppendLine();
         }
 
-        // ── 嵌入 CJK 字体回退（按尺寸取最近可用） ──
-        // D5 修复：FreeType 加载失败时不再硬编码 14px 子集，
-        // 而是按请求 size 选取 14/16 两个嵌入子集中最近的一个，
-        // 与设计器"字号不变"语义对齐。
-        sb.AppendLine("/* 模拟器嵌入的 CJK 子集只有 14/16 两档：按 size 取最近可用尺寸 */");
+        // ── 内嵌 CJK 字体回退（按尺寸取最近可用） ──
+        // 字体资产经 FreeType 加载失败时，按请求 size 在运行时 LVGL 树自带的
+        // 内嵌子集里选最近的一档（14/16），保住"字号不变"语义，而不是一律退回
+        // 无中文字形的 LV_FONT_DEFAULT。
+        sb.AppendLine("/* 内嵌 CJK 子集只有 14/16 两档：按 size 取最近可用尺寸 */");
         sb.AppendLine("static lv_font_t* sim_fallback_cjk_font(int size)");
         sb.AppendLine("{");
-        sb.AppendLine("    /* 未提供嵌入 CJK 字体时使用 LVGL 当前默认字体，保证模拟器可链接。 */");
+        sb.AppendLine("    /* 子集来自运行时 LVGL 树（与板端同一组字形）；该树未提供子集时退回");
+        sb.AppendLine("     * LVGL 默认字体，保证模拟器仍可链接、可运行。 */");
+        sb.AppendLine("#if LV_FONT_SOURCE_HAN_SANS_SC_14_CJK && LV_FONT_SOURCE_HAN_SANS_SC_16_CJK");
+        sb.AppendLine("    /* 显式去 const：这些指针只喂给 LVGL 的只读字体 API，从不经它们写入。 */");
+        sb.AppendLine("    return (lv_font_t*)(size > 14 ? &lv_font_source_han_sans_sc_16_cjk");
+        sb.AppendLine("                                  : &lv_font_source_han_sans_sc_14_cjk);");
+        sb.AppendLine("#else");
         sb.AppendLine("    (void)size;");
-        sb.AppendLine("    return lv_font_get_default();");
+        sb.AppendLine("    return (lv_font_t*)lv_font_get_default();");
+        sb.AppendLine("#endif");
         sb.AppendLine("}");
         sb.AppendLine();
 
@@ -172,7 +179,7 @@ public static partial class SimulatorProjectExporter
             sb.AppendLine($"            printf(\"[fonts] loaded asset \\\"{font.Name}\\\" via FreeType (px=%d)\\n\", {CResourceDeclarations.FontPixelSizeMacro(font.Fragment)});");
             sb.AppendLine($"        }} else {{");
             sb.AppendLine($"            fprintf(stderr, \"[fonts] WARN: cannot load font asset \\\"{font.Name}\\\" from \" {CResourceDeclarations.FontPathMacro(font.Fragment)} \"\\n\");");
-            sb.AppendLine($"            /* 加载失败时回退到嵌入的 SimSun CJK 子集字体（D5：按 size 取最近可用尺寸），");
+            sb.AppendLine($"            /* 加载失败时回退到内嵌 CJK 子集字体（按 size 取最近可用尺寸），");
             sb.AppendLine($"             * 避免生成的 hmi_ui_apply_theme 对零初始化结构体调用 lv_obj_set_style_text_font");
             sb.AppendLine($"             * 后，渲染时解引用空函数指针导致段错误（模拟器异常退出）。 */");
             sb.AppendLine($"            {CResourceDeclarations.FontVariable(font.Fragment)} = *sim_fallback_cjk_font({CResourceDeclarations.FontPixelSizeMacro(font.Fragment)});");
@@ -194,7 +201,7 @@ public static partial class SimulatorProjectExporter
             sb.AppendLine($"            printf(\"[fonts] loaded font '{variant.FontFragment}' size {variant.Size} via FreeType\\n\");");
             sb.AppendLine($"        }} else {{");
             sb.AppendLine($"            fprintf(stderr, \"[fonts] WARN: cannot load font '{variant.FontFragment}' size {variant.Size} from \" {CResourceDeclarations.FontPathMacro(variant.FontFragment)} \"\\n\");");
-            sb.AppendLine($"            /* 加载失败时回退到嵌入的 SimSun CJK 子集字体（D5：按 size 取最近可用尺寸） */");
+            sb.AppendLine($"            /* 加载失败时回退到内嵌 CJK 子集字体（按 size 取最近可用尺寸） */");
             sb.AppendLine($"            {CResourceDeclarations.FontVariantVariable(variant.FontFragment, variant.Size)} = *sim_fallback_cjk_font({variant.Size});");
             sb.AppendLine($"        }}");
             sb.AppendLine($"    }}");
@@ -202,7 +209,7 @@ public static partial class SimulatorProjectExporter
 
         sb.AppendLine("}");
         sb.AppendLine("#else  /* !LV_USE_FREETYPE */");
-        sb.AppendLine("/* 无 FreeType：将字体结构体回退到嵌入的 SimSun CJK 子集字体（D5：按 size 取最近可用尺寸），");
+        sb.AppendLine("/* 无 FreeType：将字体结构体回退到内嵌 CJK 子集字体（按 size 取最近可用尺寸），");
         sb.AppendLine(" * 避免 apply_theme_styles 使用零初始化结构体导致渲染崩溃（模拟器异常退出）。 */");
         sb.AppendLine("void init_font_assets(void)");
         sb.AppendLine("{");
