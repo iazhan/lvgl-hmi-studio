@@ -30,12 +30,17 @@ VERSION="1.2.0"
 OUT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/sdk"
 
 while [ $# -gt 0 ]; do
-    case "$1" in
-        --linux-archive) LINUX_ARCHIVE="${2:-}"; shift 2 ;;
-        --llvm)           LLVM_DIR="${2:-}";       shift 2 ;;
-        --version)        VERSION="${2:-}";        shift 2 ;;
-        --out)            OUT_DIR="${2:-}";        shift 2 ;;
-        *) echo "未知参数: $1" >&2; exit 2 ;;
+    # 容忍粘贴多行命令时残留的空白参数：行尾 "\ "（反斜杠+空格）在 bash 里是"转义空格"，
+    # 会变成一个字面空格参数，严谨解析会在这里断掉。去掉首尾空白再匹配。
+    arg="$(printf '%s' "${1:-}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    shift
+    [ -n "$arg" ] || continue
+    case "$arg" in
+        --linux-archive) LINUX_ARCHIVE="${1:-}"; shift ;;
+        --llvm)           LLVM_DIR="${1:-}";       shift ;;
+        --version)        VERSION="${1:-}";        shift ;;
+        --out)            OUT_DIR="${1:-}";        shift ;;
+        *) echo "未知参数: $arg" >&2; exit 2 ;;
     esac
 done
 
