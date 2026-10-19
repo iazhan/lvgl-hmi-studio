@@ -56,23 +56,49 @@ trap 'rm -rf "$WORK"' EXIT
 
 echo "==> [1/5] 从 Linux 归档抽出与平台无关的部分（runtime / sysroot / libgcc）"
 mkdir -p "$WORK"
-# runtime/ 整个要（契约头 + LVGL 源树）；toolchain/ 只要 sysroot 与 libgcc.a
+# runtime/ 整个要（契约头 + LVGL 源树）
 tar -xzf "$LINUX_ARCHIVE" -C "$WORK" runtime
-mkdir -p "$WORK/toolchain"
+mkdir -p "$WORK/toolchain/sysroot"
 
 # sysroot 在两种归档里位置不同：clang 版是 toolchain/sysroot，
 # gcc 版是 toolchain/<target>/sysroot（buildroot 内嵌布局）——都要认。
 if tar -tzf "$LINUX_ARCHIVE" | grep -q '^toolchain/sysroot/'; then
-    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" toolchain/sysroot
+    SYS_SUBDIR="toolchain/sysroot"
+    SYS_IN_ARCHIVE=1
 else
     SYS_SUBDIR="$(tar -tzf "$LINUX_ARCHIVE" | grep -oE '^toolchain/[^/]+/sysroot' | sort -u | head -1)"
     [ -n "$SYS_SUBDIR" ] || { echo "归档里找不到 sysroot（toolchain/sysroot 或 toolchain/<target>/sysroot）" >&2; exit 1; }
     echo "      （gcc 版布局：$SYS_SUBDIR）"
-    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" "$SYS_SUBDIR"
-    mv "$WORK/$SYS_SUBDIR" "$WORK/toolchain/sysroot"
+    SYS_IN_ARCHIVE=0
 fi
-[ -d "$WORK/toolchain/sysroot/usr/include" ] \
-    || { echo "归档里没有 toolchain/sysroot/usr/include" >&2; exit 1; }
+
+if [ "$SYS_IN_ARCHIVE" = "1" ]; then
+    # clang 版：整个 sysroot 已经是"为 clang 准备过"的（无 glibc 软链），整体取出
+    tar -xzf "$LINUX_ARCHIVE" -C "$WORK/toolchain" --strip-components=1 toolchain/sysroot
+else
+    # gcc 版：只抽编译/链接真正需要的两棵子树，且**解引用符号链接**。
+    # 为什么要解引用：MSYS 的 tar 在 Windows 上建不了符号链接（权限），而 glibc 的
+    # libc.so.6 -> libc-2.30.so 这类链接遍布 sysroot，直接抽会整片报错退出。
+    # 为什么要只抽两棵：dev/、etc/mtab 等是指向 /proc、/tmp 的**悬空链接**，
+    # 解引用也会失败；而编译只需要头文件，链接只需要 lib/（实测 lld 把 -lc 解析到
+    # lib/libc.so.6，并自动带上 lib/ld-linux.so.3；usr/lib 里的 .a 一个都用不上）。
+    echo "      （解引用抽 usr/include + lib；悬空链接的 dev/ etc/ 不抽）"
+    # 先普通抽取（建链接），再 cp -aL 把链接**就地解引用**成普通文件。
+    # 为什么不能只靠 tar -h：抽取时若链接目标还没解出来，tar 会照建链接不报错，
+    # 归档顺序不保证 —— 实测 libc.so.6 就漏过去了。cp -aL 是抽完之后统一处理，稳。
+    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" "$SYS_SUBDIR/usr/include"
+    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" "$SYS_SUBDIR/lib"
+    # 注意落点：cp 的是 usr/include，basename 是 include，必须放进 sysroot/usr/ 才对
+    mkdir -p "$WORK/toolchain/sysroot/usr"
+    cp -rL --preserve=mode,timestamps "$WORK/$SYS_SUBDIR/usr/include" "$WORK/toolchain/sysroot/usr/"
+    cp -rL --preserve=mode,timestamps "$WORK/$SYS_SUBDIR/lib" "$WORK/toolchain/sysroot/"
+    # 清掉中间抽取目录：它就在 toolchain/ 底下，不清会连重复的 glibc 一起打进归档
+    rm -rf "$WORK/$SYS_SUBDIR"
+fi
+[ -f "$WORK/toolchain/sysroot/usr/include/stdio.h" ] \
+    || { echo "sysroot 里没有 usr/include/stdio.h" >&2; exit 1; }
+[ -f "$WORK/toolchain/sysroot/lib/libc.so.6" ] || [ -L "$WORK/toolchain/sysroot/lib/libc.so.6" ] \
+    || { echo "sysroot 里没有 lib/libc.so.6（-lc 需要）" >&2; exit 1; }
 
 echo "==> [2/5] 拷入 libgcc.a（软浮点 __aeabi_* 例程，clang 默认不链）"
 mkdir -p "$WORK/toolchain/lib"
@@ -91,7 +117,10 @@ fi
 
 echo "==> [3/5] 放入 Windows LLVM（clang.exe / lld.exe / libclang-cpp.dll / libLLVM.dll）"
 mkdir -p "$WORK/toolchain/bin"
-cp -a "$LLVM_DIR/bin/." "$WORK/toolchain/bin/"
+# -rL 而不是 -aL：LLVM 的 bin 里 ld.lld/lld/lld-link 是**同一 inode 的多个名字**
+# （硬链接），-a 会把这种关系保留下来，归档时就成了硬链接条目 —— Windows 上同样建不了。
+# 保留 mode 是为了不丢可执行位。
+cp -rL --preserve=mode,timestamps "$LLVM_DIR/bin/." "$WORK/toolchain/bin/"
 # clang 的内建头（stdatomic.h 等）在 lib/clang/<ver>/include；C99 代码也可能用到
 if [ -d "$LLVM_DIR/lib/clang" ]; then
     mkdir -p "$WORK/toolchain/lib"
@@ -126,6 +155,16 @@ mkdir -p "$OUT_DIR"
 ARCHIVE="$OUT_DIR/$NAME.tar.gz"
 rm -f "$ARCHIVE"
 tar -C "$WORK" -czf "$ARCHIVE" runtime toolchain sdk.json
+
+# 自检：归档里不能有符号链接/硬链接。Windows 上 MSYS 的 tar 两样都建不了
+# （会整片报错退出），而这个脚本自身也要能在 Windows 上反复重跑，所以这里就兜住。
+LINKS="$(tar -tvzf "$ARCHIVE" | awk '$1 ~ /^[lh]/' | wc -l)"
+if [ "$LINKS" != "0" ]; then
+    echo "!! 归档里仍有 $LINKS 个链接/硬链接条目（Windows 上解不开）：" >&2
+    tar -tvzf "$ARCHIVE" | awk '$1 ~ /^[lh]/' | head -10 >&2
+    exit 1
+fi
+
 SHA="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
 SIZE="$(stat -c %s "$ARCHIVE")"
 cat > "$OUT_DIR/$NAME.manifest.json" <<EOF
