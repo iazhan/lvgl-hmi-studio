@@ -278,7 +278,7 @@ public class LangConstantUsageGuardTests
     /// 守卫自己的断言成了常量唯一的存在理由），于是基线"恰好"没变、差集判据失去意义。
     /// 改成**字面量键**后才如实涨 4。⇒ 规矩：这一族"键在不在字典里"的判据一律用字面量。</para>
     /// </summary>
-    internal const int UnusedBaseline = 1109;
+    internal const int UnusedBaseline = 1108;
 
     /// <summary>引用集合的取法。生产判据只用 <see cref="Code"/>；另两档是自检/单调性用的对照面。</summary>
     private enum ReferenceFace

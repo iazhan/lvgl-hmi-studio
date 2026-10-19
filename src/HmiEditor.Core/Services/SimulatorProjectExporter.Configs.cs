@@ -196,15 +196,24 @@ public static partial class SimulatorProjectExporter
                    endif()
                endif()
 
-               # ── 自动化测试: 自检模式 (无头环境: 设置 SDL_VIDEODRIVER=dummy) ──
+               # ── 自动化测试: 自检模式 ──
                enable_testing()
                add_test(NAME simulator_selftest
                         COMMAND hmi_sim --selftest)
+               # 无头环境（Linux CI）：dummy 视频驱动 + 软件渲染器。
                # SDL_RENDER_DRIVER=software 不能省: dummy 视频驱动下没有加速渲染器,
                # lv_sdl_window_create 取不到 renderer 会返回 NULL, 自检必然失败。
-               set_tests_properties(simulator_selftest PROPERTIES
-                   TIMEOUT 60
-                   ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy;SDL_RENDER_DRIVER=software")
+               # Windows 没有 dummy 视频驱动（同名变量不存在），开了只会让 SDL 报错,
+               # 所以按平台设置: Windows 上自检会真的开窗，只适合手动跑 `ctest`。
+               if(WIN32)
+                   set_tests_properties(simulator_selftest PROPERTIES
+                       TIMEOUT 60
+                       ENVIRONMENT "SDL_AUDIODRIVER=dummy")
+               else()
+                   set_tests_properties(simulator_selftest PROPERTIES
+                       TIMEOUT 60
+                       ENVIRONMENT "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy;SDL_RENDER_DRIVER=software")
+               endif()
 
                """;
     }

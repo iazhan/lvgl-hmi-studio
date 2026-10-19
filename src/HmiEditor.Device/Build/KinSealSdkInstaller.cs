@@ -144,7 +144,25 @@ public sealed class KinSealSdkInstaller
             error = $"SDK 缺少设备侧运行时（{RuntimeMarker}）";
             return false;
         }
-        if (!File.Exists(Path.Combine(root, ToolchainMarker.Replace('/', Path.DirectorySeparatorChar))))
+        // 交叉编译器：有 toolchain.json 就按它声明的名字找（clang 版 bin/ 下不是 gcc 那个名字），
+        // 没有清单的老 SDK 仍按 gcc 的固定名找。
+        var toolchainDir = Path.Combine(root, "toolchain");
+        var declared = KinSealSdkToolchain.Load(toolchainDir);
+        if (declared is not null)
+        {
+            if (!File.Exists(declared.ExecutablePath(toolchainDir)))
+            {
+                error = $"SDK 缺少交叉编译器（toolchain.json 声明 {declared.Cc}）";
+                return false;
+            }
+            if (!string.IsNullOrWhiteSpace(declared.Sysroot)
+                && !Directory.Exists(Path.Combine(toolchainDir, declared.Sysroot)))
+            {
+                error = $"SDK 缺少 ARM sysroot（toolchain/{declared.Sysroot}）";
+                return false;
+            }
+        }
+        else if (!File.Exists(Path.Combine(root, ToolchainMarker.Replace('/', Path.DirectorySeparatorChar))))
         {
             error = $"SDK 缺少交叉编译器（{ToolchainMarker}）";
             return false;

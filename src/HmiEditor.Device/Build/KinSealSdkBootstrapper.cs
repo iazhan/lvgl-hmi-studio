@@ -26,9 +26,17 @@ public static class KinSealSdkBootstrapper
     /// <summary>内置归档目录。</summary>
     public static string BundledDir(string installDir) => Path.Combine(installDir, BundledFolderName);
 
+    /// <summary>当前平台标签（SDK 归档名后缀）：<c>win</c> / <c>linux</c>。</summary>
+    public static string CurrentPlatformTag =>
+        OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsLinux() ? "linux" : "other";
+
     /// <summary>
     /// 找随包分发的归档：<c>&lt;install&gt;/sdk/kinseal-sdk-*.tar.gz</c>。
-    /// 多个时按文件名**降序**取第一个（版本号在名字里，降序即最新）。
+    ///
+    /// <para><b>平台变体</b>：工具链部分与宿主绑定（Linux 版是 ELF，Windows 版是 clang.exe），
+    /// 所以归档名带平台后缀 <c>-linux-x64</c> / <c>-win-x64</c>。优先取本平台的；没有本平台的
+    /// 就退回无后缀的旧格式；只有别平台时才返回它（由调用方给出"装不了"的明确提示，
+    /// 而不是笼统的"未找到 SDK"）。同平台多个时按文件名**降序**取第一个。</para>
     /// </summary>
     public static string? FindBundledArchive(string? installDir)
     {
@@ -38,14 +46,40 @@ public static class KinSealSdkBootstrapper
 
         try
         {
-            return Directory.EnumerateFiles(dir, ArchivePrefix + "*.tar.gz")
-                .OrderByDescending(p => Path.GetFileName(p), StringComparer.Ordinal)
+            var all = Directory.EnumerateFiles(dir, ArchivePrefix + "*.tar.gz").ToList();
+            if (all.Count == 0) return null;
+
+            string Name(string p) => Path.GetFileName(p);
+            var tag = CurrentPlatformTag;
+
+            var mine = all
+                .Where(p => Name(p).Contains($"-{tag}-x64", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(Name, StringComparer.Ordinal)
                 .FirstOrDefault();
+            if (mine is not null) return mine;
+
+            // 旧格式（无平台后缀）仍然可用：工具链由 toolchain.json 描述，未必绑定平台
+            var untagged = all
+                .Where(p => !System.Text.RegularExpressions.Regex.IsMatch(
+                    Name(p), ArchivePrefix + @".+-(win|linux|mac)-x64\.tar\.gz$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                .OrderByDescending(Name, StringComparer.Ordinal)
+                .FirstOrDefault();
+            return untagged ?? all.OrderByDescending(Name, StringComparer.Ordinal).First();
         }
         catch (IOException)
         {
             return null;
         }
+    }
+
+    /// <summary>归档是否属于**别**的平台（本机装不了的那种）。</summary>
+    public static bool IsForeignPlatformArchive(string archivePath)
+    {
+        var name = Path.GetFileName(archivePath);
+        var m = System.Text.RegularExpressions.Regex.Match(
+            name, ArchivePrefix + @".+-(?<tag>win|linux|mac)-x64\.tar\.gz$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return m.Success && !string.Equals(m.Groups["tag"].Value, CurrentPlatformTag, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>归档对应的清单路径：<c>xxx.tar.gz</c> → <c>xxx.manifest.json</c>。</summary>
@@ -78,6 +112,14 @@ public static class KinSealSdkBootstrapper
 
         // 先读随包清单：它决定"已装的那份是不是就是这一份"（换字体/升级 SDK 后必须能换掉旧的）
         var archive = FindBundledArchive(installDir);
+        if (archive is not null && IsForeignPlatformArchive(archive))
+        {
+            var foreign = $"安装包附带的是别的平台 SDK（{Path.GetFileName(archive)}），"
+                          + $"本机是 {CurrentPlatformTag}-x64 —— 工具链无法在本机执行。"
+                          + "请用对应平台的安装包，或在 设置→真机部署 里改用它平台的本地安装包";
+            logs.Add($"[sdk] ✗ {foreign}");
+            return new KinSealSdkInstallResult { Success = false, Error = foreign, Logs = logs };
+        }
         KinSealSdkManifest? bundled = null;
         string? manifestError = null;
         if (archive is not null)

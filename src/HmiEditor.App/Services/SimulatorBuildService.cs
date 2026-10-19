@@ -233,11 +233,23 @@ public static class SimulatorBuildService
         var names = OperatingSystem.IsWindows()
             ? new[] { "hmi_sim.exe", "hmi_sim" }
             : new[] { "hmi_sim" };
-        foreach (var name in names)
+
+        // 多配置生成器（MSVC 的 Visual Studio/Ninja-MultiConfig）把可执行文件放到
+        // <build>/<CONFIG>/ 下；单配置（MinGW Makefiles、Unix Makefiles、Ninja）在根。
+        // 只在根目录找，MSVC 用户会拿到"编译成功但找不到可执行文件"。
+        var searchDirs = new List<string> { buildDir };
+        foreach (var config in new[] { "Release", "RelWithDebInfo", "MinSizeRel", "Debug" })
         {
-            var path = Path.Combine(buildDir, name);
-            if (File.Exists(path)) return path;
+            var sub = Path.Combine(buildDir, config);
+            if (Directory.Exists(sub)) searchDirs.Add(sub);
         }
+
+        foreach (var dir in searchDirs)
+            foreach (var name in names)
+            {
+                var path = Path.Combine(dir, name);
+                if (File.Exists(path)) return path;
+            }
         return null;
     }
 

@@ -238,6 +238,90 @@ public class F1C100SSoBuilderTests : IDisposable
         }
     }
 
+    // ── 工具链清单（clang 版 SDK / Windows 变体）────────────────────────────
+
+    /// <summary>在假 SDK 里放一份 clang 工具链（bin/clang + toolchain.json）。</summary>
+    private static void AddClangToolchain(string root)
+    {
+        var toolchain = Path.Combine(root, "sdk", "kinseal", "toolchain");
+        Directory.CreateDirectory(Path.Combine(toolchain, "bin"));
+        Directory.CreateDirectory(Path.Combine(toolchain, "sysroot"));
+        Directory.CreateDirectory(Path.Combine(toolchain, "lib"));
+        File.WriteAllText(Path.Combine(toolchain, "bin", "clang"), "#!/bin/sh\nexit 0\n");
+        File.WriteAllText(Path.Combine(toolchain, "toolchain.json"), """
+            {
+              "kind": "clang", "cc": "clang", "target": "armv5te-linux-gnueabi",
+              "floatAbi": "soft", "sysroot": "sysroot", "ld": "ld.lld",
+              "libDir": "lib", "libName": "gcc", "noStdlib": true
+            }
+            """);
+    }
+
+    [Fact]
+    public void FindToolchain_PrefersManifestDeclaredCompiler()
+    {
+        // clang 版 SDK 的 bin/ 下没有 gcc 那个名字 —— 只认 gcc 会漏掉整个 Windows 变体
+        var root = TestTempDir.NewDir("rt");
+        CreateRuntimeTree(root);
+        AddClangToolchain(root);
+        var prevGcc = Environment.GetEnvironmentVariable(F1C100SSoBuilder.GccEnvVar);
+        try
+        {
+            NeutralizeEnv();
+            var found = F1C100SSoBuilder.FindToolchainGcc(null, root);
+            Assert.NotNull(found);
+            Assert.EndsWith(Path.Combine("toolchain", "bin", "clang"), found);
+        }
+        finally
+        {
+            RestoreEnv(null, prevGcc);
+            TestTempDir.DeleteDir(root);
+        }
+    }
+
+    [Fact]
+    public void ResolveContext_ClangManifest_PopulatesToolchainAndFlags()
+    {
+        var root = TestTempDir.NewDir("rt");
+        CreateRuntimeTree(root);
+        AddClangToolchain(root);
+        var prevRt = Environment.GetEnvironmentVariable(F1C100SSoBuilder.RuntimeDirEnvVar);
+        var prevGcc = Environment.GetEnvironmentVariable(F1C100SSoBuilder.GccEnvVar);
+        try
+        {
+            NeutralizeEnv();
+            var (src, tags, outDir) = CreateSources(root);
+
+            var ctx = F1C100SSoBuilder.ResolveContext(new F1C100SSoBuildOptions
+            {
+                SourcePath = src,
+                OutputDir = outDir,
+                TagsHeaderPath = tags,
+            }, root);
+
+            Assert.Empty(ctx.Missing);
+            Assert.NotNull(ctx.Toolchain);
+            Assert.Equal("clang", ctx.Toolchain!.Kind);
+            Assert.EndsWith("clang", ctx.CompilerPath);
+
+            // 编译与链接参数都要带上 target/sysroot（漏一个就按宿主架构链接）
+            var compile = F1C100SSoBuilder.BuildArguments(ctx, "/assets", outDir);
+            Assert.Contains(compile, a => a.StartsWith("--target="));
+            Assert.Contains(compile, a => a.StartsWith("--sysroot="));
+
+            var link = ctx.Toolchain.LinkFlags(ctx.ToolchainDir,
+                Path.Combine(outDir, "libhmi_ui.so"), Path.Combine(outDir, "generated_hmi.o"));
+            Assert.Contains(link, a => a.StartsWith("--ld-path="));
+            Assert.Contains("-lgcc", link);
+            Assert.Contains("-lc", link);
+        }
+        finally
+        {
+            RestoreEnv(prevRt, prevGcc);
+            TestTempDir.DeleteDir(root);
+        }
+    }
+
     [Fact]
     public void ResolveContext_MissingRuntime_ReportsMissingItems()
     {

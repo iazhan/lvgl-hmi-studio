@@ -62,7 +62,10 @@ public class AppTextBoxWiringCensusTests
         new("AlarmConfigView.axaml", 11, "driven", "AlarmConfigTextBoxWiringTests.cs"),         // 阶段 190；阶段 266 +3（ISA-18.2 职责三框）；阶段 292 +1（允许响应时间）
         new("AnimationEditorView.axaml", 9, "driven", "AnimationEditorTextBoxWiringTests.cs"), // 阶段 190
         new("AuditLogView.axaml", 1, "driven", "AuditLogTextBoxWiringTests.cs"),               // 阶段 190
-        new("SettingsDialog.axaml", 7, "driven", "SettingsTextBoxWiringTests.cs"),             // 阶段 188
+        // → 10：kinseal 面板加了 TxtKinSealToolchainGcc / TxtKinSealRuntimeDir /
+        //   TxtKinSealSdkManifestUrl 三个输入框（「编译转换」与 SDK 首次安装要用），
+        ///   三条手势已在 SettingsTextBoxWiringTests.Specs 里逐条驱动。
+        new("SettingsDialog.axaml", 10, "driven", "SettingsTextBoxWiringTests.cs"),
         new("SimulatorView.axaml", 7, "driven", "SimulatorTextBoxWiringTests.cs"),             // 阶段 191
         new("ScriptEditorView.axaml", 3, "driven", "ScriptEditorTextBoxWiringTests.cs"),       // 阶段 192（修 #89）
 

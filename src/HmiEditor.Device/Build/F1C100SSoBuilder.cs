@@ -48,6 +48,10 @@ public sealed class F1C100SBuildContext
     public string SourcePath { get; init; } = "";
     public string OutputDir { get; init; } = "";
     public string CompilerPath { get; init; } = "";
+    /// <summary>工具链根目录（<c>&lt;sdk&gt;/toolchain</c>）。没有清单时为空。</summary>
+    public string ToolchainDir { get; init; } = "";
+    /// <summary>工具链声明（clang/gcc 与所需 flag）。没有清单时为 null —— 按 gcc 行为走。</summary>
+    public KinSealSdkToolchain? Toolchain { get; init; }
     public string RuntimeDir { get; init; } = "";
     public string LvglRoot { get; init; } = "";
     public string ConfigDir { get; init; } = "";
@@ -166,7 +170,17 @@ public sealed class F1C100SSoBuilder
 
         foreach (var sdkRoot in sdkRoots)
         {
-            var gcc = Path.Combine(sdkRoot, "toolchain", "bin", GccName);
+            var toolchainDir = Path.Combine(sdkRoot, "toolchain");
+
+            // 有清单就按清单找编译器（clang 版 SDK 的 bin/ 下不是 gcc 那个名字）
+            var declared = KinSealSdkToolchain.Load(toolchainDir);
+            if (declared is not null)
+            {
+                var declaredExe = declared.ExecutablePath(toolchainDir);
+                if (File.Exists(declaredExe)) return declaredExe;
+            }
+
+            var gcc = Path.Combine(toolchainDir, "bin", GccName);
             if (File.Exists(gcc)) return gcc;
         }
 
@@ -220,9 +234,14 @@ public sealed class F1C100SSoBuilder
 
         var compiler = FindToolchainGcc(options.ToolchainGcc, installDir);
         if (compiler is null)
-            missing.Add($"未找到交叉编译器 {GccName} ——请在 设置→真机部署 指定路径，"
+            missing.Add($"未找到交叉编译器 ——请在 设置→真机部署 指定路径，"
                 + $"或设环境变量 {GccEnvVar}，或随安装包放在 <安装目录>/{BundledSdkRelativePath}/toolchain/bin，"
-                + $"或加入 PATH");
+                + $"或加入 PATH（SDK 的 toolchain/toolchain.json 决定用 gcc 还是 clang）");
+
+        // 工具链清单：放在 bin 的上一级（<sdk>/toolchain/toolchain.json）。没有就按 gcc 行为走
+        // —— 老 SDK（只有 buildroot gcc）与手工配的编译器路径都不需要它。
+        var toolchainDir = compiler is null ? "" : ToolchainDirOf(compiler);
+        var toolchain = toolchainDir == "" ? null : KinSealSdkToolchain.Load(toolchainDir);
 
         var lvgl = FindLvglRoot(runtimeDir);
         if (lvgl is null)
@@ -257,8 +276,31 @@ public sealed class F1C100SSoBuilder
             LvglRoot = lvgl ?? "",
             ConfigDir = configDir,
             TagsDir = tagsDir,
+            ToolchainDir = toolchain is null ? "" : toolchainDir,
+            Toolchain = toolchain,
             Missing = missing
         };
+    }
+
+    /// <summary>
+    /// 把路径规范成 C 字符串字面量里安全的形式：一律用正斜杠。
+    /// Windows 路径里的 <c>\</c> 在 C 字符串里是转义符（<c>\U</c> 是通用字符名、<c>\a</c> 是响铃），
+    /// 直接拼进 <c>-DSIM_ASSET_DIR="…"</c> 会让生成代码里的路径变成乱码 —— 而 Windows 的
+    /// 文件 API 接受正斜杠，所以统一换掉即可。
+    /// </summary>
+    private static string AsCStringPath(string path) =>
+        path.Replace('\\', '/');
+
+    /// <summary>
+    /// 由编译器可执行路径反推工具链根：<c>&lt;sdk&gt;/toolchain/bin/&lt;cc&gt;</c> → <c>&lt;sdk&gt;/toolchain</c>。
+    /// 手工指定/在 PATH 里的编译器不在这个布局下，返回空串（等于"没有清单"）。
+    /// </summary>
+    private static string ToolchainDirOf(string compilerPath)
+    {
+        var bin = Path.GetDirectoryName(Path.GetFullPath(compilerPath));
+        if (bin is null) return "";
+        var root = Path.GetFullPath(Path.Combine(bin, ".."));
+        return File.Exists(Path.Combine(root, "toolchain.json")) ? root : "";
     }
 
     /// <summary>
@@ -268,12 +310,17 @@ public sealed class F1C100SSoBuilder
     public static IReadOnlyList<string> BuildArguments(F1C100SBuildContext ctx, string assetDir, string workDir)
     {
         var rt = ctx.RuntimeDir;
-        return new[]
+        var args = new List<string>();
+        // clang 需要显式 target/float-abi/sysroot（gcc 由 spec 隐式，清单里为空）
+        if (ctx.Toolchain is not null && !string.IsNullOrEmpty(ctx.ToolchainDir))
+            args.AddRange(ctx.Toolchain.CompileFlags(ctx.ToolchainDir));
+
+        args.AddRange(new[]
         {
             "-std=c99", "-D_GNU_SOURCE", "-Wno-unused-parameter",
             "-fPIC",
             "-DLV_CONF_INCLUDE_SIMPLE",
-            $"-DSIM_ASSET_DIR=\"{assetDir}\"",
+            $"-DSIM_ASSET_DIR=\"{AsCStringPath(assetDir)}\"",
             "-I" + ctx.ConfigDir,
             "-I" + ctx.LvglRoot,
             "-I" + Path.Combine(rt, "third_party"),
@@ -285,7 +332,8 @@ public sealed class F1C100SSoBuilder
             "-I" + ctx.TagsDir,
             "-c", ctx.SourcePath,
             "-o", Path.Combine(workDir, "generated_hmi.o")
-        };
+        });
+        return args;
     }
 
     /// <summary>
@@ -336,8 +384,14 @@ public sealed class F1C100SSoBuilder
             // 2. 链接（符号由宿主 dlopen 时解析，-nostartfiles 不链接 CRT）
             var outputPath = Path.Combine(ctx.OutputDir, "libhmi_ui.so");
             Info("[.so] 链接 libhmi_ui.so ...");
-            var (linkExit, linkOut) = await RunAsync(ctx.CompilerPath,
-                new[] { "-shared", "-nostartfiles", "-o", outputPath, Path.Combine(workDir, "generated_hmi.o") }, ct);
+            var linkArgs = ctx.Toolchain is not null && !string.IsNullOrEmpty(ctx.ToolchainDir)
+                ? ctx.Toolchain.LinkFlags(ctx.ToolchainDir, outputPath, Path.Combine(workDir, "generated_hmi.o"))
+                : new[]
+                {
+                    "-shared", "-nostartfiles", "-o", outputPath,
+                    Path.Combine(workDir, "generated_hmi.o")
+                };
+            var (linkExit, linkOut) = await RunAsync(ctx.CompilerPath, linkArgs, ct);
             foreach (var line in SplitLines(linkOut))
                 Info($"[.so] {line}");
             if (linkExit != 0 || !File.Exists(outputPath))

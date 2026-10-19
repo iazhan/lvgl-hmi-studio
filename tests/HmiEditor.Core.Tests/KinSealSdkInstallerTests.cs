@@ -388,6 +388,61 @@ public class KinSealSdkInstallerTests : IDisposable
         }
     }
 
+    // ── 平台变体（Windows 版与 Linux 版 SDK 不能混装）────────────────────
+
+    [Fact]
+    public void FindBundledArchive_PrefersCurrentPlatform()
+    {
+        var work = TestTempDir.NewDir("sdk");
+        var installDir = Path.Combine(work, "app");
+        var bundled = Path.Combine(installDir, "sdk");
+        Directory.CreateDirectory(bundled);
+        try
+        {
+            // 两个平台都在：必须挑中本平台那份
+            var mine = KinSealSdkBootstrapper.CurrentPlatformTag;
+            var other = mine == "win" ? "linux" : "win";
+            File.WriteAllText(Path.Combine(bundled, $"kinseal-sdk-9.9.9-{other}-x64.tar.gz"), "x");
+            var expected = Path.Combine(bundled, $"kinseal-sdk-1.0.0-{mine}-x64.tar.gz");
+            File.WriteAllText(expected, "x");
+
+            Assert.Equal(expected, KinSealSdkBootstrapper.FindBundledArchive(installDir));
+            Assert.False(KinSealSdkBootstrapper.IsForeignPlatformArchive(expected));
+            Assert.True(KinSealSdkBootstrapper.IsForeignPlatformArchive(
+                Path.Combine(bundled, $"kinseal-sdk-9.9.9-{other}-x64.tar.gz")));
+        }
+        finally { TestTempDir.DeleteDir(work); }
+    }
+
+    [Fact]
+    public async Task Bootstrapper_ForeignPlatformArchive_ExplainsInsteadOfFailingBlindly()
+    {
+        var work = TestTempDir.NewDir("sdk");
+        var installDir = Path.Combine(work, "app");
+        try
+        {
+            Cleanup();
+            var bundled = Path.Combine(installDir, "sdk");
+            Directory.CreateDirectory(bundled);
+            var mine = KinSealSdkBootstrapper.CurrentPlatformTag;
+            var other = mine == "win" ? "linux" : "win";
+            File.WriteAllText(Path.Combine(bundled, $"kinseal-sdk-1.0.0-{other}-x64.tar.gz"), "x");
+
+            var result = await KinSealSdkBootstrapper.EnsureAsync(installDir);
+
+            Assert.False(result.Success);
+            // 必须说清"是别平台的 SDK"，而不是笼统的"未找到 SDK"
+            Assert.Contains(other, result.Error);
+            Assert.Contains(mine, result.Error);
+            Assert.False(Directory.Exists(SdkRoot));
+        }
+        finally
+        {
+            Cleanup();
+            TestTempDir.DeleteDir(work);
+        }
+    }
+
     [Fact]
     public async Task Bootstrapper_WithoutManifest_RefusesToInstall()
     {

@@ -79,6 +79,15 @@ public class SettingsTextBoxWiringTests
             d => d.Settings.Device.T113SdkRoot, "  /opt/tina  ", "/opt/tina"),
         new("TxtT113Toolchain", "device", "Device.T113ToolchainGcc",
             d => d.Settings.Device.T113ToolchainGcc, "  /opt/gcc  ", "/opt/gcc"),
+
+        // ── 设备：kinseal（F1C100S）三个输入框，同样裁剪 ──
+        new("TxtKinSealToolchain", "device", "KinSeal.ToolchainGcc",
+            d => d.Settings.KinSeal.ToolchainGcc, "  /opt/arm-gcc  ", "/opt/arm-gcc"),
+        new("TxtKinSealRuntimeDir", "device", "KinSeal.RuntimeDir",
+            d => d.Settings.KinSeal.RuntimeDir, "  /opt/chenge-rt  ", "/opt/chenge-rt"),
+        new("TxtKinSealSdkManifestUrl", "device", "KinSeal.SdkManifestUrl",
+            d => d.Settings.KinSeal.SdkManifestUrl, "  https://example.com/sdk.json  ",
+            "https://example.com/sdk.json"),
     };
 
     private static T Find<T>(Window window, string name) where T : Control =>
