@@ -60,6 +60,48 @@ mkdir -p "$WORK"
 tar -xzf "$LINUX_ARCHIVE" -C "$WORK" runtime
 mkdir -p "$WORK/toolchain/sysroot"
 
+# 从归档里抽一个子树，但**完全不创建符号链接/硬链接**（Windows 上 MSYS 的 tar 建不了）：
+# 1) 只抽该子树下的普通文件/目录成员（用 -T 喂成员清单，把 l/ 开头的链接成员剔除），
+#    这样 tar 根本不会去碰链接，不会报 "Cannot create symlink" 退出，所有目标 .so 都能落地；
+# 2) 再从归档清单里读出该子树的链接（name -> target），用 cp -L 把目标复制成链接名
+#    （目标此刻已落地，顺序无关、幂等），悬空的（指向 /proc、/tmp）直接丢弃。
+# 只抽 usr/include + lib 两棵：dev/、etc/mtab 等悬空链接本就不抽；编译只要头文件，
+# 链接只要 lib/（实测 lld 把 -lc 解析到 lib/libc.so.6，并自动带上 lib/ld-linux.so.3）。
+# 用法：extract_tree_no_links <归档> <前缀> <落盘根> <去掉的前导段数>
+# 只抽前缀下的普通文件/目录（剔除 l/h 链接成员，Windows 上 tar 建不了链接），
+# 再从归档清单把该前缀下的链接重建为"实体副本"（cp -L）。顺序无关、幂等。
+extract_tree_no_links() {
+    local archive="$1" prefix="$2" out="$3" strip="$4"
+    mkdir -p "$out"
+    # 1) 普通文件（剔除链接成员与目录条目；目录由文件自动创建，放进 -T 反而会
+    #    让 GNU tar 报"归档中找不到"，见实测）。这样 tar 根本不碰链接，也不会退出。
+    tar -tzf "$archive" \
+        | grep -E "^$prefix/" \
+        | grep -vE '^[lh]' \
+        | grep -v '/$' \
+        | tar -xzf "$archive" -C "$out" --strip-components="$strip" -T - || true
+    # 2) 重建链接为实体副本。
+    # 注意：rel/tgt 是"相对 prefix 之后"的名字（如 ld-linux.so.3），但落到 out 下时
+    # 还要带上 prefix 被 strip 掉的那几段（如 lib/）——否则会丢子目录（实测踩过）。
+    local tailpart
+    tailpart="$(echo "$prefix" | awk -F/ -v s="$strip" '{o="";for(i=s+1;i<=NF;i++)o=o (o==""?"":"/") $i; print o}')"
+    tar -tvzf "$archive" \
+        | grep -E "^[lh].*$prefix" \
+        | while IFS= read -r line; do
+              local path="${line#*$prefix/}"             # 去掉元数据与前缀，得 "名 -> 目标"
+              local rel="${path%% -> *}"                  # 链接名（相对 prefix 之后）
+              local tgt="${path##* -> }"                  # 链接目标（相对或绝对）
+              [ "$rel" = "$path" ] && continue            # 没有 " -> "，跳过
+              local src="$out/$tailpart/${tgt#/}"
+              local dst="$out/$tailpart/$rel"
+              if [ -e "$src" ]; then
+                  rm -f "$dst"; cp -L --preserve=mode,timestamps "$src" "$dst"
+              else
+                  rm -f "$dst"                            # 悬空链接，丢弃
+              fi
+          done || true   # grep 无匹配（usr/include 里本就没有链接）会返回 1，别让 set -e 中断
+}
+
 # sysroot 在两种归档里位置不同：clang 版是 toolchain/sysroot，
 # gcc 版是 toolchain/<target>/sysroot（buildroot 内嵌布局）——都要认。
 if tar -tzf "$LINUX_ARCHIVE" | grep -q '^toolchain/sysroot/'; then
@@ -74,26 +116,15 @@ fi
 
 if [ "$SYS_IN_ARCHIVE" = "1" ]; then
     # clang 版：整个 sysroot 已经是"为 clang 准备过"的（无 glibc 软链），整体取出
-    tar -xzf "$LINUX_ARCHIVE" -C "$WORK/toolchain" --strip-components=1 toolchain/sysroot
+    # 去掉前导 1 段（toolchain/），把 sysroot/ 落到 out 下
+    extract_tree_no_links "$LINUX_ARCHIVE" toolchain/sysroot "$WORK/toolchain" 1
 else
-    # gcc 版：只抽编译/链接真正需要的两棵子树，且**解引用符号链接**。
-    # 为什么要解引用：MSYS 的 tar 在 Windows 上建不了符号链接（权限），而 glibc 的
-    # libc.so.6 -> libc-2.30.so 这类链接遍布 sysroot，直接抽会整片报错退出。
-    # 为什么要只抽两棵：dev/、etc/mtab 等是指向 /proc、/tmp 的**悬空链接**，
-    # 解引用也会失败；而编译只需要头文件，链接只需要 lib/（实测 lld 把 -lc 解析到
-    # lib/libc.so.6，并自动带上 lib/ld-linux.so.3；usr/lib 里的 .a 一个都用不上）。
-    echo "      （解引用抽 usr/include + lib；悬空链接的 dev/ etc/ 不抽）"
-    # 先普通抽取（建链接），再 cp -aL 把链接**就地解引用**成普通文件。
-    # 为什么不能只靠 tar -h：抽取时若链接目标还没解出来，tar 会照建链接不报错，
-    # 归档顺序不保证 —— 实测 libc.so.6 就漏过去了。cp -aL 是抽完之后统一处理，稳。
-    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" "$SYS_SUBDIR/usr/include"
-    tar -xzf "$LINUX_ARCHIVE" -C "$WORK" "$SYS_SUBDIR/lib"
-    # 注意落点：cp 的是 usr/include，basename 是 include，必须放进 sysroot/usr/ 才对
-    mkdir -p "$WORK/toolchain/sysroot/usr"
-    cp -rL --preserve=mode,timestamps "$WORK/$SYS_SUBDIR/usr/include" "$WORK/toolchain/sysroot/usr/"
-    cp -rL --preserve=mode,timestamps "$WORK/$SYS_SUBDIR/lib" "$WORK/toolchain/sysroot/"
-    # 清掉中间抽取目录：它就在 toolchain/ 底下，不清会连重复的 glibc 一起打进归档
-    rm -rf "$WORK/$SYS_SUBDIR"
+    # gcc 版：SYS_SUBDIR 形如 toolchain/<target>/sysroot，去掉这 3 段后，
+    # lib、usr/include 才能正确落到 $WORK/toolchain/sysroot 下。
+    SYS_DEPTH="$(echo "$SYS_SUBDIR" | awk -F/ '{print NF}')"
+    echo "      （抽 usr/include + lib；悬空链接的 dev/ etc/ 不抽）"
+    extract_tree_no_links "$LINUX_ARCHIVE" "$SYS_SUBDIR/usr/include" "$WORK/toolchain/sysroot" "$SYS_DEPTH"
+    extract_tree_no_links "$LINUX_ARCHIVE" "$SYS_SUBDIR/lib" "$WORK/toolchain/sysroot" "$SYS_DEPTH"
 fi
 [ -f "$WORK/toolchain/sysroot/usr/include/stdio.h" ] \
     || { echo "sysroot 里没有 usr/include/stdio.h" >&2; exit 1; }
