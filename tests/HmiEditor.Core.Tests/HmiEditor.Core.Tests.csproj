@@ -13,7 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\HmiEditor.Core\HmiEditor.Core.csproj" />
-    <ProjectReference Include="..\..\src\HmiEditor.CodeGen\HmiEditor.CodeGen.csproj" />
     <ProjectReference Include="..\..\src\HmiEditor.App\HmiEditor.App.csproj" />
     <ProjectReference Include="..\HmiEditor.TestSupport\HmiEditor.TestSupport.csproj" />
   </ItemGroup>

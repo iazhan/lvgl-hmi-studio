@@ -78,6 +78,10 @@ public class PropertyPanelTextBoxWiringTests
         ["VsTextColor"] = "视觉状态文本色：同上（**XAML 属性式接线**，不在本面）",
         ["VsBgColor"] = "视觉状态底色：同上（**XAML 属性式接线**，不在本面）",
         ["VsBorderColor"] = "视觉状态边框色：同上（**XAML 属性式接线**，不在本面）",
+        ["UnitBox"] = "数值显示单位：同上（**XAML 属性式接线**，不在本面）",
+        ["CgAlarmGroupBox"] = "报警列表的报警组过滤：同上（**XAML 属性式接线**，不在本面）",
+        ["CgTrendGroupBox"] = "历史曲线的采集组名：同上（**XAML 属性式接线**，不在本面）",
+        ["CgCurveVarsBox"] = "历史曲线的通道变量：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

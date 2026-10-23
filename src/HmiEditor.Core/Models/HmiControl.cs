@@ -219,6 +219,38 @@ public class HmiControl
     /// <summary>阀门类型（Valve：Ball/Gate/Butterfly/Globe）。默认 Ball。</summary>
     public string? ValveType { get; set; }
 
+    // ── chenge-runtime 目标新增控件参数 ──
+
+    /// <summary>数值显示单位（Value；导出为 value.unit，空则用变量上的单位）。</summary>
+    public string? Unit { get; set; }
+
+    /// <summary>报警列表的数据来源组名（AlarmList；空 = 全部组）。</summary>
+    public string? AlarmGroupFilter { get; set; }
+
+    /// <summary>报警列表模式（AlarmList：active / history）。默认 active。</summary>
+    public string? AlarmMode { get; set; }
+
+    /// <summary>报警列表等级过滤（AlarmList，如 "1~4"、"2,3"；空 = 全部）。</summary>
+    public string? AlarmLevelFilter { get; set; }
+
+    /// <summary>报警列表行数上限（AlarmList）。默认 10。</summary>
+    public int AlarmMaxRows { get; set; } = 10;
+
+    /// <summary>报警列表列（AlarmList，逗号分隔：time,level,name,value,text,state,ack）。</summary>
+    public string? AlarmColumns { get; set; } = "time,level,name,text,state,ack";
+
+    /// <summary>历史曲线的存盘组 / 采集 logger 名（HistoryCurve，必填）。</summary>
+    public string? TrendGroup { get; set; }
+
+    /// <summary>历史曲线窗口宽度（分钟）。默认 30。</summary>
+    public int SpanMin { get; set; } = 30;
+
+    /// <summary>历史曲线重读周期（ms）；0 = 只在进页时读一次。默认 5000。</summary>
+    public int RefreshMs { get; set; } = 5000;
+
+    /// <summary>历史曲线通道（HistoryCurve，逗号分隔的变量 Id，最多 4 个）。</summary>
+    public string? CurveVariableIds { get; set; }
+
     // ── LVGL 标准行为配置（对齐官方文档）──
 
     /// <summary>

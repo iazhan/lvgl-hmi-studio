@@ -826,6 +826,18 @@ public partial class DesignCanvas : Control
             case HmiControlType.Arc:
                 RenderArcShape(context, control, rect, z);
                 return;
+            // chenge-runtime 目标新增：设计期只画数据形状占位（真渲染由宿主运行时负责）
+            case HmiControlType.Value:
+                RenderDataWidgetPlaceholder(context, control, rect, z, ValueSubtitle(control));
+                return;
+            case HmiControlType.AlarmList:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    $"{control.AlarmGroupFilter} · {control.AlarmMode} · {control.AlarmMaxRows}");
+                return;
+            case HmiControlType.HistoryCurve:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    $"{control.TrendGroup} · {control.SpanMin}min");
+                return;
             case HmiControlType.Button:
                 RenderButton(context, control, rect, z);
                 return;

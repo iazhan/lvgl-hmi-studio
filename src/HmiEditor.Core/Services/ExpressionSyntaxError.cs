@@ -13,7 +13,7 @@ namespace HmiEditor.Core.Services;
 ///
 /// <para><b><see cref="Message"/> 是回落、不是文案</b>：字典缺键时原样显示它
 /// （宁可显示中文，也不能把码名显示给用户）。它同时被**产物注释**那条路用 ——
-/// <c>CodeGenerator.Screen.cs</c> 写进 <c>generated_ui.c</c> 的
+/// <c>removed</c>：<c>CodeGenerator.Screen.cs</c> 写进 <c>generated_ui.c</c> 的
 /// <c>// WARNING: Invalid expression for '…': {回落} (skipped)</c> 里，
 /// 那里放的是读 C 代码的人要看的信息，**不随界面语言变**（与
 /// <c>GeneratedCodeIssueCodes.GENERATOR_WARNING_COMMENT</c> 同一类"判过的不做"）。</para>

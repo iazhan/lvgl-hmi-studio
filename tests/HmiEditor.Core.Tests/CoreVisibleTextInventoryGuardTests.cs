@@ -48,7 +48,7 @@ namespace HmiEditor.Core.Tests;
 ///
 /// <para><b>两条基线</b>：剩下的按"**是否已核实会到界面**"分两桶，都只减不增。</para>
 /// <list type="bullet">
-/// <item><see cref="VisibleChannels"/>：**已核实**会显示在编辑器界面上的 15 条通道（101 条文案）。
+/// <item><see cref="VisibleChannels"/>：**已核实**会显示在编辑器界面上的 13 条通道（75 条文案）。
 /// ⚠ 「6 条 / 61 条」这个读数停在阶段 44 定版那一刻 —— 之后阶段 87（SvgParseError）/
 /// 88（CsvVariableImporter）/ 89（GeneratedCodeValidator）/ 91（ExpressionSyntaxError）/
 /// 93（DanglingRefLocation）各自新增过通道，都没回头改这句。阶段 93 顺手归位为 **10 / 72**，
@@ -64,6 +64,8 @@ namespace HmiEditor.Core.Tests;
 /// 这一次是**审计口吻的短句**进了**已有的**审计日志通道（与同文件的 `启用/禁用账户` /
 /// `变更角色: a → b` 完全同形）⇒ 通道数不动、条数 +1。
 /// 🩸 它是**门禁实测**点名出来的（`NoUnclassifiedCoreChinese`：登记 12、实扫 13），不是预估。
+/// 阶段 125（#61g）为 **13 / 75**（**通道 −1 / 条数 −23** —— `Services/GeneratedCodeValidator.cs`
+/// 整条通道随 C 源码导出路径一起移除；那 23 条是「生成代码验证结果」的中文回落原文，没有产物就没有读者）。
 /// ⚠ 阶段 105 **没动这条链**：它改的是 `Pending` 桶（`Serialization/HmiPackageService.cs` 7 → 9）。
 /// 两个桶**只差一个字段名**（`VisibleChannels` 是 `Channel[]`、`Pending` 是 `Dictionary<string,int>`），
 /// 照着"改了两条文案 ⇒ 数字 +2"去改这条链，`Assert.Equal(100, sum)` 当场红 —— 本阶段真踩过。
@@ -175,15 +177,6 @@ public class CoreVisibleTextInventoryGuardTests
     /// </summary>
     public static readonly Channel[] VisibleChannels =
     {
-        // 生成代码验证结果对话框（阶段 89 / 登记 #61g）：Message 与 Location 以前是
-        // `Text = finding.Message` / `Text = finding.Location` **直显**；现在两条都走
-        // `ExternalText` 的码化出口 ⇒ 消费标记落在**出口**那一层
-        // （与阶段 87 的 SvgParseError / 阶段 88 的 CsvVariableImporter 同一形状）。
-        // ⚠ 23 **一条都没少**：18 条消息 + 5 条定位的中文**按设计必须留在 Core**
-        //   （它们是字典缺键时的回落原文）—— 变的是它们**到用户眼里的路径**，不是数量。
-        new("Services/GeneratedCodeValidator.cs", 23,
-            "src/HmiEditor.App/Services/ExternalText.cs", "GenIssueKey(finding.Code)"),
-
         // 交叉引用面板：这 9 条中文以前由 XAML 的 `Text="{Binding Description}"` **直显**。
         // ⚠ 阶段 93（#61l）从 13 降到 **9**：那 4 条 `[屏名] 控件 '名' …` **不是**面板文案
         //   （面板显示的是 `ReferenceLocation.Description`，另一套措辞），而是给
@@ -197,18 +190,6 @@ public class CoreVisibleTextInventoryGuardTests
         new("Services/CrossReferenceAnalyzer.cs", 9,
             "src/HmiEditor.App/Services/ReferenceTextKeys.cs", "Lang.CrossRefDescScreenSwitch"),
 
-        // 悬空引用的**定位串**（阶段 93，闭环 #61l）：这 3 条中文是**从上一条搬过来的**
-        // （`CrossReferenceAnalyzer` 13 → 9 少的正是它们）。改动前它们是
-        // `FindDanglingReferences` 拼的中文串、由调用方**原样直出**（`LocationCode` 留空）
-        // ⇒ 英文界面下这一半中英混排；现在它们是 `DanglingRefLocation` 记录体的
-        // **回落原文**，正常路径走 `gen.loc.*`。消费标记落在出口那一层
-        // （与 SvgParseError / CsvVariableImporter / ExpressionSyntaxError 同形）。
-        // ⚠ 为什么单列一条通道、不并进 `GeneratedCodeValidator`：**产出方不同** ——
-        //   定位码由本文件的三个工厂方法发（`OfBinding` / `OfLegacyBinding` / `OfAction`）。
-        //   顺带更正登记里的一处表述：那 4 条与这里的 3 条**不是同一批**字面量
-        //   （前者是面板措辞 `控件 名 绑定变量 (方向)`）⇒「同一串在两个地方露出」**不成立**。
-        new("Services/DanglingRefLocation.cs", 3,
-            "src/HmiEditor.App/Services/ExternalText.cs", "DescribeLocation(GeneratedCodeFinding"),
 
         // 动作展示名（阶段 94，闭环登记 #61m）：`HmiAction.GetDescription()` 的 13 条中文。
         // ⚠ 这批字面量**改动前就在 Core 里**，但它在 Pending 里被错归成「DATA：落盘数据」——
@@ -352,6 +333,10 @@ public class CoreVisibleTextInventoryGuardTests
         // 处置 = 搬进字典 role.*.desc（消费方 RoleTextKeys.DisplayDescription）。
         ["Models/Alarm/VariableAlarmConfig.cs"] = 1,   // 落盘默认名 "变量报警-{variableId}"
         ["Models/ControlTemplate.cs"] = 1,             // 分类名 "通用"
+        // 悬空引用的三条定位串：**与语言无关的模型路径**（`[屏] 控件 '名' (属性)`），
+        // 由交叉引用面板直出。gen.loc.* 键族随 C 导出路径移除后它们不再有字典键，
+        // 所以在这里按「不翻译」登记，而不是留在 VisibleChannels 里假装有出口。
+        ["Services/DanglingRefLocation.cs"] = 3,
         ["Models/TableLayoutHelper.cs"] = 1,           // 布局模式名 "自适应"
 
         // 只进 Debug / 无订阅点（DEV）：看起来像界面提示，实测到不了。
@@ -484,7 +469,7 @@ public class CoreVisibleTextInventoryGuardTests
 
         Assert.True(raw.Count >= 40,
             $"关掉排除项只扫到 {raw.Count} 个文件含中文 —— 扫描器可能失效");
-        Assert.True(raw.Values.Sum() >= 900,
+        Assert.True(raw.Values.Sum() >= 600,
             $"关掉排除项只扫到 {raw.Values.Sum()} 条 —— 扫描器可能失效");
     }
 
@@ -611,7 +596,7 @@ public class CoreVisibleTextInventoryGuardTests
         // LINQ 的扩展方法 → 方法组 → `CS8917`，编译器当场拦下）。
         var count = VisibleChannels.Length;
         var sum = VisibleChannels.Sum(c => c.Count);
-        Assert.Equal(101, sum);
+        Assert.Equal(75, sum);
 
         // ── 文档里的**两个**数字（通道数 / 条数）都必须等于算出来的值（阶段 99 补）──
         // 两处都手抄 ⇒ 必须由判据看着，否则阶段 98 那种「把 +1 通道写成通道数不变」会再发生。

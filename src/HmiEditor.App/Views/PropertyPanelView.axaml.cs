@@ -258,6 +258,7 @@ public partial class PropertyPanelView : UserControl
             // 加载值显示配置（Label 等显示型控件可见）
             // 过程图形控件也支持：Tank 液位 / Valve 开度 / Pipe 流量百分比
             bool supportsValueDisplay = control.Type is HmiControlType.Label
+                or HmiControlType.Value
                 or HmiControlType.Gauge or HmiControlType.Bar or HmiControlType.Knob
                 or HmiControlType.Led or HmiControlType.Slider or HmiControlType.CheckBox
                 or HmiControlType.Switch or HmiControlType.Dropdown

@@ -137,6 +137,21 @@ public partial class PropertyPanelView : UserControl
             ValidateAndWrite(nameof(HmiControl.RowHeight), RowHeightBox.Value, v => _currentControl.RowHeight = v);
             ValidateAndWrite(nameof(HmiControl.ColumnWidths), string.IsNullOrWhiteSpace(ColWidthsBox.Text) ? null : ColWidthsBox.Text.Trim(), v => _currentControl.ColumnWidths = v);
             ValidateAndWrite(nameof(HmiControl.TabTitles), string.IsNullOrWhiteSpace(TabTitlesBox.Text) ? null : TabTitlesBox.Text.Trim(), v => _currentControl.TabTitles = v);
+            // chenge-runtime 数据控件参数（面板可见时才写，避免把无关字段清空）
+            if (UnitBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.Unit), string.IsNullOrWhiteSpace(UnitBox.Text) ? null : UnitBox.Text.Trim(), v => _currentControl.Unit = v);
+            if (CgAlarmGroupBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmGroupFilter), string.IsNullOrWhiteSpace(CgAlarmGroupBox.Text) ? null : CgAlarmGroupBox.Text.Trim(), v => _currentControl.AlarmGroupFilter = v);
+            if (CgAlarmModeCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmMode), GetComboTag(CgAlarmModeCombo), v => _currentControl.AlarmMode = v);
+            if (CgAlarmRowsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmMaxRows), (int)CgAlarmRowsBox.Value, v => _currentControl.AlarmMaxRows = v);
+            if (CgTrendGroupBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.TrendGroup), string.IsNullOrWhiteSpace(CgTrendGroupBox.Text) ? null : CgTrendGroupBox.Text.Trim(), v => _currentControl.TrendGroup = v);
+            if (CgSpanMinBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SpanMin), (int)CgSpanMinBox.Value, v => _currentControl.SpanMin = v);
+            if (CgCurveVarsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.CurveVariableIds), string.IsNullOrWhiteSpace(CgCurveVarsBox.Text) ? null : CgCurveVarsBox.Text.Trim(), v => _currentControl.CurveVariableIds = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

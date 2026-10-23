@@ -13,6 +13,21 @@ public class DataLogConfig
     /// <summary>唯一标识</summary>
     public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
 
+    /// <summary>存盘组名（导出 savecfg.json 的 group.name；历史曲线的 group 引用它）。</summary>
+    public string Name { get; set; } = "";
+
+    /// <summary>采集模式：period（按 PeriodS）/ change（值变化）/ trigger（动作触发）。</summary>
+    public string Mode { get; set; } = "period";
+
+    /// <summary>周期秒（mode=period 时生效，1–3600）。</summary>
+    public int PeriodS { get; set; } = 60;
+
+    /// <summary>组容量上限（MB，1–64）。与 MaxRecords 二选一，写了 MaxRecords 就以条数为准。</summary>
+    public int MaxMb { get; set; } = 4;
+
+    /// <summary>CSV 时间列格式：iso / unix。</summary>
+    public string CsvTimeFormat { get; set; } = "iso";
+
     /// <summary>采样间隔（毫秒），默认 1000ms。这是数据新鲜度 SLI。</summary>
     public int SampleIntervalMs { get; set; } = 1000;
 

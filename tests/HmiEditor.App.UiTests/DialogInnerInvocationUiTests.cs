@@ -162,25 +162,6 @@ public class DialogInnerInvocationUiTests
             Skip("BtnTitleClose", "点了会关掉宿主对话框本身，后续按钮就无从验证了"),
         }),
 
-        new("MenuDeviceManager", typeof(DeviceManagerView), new[]
-        {
-            Quiet("BtnRefreshPorts", "重新枚举串口，不弹窗"),
-            Quiet("BtnOpenClose", "无设备可连时只更新按钮文案与状态栏，不弹窗"),
-            Quiet("BtnDetect", "探测无果时只写状态栏，不弹窗"),
-            Quiet("BtnCheckUpdate", "无连接时提前 return，不弹窗"),
-            Quiet("BtnBrowseHmiSwu", "走 StorageProvider 的文件选择器（headless 桩返回空）⇒ 提前 return，不弹窗"),
-            Skip("BtnUpdateHmi", "升级 HMI 运行时：会向设备推送文件，是不可逆的外部动作"),
-            Quiet("BtnBrowseFwSwu", "同上：StorageProvider 桩返回空 ⇒ 提前 return"),
-            Skip("BtnFlashFw", "烧录固件：不可逆的外部动作，不做"),
-            Quiet("BtnBrowseHmiLib", "同上：StorageProvider 桩返回空 ⇒ 提前 return"),
-            Quiet("BtnBrowseOutput", "同上：StorageProvider 桩返回空 ⇒ 提前 return"),
-            Skip("BtnGenerate", "生成整套代码到输出目录 = 写盘（输出目录还能被 BtnBrowseOutput 改掉）⇒ 本层只覆盖弹窗接线，不点写盘按钮"),
-            Quiet("BtnBrowseFelTool", "同上：StorageProvider 桩返回空 ⇒ 提前 return"),
-            Quiet("BtnBrowseFelImage", "同上：StorageProvider 桩返回空 ⇒ 提前 return"),
-            Skip("BtnFelFlash", "FEL 烧录：不可逆的外部动作，不做"),
-            Skip("BtnTitleClose", "点了会关掉宿主对话框本身，后续按钮就无从验证了"),
-        }),
-
         new("MenuAnimationEditor", typeof(AnimationEditorView), new[]
         {
             Quiet("BtnNewAnimation", "新建动画并选中它（不弹窗）—— 它排在 BtnDeleteAnimation 之前，把后者的初始状态钉成「有动画可删」"),

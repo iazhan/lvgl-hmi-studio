@@ -13,7 +13,6 @@ using Dock.Model.Core;
 using HmiEditor.App.Controls;
 using HmiEditor.App.Services;
 using HmiEditor.App.Views;
-using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.Alarm;
 using HmiEditor.Core.Models.Scripting;
@@ -21,7 +20,6 @@ using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Diagnostics;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
-using HmiEditor.Device.Build;
 
 namespace HmiEditor.App;
 
@@ -60,13 +58,10 @@ public partial class MainWindow
         MenuNewProject.Click += (_, _) => NewProject();
         MenuOpenProject.Click += (_, _) => OpenProject();
         MenuSaveProject.Click += (_, _) => SaveProject();
-        MenuExportCode.Click += (_, _) => ExportCode();
-        MenuCompile.Click += (_, _) => CompileProject();
-        BtnCompile.Click += (_, _) => CompileProject();
-        MenuBuildRun.Click += (_, _) => BuildAndRunSimulator();
-        BtnBuildRun.Click += (_, _) => BuildAndRunSimulator();
-        MenuDownload.Click += (_, _) => DownloadToHmi();
-        BtnDownloadHmi.Click += (_, _) => DownloadToHmi();
+        MenuExportChenge.Click += (_, _) => ExportChengeProject();
+        BtnExportChenge.Click += (_, _) => ExportChengeProject();
+        MenuExportPreview.Click += (_, _) => ExportAndPreview();
+        BtnExportPreview.Click += (_, _) => ExportAndPreview();
         MenuExit.Click += (_, _) => Close();
 
         // ── I8: Git 工作流菜单 ──
@@ -77,10 +72,6 @@ public partial class MainWindow
 
         // ── I9: 自适应分辨率预览 ──
         CboResolutionPreview.SelectionChanged += (_, _) => OnResolutionPreviewChanged();
-
-        // ── I11: 验证生成代码 / 导出模拟器工程 ──
-        MenuValidateCode.Click += (_, _) => ValidateGeneratedCode();
-        MenuSimulatorExport.Click += (_, _) => ExportSimulatorProject();
 
         // ── 工具栏文件按钮 ──
         BtnNewProject.Click += (_, _) => NewProject();

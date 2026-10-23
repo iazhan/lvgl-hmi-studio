@@ -21,9 +21,7 @@
     <StreamGeometry x:Key="IconExportCode">M3,3 H8 V4 H4 V12 H10 V7 H11 V13 H3 Z M8,8 H14 M11,5 L14,8 L11,11</StreamGeometry>
 
     <!-- ═══ 构建与部署组 ═══ -->
-    <StreamGeometry x:Key="IconCompile">M7,2 H11 V3 H7 Z M8,3 V5 H10 V3 H8 Z M4,5 H14 V8 H4 Z M5,9 H12 V10 H5 Z M7,12 H13 V13 H7 Z M5,9 C5,9 4.5,10 5,10.5 C5.5,11 6,10.5 6,10.5 M5,5 H6 M6,5 V6 M6.5,5 H7 M5,10 C5,10 4.5,11 5,11.5 C5.5,12 6,11.5 6,11.5</StreamGeometry>
     <StreamGeometry x:Key="IconBuildRun">M4,3 L14,10 L4,17 Z</StreamGeometry>
-    <StreamGeometry x:Key="IconDownloadHmi">M2,6 H6 L7,5 H13 V12 H2 Z M8,9 H11.5 M10,7.5 L12,9 L10,10.5 M4,15 H12 M3,12 H4 M8,15 H9</StreamGeometry>
 
     <!-- ═══ 编辑组 ═══ -->
     <StreamGeometry x:Key="IconUndo">M3,8 C3,5 5,4 8,4 C11,4 13,6 13,9 M3,8 L6,5 M3,8 L6,11</StreamGeometry>

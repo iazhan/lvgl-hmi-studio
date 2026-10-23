@@ -57,6 +57,14 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, false);
         SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, false);
         SetParamRow(LblValveType, ValveTypeCombo, false);
+        // chenge-runtime 数据控件参数
+        SetParamRow(LblUnit, UnitBox, false);
+        SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, false);
+        SetParamRow(LblCgAlarmMode, CgAlarmModeCombo, false);
+        SetParamRow(LblCgAlarmRows, CgAlarmRowsBox, false);
+        SetParamRow(LblCgTrendGroup, CgTrendGroupBox, false);
+        SetParamRow(LblCgSpanMin, CgSpanMinBox, false);
+        SetParamRow(LblCgCurveVars, CgCurveVarsBox, false);
 
         bool anyVisible = true;
         switch (control.Type)
@@ -147,6 +155,24 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblValveType, ValveTypeCombo, true);
                 break;
+            // chenge-runtime 目标新增
+            case HmiControlType.Value:
+                SetParamRow(LblUnit, UnitBox, true);
+                SetParamRow(LblMinValue, MinValueBox, true);
+                SetParamRow(LblMaxValue, MaxValueBox, true);
+                break;
+            case HmiControlType.AlarmList:
+                SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, true);
+                SetParamRow(LblCgAlarmMode, CgAlarmModeCombo, true);
+                SetParamRow(LblCgAlarmRows, CgAlarmRowsBox, true);
+                break;
+            case HmiControlType.HistoryCurve:
+                SetParamRow(LblCgTrendGroup, CgTrendGroupBox, true);
+                SetParamRow(LblCgSpanMin, CgSpanMinBox, true);
+                SetParamRow(LblCgCurveVars, CgCurveVarsBox, true);
+                SetParamRow(LblMinValue, MinValueBox, true);
+                SetParamRow(LblMaxValue, MaxValueBox, true);
+                break;
             // I10: 基础绘图图形
             case HmiControlType.Arc:
                 // 圆弧角度范围：MinValue/MaxValue 作为起始/结束角（度），指示弧进度取 Value
@@ -169,7 +195,8 @@ public partial class PropertyPanelView : UserControl
 
         // 🩸 阶段 220（#96 的"统一可见性"那半）：**字体族/字号/水平对齐三行只对文本类控件显示**。
         //   此前它们对所有类型都显示 ⇒ 形状/Led/Slider 之类改了既不进导出、预览也看不出效果
-        //   （用户会以为"设置丢了"）。名单与 `CodeGenerator.Screen.cs` 的文本块一致：
+        //   （用户会以为"设置丢了"）。（removed：与 `CodeGenerator.Screen.cs` 保持一致的约束
+        //   随 C 导出路径删除，这里只按「用户在面板上看得见」定名单。）
         //   Label / Button / CheckBox / TextArea（＋ Dropdown 在 `EmitDropdownParameters` 里发对齐）。
         var textBearing = control.Type is HmiControlType.Label or HmiControlType.Button
             or HmiControlType.CheckBox or HmiControlType.TextArea or HmiControlType.Dropdown;
@@ -197,6 +224,13 @@ public partial class PropertyPanelView : UserControl
         MaxValueBox.Value = control.MaxValue;
         StepValueBox.Value = control.StepValue;
         SelectedIndexBox.Value = control.SelectedIndex;
+        UnitBox.Text = control.Unit ?? "";
+        CgAlarmGroupBox.Text = control.AlarmGroupFilter ?? "";
+        SelectComboByTag(CgAlarmModeCombo, control.AlarmMode, 0);
+        CgAlarmRowsBox.Value = control.AlarmMaxRows;
+        CgTrendGroupBox.Text = control.TrendGroup ?? "";
+        CgSpanMinBox.Value = control.SpanMin;
+        CgCurveVarsBox.Text = control.CurveVariableIds ?? "";
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

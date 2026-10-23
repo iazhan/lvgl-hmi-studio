@@ -176,8 +176,7 @@ public class LangConstantUsageGuardTests
     ///
     /// <para><b>1113 不动</b>（阶段 93，闭环 #61l）：两本字典各 +1 键
     /// （<c>gen.loc.screen_control_action</c>，2226 → <b>2227</b>），但**没有新增任何常量** ——
-    /// 这一族（<c>gen.issue.*</c> / <c>gen.loc.*</c>）的键靠 <c>ExternalText.GenIssueKey</c> /
-    /// <c>GenLocationKey</c> **推导**，本就不进本集；可达性由机制 <b>M13</b> 担保
+    /// 这一族（<c>gen.issue.*</c> / <c>gen.loc.*</c>）已随 C 源码导出路径移除（removed），本集里不再有它们的常量
     /// （面 21 → <b>22</b>，下界同步抬满）。⇒ 「字典 +1 而基线不动」不矛盾，两者数的集合不同。</para>
     /// <para><b>与补键工具的方向冲突（已知陷阱，登记 #52）</b>：
     /// <c>scripts/sync_localization.py</c> 第 2 步会给「字典里有、<c>Lang.cs</c> 里没有」的键
@@ -278,7 +277,7 @@ public class LangConstantUsageGuardTests
     /// 守卫自己的断言成了常量唯一的存在理由），于是基线"恰好"没变、差集判据失去意义。
     /// 改成**字面量键**后才如实涨 4。⇒ 规矩：这一族"键在不在字典里"的判据一律用字面量。</para>
     /// </summary>
-    internal const int UnusedBaseline = 1108;
+    internal const int UnusedBaseline = 1031;
 
     /// <summary>引用集合的取法。生产判据只用 <see cref="Code"/>；另两档是自检/单调性用的对照面。</summary>
     private enum ReferenceFace

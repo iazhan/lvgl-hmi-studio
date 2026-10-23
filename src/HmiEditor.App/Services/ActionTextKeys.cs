@@ -22,6 +22,9 @@ namespace HmiEditor.App.Services;
 /// <para><b>与 Core 那两份中文的关系</b>（本项最容易做错的地方）：
 /// <list type="bullet">
 /// <item><see cref="ActionTypeMeta.DisplayName"/> 的 12 条中文**必须留在** Core ——
+/// <para><b>removed</b>：本段提到的生成产物（CodeGenerator / SecurityConfigCodeGen）已随 C 源码
+/// 导出路径一起删除，下面关于「产物注释」的说明只作历史背景。</para>
+///
 /// 它们是**生成产物**里的注释（<c>CodeGenerator.Actions.cs</c> / <c>SecurityConfigCodeGen.cs</c>），
 /// 产物可复现性要求它们冻结；</item>
 /// <item><see cref="HmiAction.GetDescription"/> 的 13 条中文也留在 Core，作为**面板的回落原文**

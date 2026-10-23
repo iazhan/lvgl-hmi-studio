@@ -122,6 +122,9 @@ public sealed class SettingsService : IDisposable
     /// </summary>
     public KinSealSettings KinSeal => new(this);
 
+    /// <summary>chenge-runtime 导出/预览设置（运行时目录）。</summary>
+    public ChengeSettings Chenge => new(this);
+
     /// <summary>
     /// 获取**报表模板**（阶段 182：每个数据源一份列布局模板）。
     /// </summary>
@@ -507,6 +510,26 @@ public sealed class SettingsService : IDisposable
         /// </summary>
         public string SdkManifestUrl => _parent.Get(nameof(SdkManifestUrl), "");
         public void SetSdkManifestUrl(string value) => _parent.Set(nameof(SdkManifestUrl), value);
+    }
+
+    /// <summary>
+    /// chenge-runtime 导出/预览设置。
+    ///
+    /// <para>预览要的是**宿主运行时二进制**（在 chenge-runtime 目录执行 `make HOST=1` 的产物），
+    /// 与板上那一份是同一份代码——这正是预览值得做的原因。目录留空则只认环境变量
+    /// <c>CHENGE_RUNTIME_DIR</c> 与安装目录内置的 <c>chenge-runtime/</c>：
+    /// 编辑器是独立安装的软件，**不猜**机器上其它仓库的位置（猜的结果是作者机器上能预览、用户机器上找不到）。</para>
+    /// </summary>
+    public sealed class ChengeSettings
+    {
+        private const string RuntimeDirKey = "ChengeRuntimeDir";
+
+        private readonly SettingsService _parent;
+        internal ChengeSettings(SettingsService parent) => _parent = parent;
+
+        /// <summary>chenge-runtime 目录（其下有 chenge-runtime 可执行文件）。空 = 环境变量/安装目录。</summary>
+        public string RuntimeDir => _parent.Get(RuntimeDirKey, "");
+        public void SetRuntimeDir(string value) => _parent.Set(RuntimeDirKey, value);
     }
 
     /// <summary>

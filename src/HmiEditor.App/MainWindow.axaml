@@ -21,12 +21,8 @@
                 <MenuItem x:Name="MenuOpenProject" Header="{res:Loc project.open}" InputGesture="Ctrl+O" />
                 <MenuItem x:Name="MenuSaveProject" Header="{res:Loc project.save}" InputGesture="Ctrl+S" />
                 <Separator />
-                <MenuItem x:Name="MenuExportCode" Header="{res:Loc project.export.c}" InputGesture="Ctrl+E" />
-                <MenuItem x:Name="MenuCompile" Header="{res:Loc menu.compile}" InputGesture="Ctrl+B" />
-                <MenuItem x:Name="MenuBuildRun" Header="{res:Loc menu.build.run}" InputGesture="Ctrl+Shift+B" />
-                <MenuItem x:Name="MenuDownload" Header="{res:Loc menu.download}" InputGesture="Ctrl+Shift+D" IsEnabled="False" />
-                <MenuItem x:Name="MenuValidateCode" Header="{res:Loc menu.validate.code}" InputGesture="Ctrl+Shift+V" />
-                <MenuItem x:Name="MenuSimulatorExport" Header="{res:Loc menu.export.simulator}" />
+                <MenuItem x:Name="MenuExportChenge" Header="{res:Loc menu.export.chenge}" InputGesture="Ctrl+E" />
+                <MenuItem x:Name="MenuExportPreview" Header="{res:Loc menu.export.preview}" InputGesture="Ctrl+Shift+E" />
                 <Separator />
                 <MenuItem x:Name="MenuExit" Header="{res:Loc project.exit}" InputGesture="Alt+F4" />
             </MenuItem>
@@ -102,7 +98,6 @@
                 <Separator />
                 <MenuItem x:Name="MenuCrossReference" Header="{res:Loc cross.ref.title}" />
                 <MenuItem x:Name="MenuAuditLog" Header="{res:Loc audit.title}" />
-                <MenuItem x:Name="MenuDeviceManager" Header="{res:Loc device.title}" InputGesture="Ctrl+Alt+D" />
                 <MenuItem x:Name="MenuLogin" Header="{res:Loc login.title}" InputGesture="Ctrl+Shift+L" />
                 <Separator />
                 <MenuItem x:Name="MenuGitInit" Header="{res:Loc menu.git.init}" />
@@ -145,28 +140,14 @@
                             <PathIcon Data="{StaticResource IconSaveProject}"/>
                         </CommandBarButton.Icon>
                     </CommandBarButton>
-                    <CommandBarButton x:Name="BtnExportCode" Label="{res:Loc project.export.c}" ToolTip.Tip="{res:Loc project.export.c}">
+                    <CommandBarButton x:Name="BtnExportChenge" Label="{res:Loc menu.export.chenge}" ToolTip.Tip="{res:Loc menu.export.chenge}">
                         <CommandBarButton.Icon>
                             <PathIcon Data="{StaticResource IconExportCode}"/>
                         </CommandBarButton.Icon>
                     </CommandBarButton>
-
-                    <CommandBarSeparator/>
-
-                    <!-- 构建与部署组 -->
-                    <CommandBarButton x:Name="BtnCompile" Label="{res:Loc toolbar.compile}" ToolTip.Tip="{res:Loc toolbar.compile.tt}">
-                        <CommandBarButton.Icon>
-                            <PathIcon Data="{StaticResource IconCompile}"/>
-                        </CommandBarButton.Icon>
-                    </CommandBarButton>
-                    <CommandBarButton x:Name="BtnBuildRun" Label="{res:Loc toolbar.build.run}" ToolTip.Tip="{res:Loc toolbar.build.run.tt}">
+                    <CommandBarButton x:Name="BtnExportPreview" Label="{res:Loc menu.export.preview}" ToolTip.Tip="{res:Loc menu.export.preview}">
                         <CommandBarButton.Icon>
                             <PathIcon Data="{StaticResource IconBuildRun}"/>
-                        </CommandBarButton.Icon>
-                    </CommandBarButton>
-                    <CommandBarButton x:Name="BtnDownloadHmi" Label="{res:Loc toolbar.download}" ToolTip.Tip="{res:Loc toolbar.download.tt}" IsEnabled="False">
-                        <CommandBarButton.Icon>
-                            <PathIcon Data="{StaticResource IconDownloadHmi}"/>
                         </CommandBarButton.Icon>
                     </CommandBarButton>
 
@@ -584,28 +565,6 @@
                 <TextBlock x:Name="StatusText"
                            Text="{res:Loc project.status.ready}"
                            Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="12" />
-
-                <!-- 编译进度 -->
-                <StackPanel x:Name="CompileBarPanel" Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                            VerticalAlignment="Center" Margin="12,0,0,0"
-                            IsVisible="False">
-                    <TextBlock x:Name="CompileStatusText" Text=""
-                               Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11" />
-                    <ProgressBar x:Name="CompileBar" Width="120" Height="10"
-                                 Minimum="0" Maximum="100" Value="0"
-                                 CornerRadius="2">
-                        <ProgressBar.Styles>
-                            <Style Selector="ProgressBar">
-                                <Setter Property="Transitions">
-                                    <Transitions>
-                                        <DoubleTransition Property="Value" Duration="0:0:0.3"/>
-                                        <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
-                                    </Transitions>
-                                </Setter>
-                            </Style>
-                        </ProgressBar.Styles>
-                    </ProgressBar>
-                </StackPanel>
 
                 <TextBlock x:Name="ControlCountText"
                            Text="{res:Loc status.controls}"

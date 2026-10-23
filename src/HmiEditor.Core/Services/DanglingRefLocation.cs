@@ -1,6 +1,22 @@
 namespace HmiEditor.Core.Services;
 
 /// <summary>
+/// 悬空引用的**定位码**（App 层按码查文案：<c>gen.loc.&lt;码小写&gt;</c>）。
+/// 码是稳定的英文标识，中文只作字典缺键时的回落。
+/// </summary>
+public static class FindingLocationCodes
+{
+    /// <summary>到屏幕 + 控件。2 实参 = 屏幕名、控件名。</summary>
+    public const string SCREEN_CONTROL = "SCREEN_CONTROL";
+
+    /// <summary>到屏幕 + 控件 + 绑定属性。3 实参 = 屏幕名、控件名、属性名。</summary>
+    public const string SCREEN_CONTROL_PROPERTY = "SCREEN_CONTROL_PROPERTY";
+
+    /// <summary>到屏幕 + 控件 + 动作（动作目标悬空）。2 实参 = 屏幕名、控件名。</summary>
+    public const string SCREEN_CONTROL_ACTION = "SCREEN_CONTROL_ACTION";
+}
+
+/// <summary>
 /// 一条**悬空引用**的位置 —— 「**定位码 + 中文回落原文** ＋ 实参」三段式
 /// （阶段 93，闭环登记 <b>#61l</b>），与 <see cref="SvgParseError"/> /
 /// <see cref="ExpressionSyntaxError"/> / <c>CsvImportIssue</c> 同形。

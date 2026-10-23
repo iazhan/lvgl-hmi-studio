@@ -21,6 +21,9 @@ namespace HmiEditor.Core.Services;
 /// <see cref="ExpressionSyntaxException"/> 只是因为它的返回契约是 AST；真正的消费入口是
 /// <see cref="ExpressionEngine.TryCompile"/>（返回 <see cref="ExpressionSyntaxError"/>）。
 /// 三条搬运路径共用同一套码：① 编辑器 UI（经 <c>ExternalText</c> 渲染）；
+/// <para><b>removed</b>：② 提到的产物注释（C 代码生成器）已随 C 导出路径删除，
+/// 这一档只保留了日志/兜底打印的用法。</para>
+///
 /// ② 产物注释（<c>CodeGenerator.Screen.cs</c> 的 <c>// WARNING:</c>，**用回落原文** ⇒ 与
 /// <c>GENERATOR_WARNING_COMMENT</c> 同一类"判过的不做"）；③ 设计时预览（属性面板）。</para>
 /// </summary>

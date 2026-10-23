@@ -809,8 +809,8 @@ public class RecipeImportIssueLocalizationGuardTests
         var prefixes = DeclaredPrefixes();
         // 阶段 103 起 **15** 条（新增 sim.build.issue.）。与 M8~M18 同口径取下界满值：
         // 少一条就说明取数出口改名/挪走了，这条判据（以及它担保的清单）一起失效。
-        Assert.True(prefixes.Count >= 15,
-            $"只反射到 {prefixes.Count} 条 `*KeyPrefix`（应有 ≥ 15）"
+        Assert.True(prefixes.Count >= 14,
+            $"只反射到 {prefixes.Count} 条 `*KeyPrefix`（应有 ≥ 14）"
             + " ⇒ 反射面失效（最可能：少了 BindingFlags.NonPublic，ExternalText 是 internal）");
 
         var file = AppSourceScanner.ScanAllProductSources()
@@ -1062,7 +1062,7 @@ public class RecipeImportIssueLocalizationGuardTests
 
         // ── NC7 · 键前缀清单（锚点是**清单条目的形状**，不是"名字出现过"）──
         var prefixes = DeclaredPrefixes();
-        Assert.True(prefixes.Count >= 15, $"只反射到 {prefixes.Count} 条前缀 —— 取数失效");
+        Assert.True(prefixes.Count >= 14, $"只反射到 {prefixes.Count} 条前缀 —— 取数失效");
 
         // ⚠ **定义面当输入面**：const 声明写的是 `= "user.issue.";`，**没有** `&lt;`
         //   ⇒ 收紧后的判据**逐条点名**。（收紧前它在定义面下恒真 —— 而那正是负控 E 打穿的路：

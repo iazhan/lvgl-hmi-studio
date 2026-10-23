@@ -65,7 +65,8 @@ public class AppTextBoxWiringCensusTests
         // → 10：kinseal 面板加了 TxtKinSealToolchainGcc / TxtKinSealRuntimeDir /
         //   TxtKinSealSdkManifestUrl 三个输入框（「编译转换」与 SDK 首次安装要用），
         ///   三条手势已在 SettingsTextBoxWiringTests.Specs 里逐条驱动。
-        new("SettingsDialog.axaml", 10, "driven", "SettingsTextBoxWiringTests.cs"),
+        // 11：再加 TxtChengeRuntimeDir（导出预览用的宿主运行时目录）。
+        new("SettingsDialog.axaml", 11, "driven", "SettingsTextBoxWiringTests.cs"),
         new("SimulatorView.axaml", 7, "driven", "SimulatorTextBoxWiringTests.cs"),             // 阶段 191
         new("ScriptEditorView.axaml", 3, "driven", "ScriptEditorTextBoxWiringTests.cs"),       // 阶段 192（修 #89）
 

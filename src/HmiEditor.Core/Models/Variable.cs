@@ -28,6 +28,26 @@ public class Variable : IIdentifiedModel
     public string? Unit { get; set; }
     public string? SimulatedValue { get; set; }
 
+    // ── Modbus 取数坐标（导出 37 tags.json 的 source 用；缺省值保持旧工程可读）──
+
+    /// <summary>寄存器区：holding / coil / input / discrete（S7：db / mk / pe / pa）。</summary>
+    public string Area { get; set; } = "holding";
+
+    /// <summary>访问级别：r 或 rw。</summary>
+    public string Access { get; set; } = "rw";
+
+    /// <summary>32/64 位数据的字节序与字序：ABCD / CDAB / BADC（空 = 取设备 default_order）。</summary>
+    public string? ByteOrder { get; set; }
+
+    /// <summary>string 变量的字节组织方式：ascii / unicode。</summary>
+    public string? Encoding { get; set; }
+
+    /// <summary>string 变量的字节数（1–64，缺省 16）。</summary>
+    public int StringLen { get; set; } = 16;
+
+    /// <summary>取寄存器某一位（0–15）；设置后 type 必须是 bool。</summary>
+    public int? Bit { get; set; }
+
     // ── 变量级报警设置（参考主流 HMI 软件：WinCC/组态王/MCGS）──
 
     /// <summary>

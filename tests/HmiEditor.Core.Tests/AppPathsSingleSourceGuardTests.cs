@@ -294,12 +294,12 @@ public class AppPathsSingleSourceGuardTests
         foreach (var must in new[]
                  {
                      "HmiEditor.Core/Services/AppPaths.cs",
-                     "HmiEditor.Device/Updates/HmiDeployService.cs",
-                     "HmiEditor.Device/Build/T113SoBuilder.cs",
+                     "HmiEditor.Core/Services/AuditLogStore.cs",
+                     "HmiEditor.Export.Chenge/ChengeExporter.cs",
                      "HmiEditor.App/MainWindow.axaml.cs",
-                     "HmiEditor.App/Services/BuildPipelineService.cs",
+                     "HmiEditor.App/Services/ChengeExportService.cs",
                      "HmiEditor.App/Views/AiIconDialog.axaml.cs",
-                     "HmiEditor.App/Views/DownloadToHmiView.axaml.cs",
+                     "HmiEditor.App/Views/SettingsDialog.axaml.cs",
                  })
         {
             Assert.True(rels.Contains(must), $"关键文件不在扫描面内：{must}");

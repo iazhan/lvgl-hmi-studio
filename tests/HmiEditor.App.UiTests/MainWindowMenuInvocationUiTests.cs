@@ -80,7 +80,8 @@ public class MainWindowMenuInvocationUiTests
         ["MenuAlarmList"] = Popup(typeof(AlarmListView), "实时报警列表"),
         ["MenuAnimationEditor"] = Popup(typeof(AnimationEditorView), "动画编辑器"),
         ["MenuCommConfig"] = Popup(typeof(CommunicationConfigView), "通讯配置"),
-        ["MenuDeviceManager"] = Popup(typeof(DeviceManagerView), "设备管理器（本判据抓到的第一个真缺陷就在这）"),
+        ["MenuExportChenge"] = Silent("导出 chenge 工程：打开目录选择器；headless 桩返回空 ⇒ 提前 return，不弹窗"),
+        ["MenuExportPreview"] = Skipped("导出并预览会启动宿主 chenge-runtime 进程并等它截图，属外部进程动作，本层不点"),
         ["MenuLogin"] = Popup(typeof(LoginDialog), "登录对话框（async void 处理器，ShowDialog 仍同步显示）"),
         ["MenuProjectSettings"] = Popup(typeof(ProjectSettingsView), "工程设置"),
         ["MenuRecipeEditor"] = Popup(typeof(RecipeEditorView), "配方编辑器"),
@@ -131,11 +132,7 @@ public class MainWindowMenuInvocationUiTests
         ["MenuZoomReset"] = Silent("画布缩放复位为 100%"),
 
         // ── 跳过桶（14）—— 必须写明碰到了什么才不点 ──
-        ["MenuBuildRun"] = Skipped("构建并启动模拟器：起外部构建进程"),
-        ["MenuCompile"] = Skipped("编译工程：起外部构建进程"),
-        ["MenuDownload"] = Skipped("烧录下载到 HMI：走 ADB / 外部进程"),
         ["MenuExit"] = Skipped("关闭主窗口，后续菜单将无法继续点击"),
-        ["MenuExportCode"] = Skipped("导出生成代码：写工程目录"),
         ["MenuGitCommit"] = Skipped("git 提交对话框：起 git 进程"),
         ["MenuGitHistory"] = Skipped("git 历史：起 git 进程"),
         ["MenuGitInit"] = Skipped("git init：起 git 进程且改工作树"),
@@ -143,8 +140,6 @@ public class MainWindowMenuInvocationUiTests
         ["MenuNewProject"] = Skipped("新建工程：可能弹未保存确认并重置工程"),
         ["MenuOpenProject"] = Skipped("打开工程：走 StorageProvider 文件选择器"),
         ["MenuSaveProject"] = Skipped("保存工程：写工程文件到磁盘，可能弹未保存确认"),
-        ["MenuSimulatorExport"] = Skipped("导出模拟器工程：写整套工程文件到磁盘"),
-        ["MenuValidateCode"] = Skipped("校验生成代码：写临时产物并可能起编译器"),
     };
 
     /// <summary>窗口上具名菜单项的实际名字（去重）。</summary>
@@ -192,7 +187,7 @@ public class MainWindowMenuInvocationUiTests
         Assert.True(stale.Count == 0,
             "分类表里登记了这些名字，但窗口上找不到 —— 菜单项被删或改名了：\n  "
             + string.Join("\n  ", stale));
-        Assert.True(actual.Count >= 60, $"人口下界不成立：具名菜单项只有 {actual.Count} 个（预期 ≥ 60）");
+        Assert.True(actual.Count >= 57, $"人口下界不成立：具名菜单项只有 {actual.Count} 个（预期 ≥ 60）");
     }
 
     /// <summary>
@@ -202,12 +197,13 @@ public class MainWindowMenuInvocationUiTests
     [Fact]
     public void MenuBucketTable_IsNotEmptiedAndIsSelfConsistent()
     {
-        Assert.True(Buckets.Count >= 60, $"分类表只有 {Buckets.Count} 行（预期 ≥ 60）");
+        Assert.True(Buckets.Count >= 57, $"分类表只有 {Buckets.Count} 行（预期 ≥ 57；单轨后删掉 4 条 C/.so 菜单）");
 
         var popups = Buckets.Where(kv => kv.Value.Bucket == MenuBucket.Popup).ToList();
         var skips = Buckets.Where(kv => kv.Value.Bucket == MenuBucket.Skipped).ToList();
-        Assert.True(popups.Count >= 18, $"弹窗桶只有 {popups.Count} 项（预期 ≥ 18）");
-        Assert.True(skips.Count >= 12, $"跳过桶只有 {skips.Count} 项（预期 ≥ 12）");
+        // 设备管理菜单随 C/.so 导出路径一起移除（removed）⇒ 弹窗桶 18 → 17。
+        Assert.True(popups.Count >= 17, $"弹窗桶只有 {popups.Count} 项（预期 ≥ 17）");
+        Assert.True(skips.Count >= 9, $"跳过桶只有 {skips.Count} 项（预期 ≥ 9；单轨后 3 条 C/.so 菜单连同它们的跳过理由一起删掉）");
 
         foreach (var (name, spec) in Buckets)
         {

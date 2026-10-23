@@ -33,7 +33,7 @@ namespace HmiEditor.App.UiTests;
 /// **XAML 属性式 <c>TextChanged="…"</c> 26 个**（阶段 199 才量出来的第三形态 ⇒
 /// <see cref="AppXamlAttributeWiringFaceTests"/>）。⚠ 阶段 196 那一版把这 26 个也算进"没接线"，
 /// 读数 91 / 122 / 118 / 4 里有三个数偏了 —— 见 `docs/2026-10-01-xaml-attribute-wiring-face.md` 的勘误。</item>
-/// <item><b>92 个没接线、有读点</b>（由"点保存/应用"或动作处理器一次性读取）—— 读点就是"不是缺口"的证据；</item>
+/// <item><b>78 个没接线、有读点</b>（由"点保存/应用"或动作处理器一次性读取）—— 读点就是"不是缺口"的证据；</item>
 /// <item><b>4 个只读展示</b>（登记表）；</item>
 /// <item><b>0 个「没人读」</b>（这一格要被守住）。</item>
 /// </list>
@@ -45,14 +45,12 @@ public class AppUnwiredInputReadFaceTests
     /// <summary>只读展示框的登记表（键＝文件＋控件名，值＝理由）。</summary>
     private static readonly Dictionary<(string File, string Name), string> DisplayOnly = new()
     {
-        [("DeviceManagerView.axaml", "TxtDeviceVersion")] =
-            "只读展示（`IsReadOnly=\"True\"`）：由设备信息回填（`info.HmiVersion` / `result.DeviceVersion`），没人读它",
-        [("DownloadToHmiView.axaml", "TxtSoPath")] =
-            "只读展示（`IsReadOnly=\"True\"`）：由「选择 .so」回填；真正下发用的是那个路径变量，不是这个框",
         [("Editors/VariablePicker.axaml", "DisplayField")] =
             "只读展示（`IsReadOnly=\"True\"`）：`UpdateDisplay()` 写选中变量的显示名，没人读它",
         [("UserManagerView.axaml", "RoleNameBox")] =
             "只读展示（#50：角色名与描述都是只读展示）：由 `ShowRoleDetail` 回填，没人读它",
+        [("ChengePreviewView.axaml", "LogBox")] =
+            "只读展示：预览日志由宿主运行时输出回填（`LogBox.Text = preview.Log`），没人读它",
     };
 
     private sealed record Box(string File, string Name);
@@ -183,8 +181,8 @@ public class AppUnwiredInputReadFaceTests
             $"只扫到 {scan.Wired.Count} 个已接线输入框 —— 扫描面可能塌了（阶段 199 实测 117 ＝ code-behind 91 ＋ XAML 属性式 26）");
         Assert.True(scan.WiredByXaml.Count >= 25,
             $"只扫到 {scan.WiredByXaml.Count} 条 XAML 属性式接线 —— 第三形态的扫描面可能塌了（阶段 199 实测 26 条）");
-        Assert.True(scan.Read.Count >= 85,
-            $"只扫到 {scan.Read.Count} 个「没接线但有读点」的输入框 —— 扫描面可能塌了（阶段 199 实测 92 个）");
+        Assert.True(scan.Read.Count >= 70,
+            $"只扫到 {scan.Read.Count} 个「没接线但有读点」的输入框 —— 扫描面可能塌了（实测 78 个）");
 
         var offenders = scan.Unread
             .Where(b => !DisplayOnly.ContainsKey((b.File, b.Name)))

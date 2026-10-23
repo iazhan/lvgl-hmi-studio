@@ -33,24 +33,8 @@ public class ActionHandlerReadInventoryTests
     private static readonly Entry[] Entries =
     {
         // ── 已驱动：DeviceManagerView（阶段 205/206：注入缝补齐后 13 个全驱动）──
-        new("DeviceManagerView.axaml", "TxtHost", "DeviceManagerInputReadFaceTests.cs", "假通道工厂记 TCP 参数"),
-        new("DeviceManagerView.axaml", "TxtTcpPort", "DeviceManagerInputReadFaceTests.cs", "同上（含非法值回退 23 的口径）"),
-        new("DeviceManagerView.axaml", "TxtBaudRate", "DeviceManagerInputReadFaceTests.cs", "假工厂记串口参数（含回退默认波特率）"),
-        new("DeviceManagerView.axaml", "TxtLocalVersion", "DeviceManagerInputReadFaceTests.cs", "假更新服务记本地版本"),
-        new("DeviceManagerView.axaml", "TxtHmiSwu", "DeviceManagerInputReadFaceTests.cs", "假更新服务记 .swu 路径"),
-        new("DeviceManagerView.axaml", "TxtFwSwu", "DeviceManagerInputReadFaceTests.cs", "假刷写器记固件包路径"),
-        new("DeviceManagerView.axaml", "TxtHmiLib", "DeviceManagerInputReadFaceTests.cs", "真打包器产出 hmi-<版本>.swu"),
-        new("DeviceManagerView.axaml", "TxtOutputDir", "DeviceManagerInputReadFaceTests.cs", "同上（产出目录来自这一格）"),
-        new("DeviceManagerView.axaml", "TxtPkgVersion", "DeviceManagerInputReadFaceTests.cs", "同上（包名里的版本来自这一格）"),
-        new("DeviceManagerView.axaml", "TxtFelTool", "DeviceManagerInputReadFaceTests.cs", "假刷写器记 FEL 三格"),
-        new("DeviceManagerView.axaml", "TxtFelImage", "DeviceManagerInputReadFaceTests.cs", "同上 ＋ 镜像不存在的校验分支"),
-        new("DeviceManagerView.axaml", "TxtFelArgs", "DeviceManagerInputReadFaceTests.cs", "同上（参数模板）"),
 
         // ── 已驱动：DownloadToHmiView（阶段 207：补 IHmiDeployService ＋ 通道工厂两条缝）──
-        new("DownloadToHmiView.axaml", "TxtHost", "DownloadToHmiInputReadFaceTests.cs", "假通道工厂记 TCP 参数"),
-        new("DownloadToHmiView.axaml", "TxtTcpPort", "DownloadToHmiInputReadFaceTests.cs", "同上"),
-        new("DownloadToHmiView.axaml", "TxtBaudRate", "DownloadToHmiInputReadFaceTests.cs", "假工厂记串口参数"),
-        new("DownloadToHmiView.axaml", "TxtRemoteDir", "DownloadToHmiInputReadFaceTests.cs", "假部署服务记目标目录（含**空白 ⇒ 回退默认**：#95 的判据）"),
 
         // ── 已驱动：三个搜索框（阶段 200）──
 
@@ -167,8 +151,8 @@ public class ActionHandlerReadInventoryTests
             "台账里这些条目在扫描面里对不上（框改名/接线了/读点搬家了）：\n  "
             + string.Join("\n  ", ghosts));
 
-        Assert.True(Entries.Length >= 21,
-            $"台账只剩 {Entries.Length} 条 —— 阶段 210 实测 21 条（13 DeviceManager 除只读展示 ＋ 4 DownloadToHmi ＋ 4 AiIcon ＋ TagMonitor），面可能塌了");
+        Assert.True(Entries.Length >= 5,
+            $"台账只剩 {Entries.Length} 条 —— 实测 5 条（13 DeviceManager ＋ 4 DownloadToHmi 两条台账随视图移除；余 AiIcon 4 ＋ TagMonitor），面可能塌了");
 
         // 扫描口径自检：**可写**的 `TxtWriteValue` 必须在面内；**只读**的 `OutputLog` 必须在面外
         Assert.True(scan.TryGetValue("TagMonitorView.axaml", out var tagMonitor)
@@ -216,7 +200,7 @@ public class ActionHandlerReadInventoryTests
         //   真要登记，得先确认"连假实现也观测不到"，并把理由写足（阶段 210 就抓到一条**登记错了**的：
         //   `TagMonitorView.TxtWriteValue` 当时写的是"要模拟器/设备侧的注入缝"，而 `RuntimeBindingEngine`
         //   本来就吃 `IRuntimeValueSource` —— 登记理由必须**验过**）。
-        Assert.True(driven >= 21, $"只有 {driven} 条已驱动 —— 阶段 210 实测 21 条");
+        Assert.True(driven >= 5, $"只有 {driven} 条已驱动 —— 实测 5 条（DeviceManager / DownloadToHmi 两组随旧路径移除）");
         Assert.True(registered == 0,
             "有框被登记为「不可驱动」—— 先验一遍理由（阶段 210 的经验：有一条其实早就可驱动）："
             + string.Join(", ", Entries.Where(e => e.JudgeFile is null).Select(e => e.View + "::" + e.Name)));

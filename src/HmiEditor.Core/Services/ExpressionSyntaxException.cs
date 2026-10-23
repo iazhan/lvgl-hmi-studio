@@ -19,7 +19,8 @@ namespace HmiEditor.Core.Services;
 /// <c>expr.syntax.</c>），是仓库既定约定。</para>
 ///
 /// <para><b><see cref="Exception.Message"/> 保留中文回落</b>（= <see cref="ExpressionSyntaxError.Message"/>）：
-/// 它是任何日志/兜底打印里的可读信息，也是 <c>CodeGenerator.Screen.cs</c> 写进产物注释的那一份。
+/// 它是任何日志/兜底打印里的可读信息。（removed：C 代码生成器写进产物注释的那一份已随
+/// 导出路径删除。）
 /// 换成英文原文或码名都是退步。</para>
 /// </summary>
 public sealed class ExpressionSyntaxException : Exception

@@ -1,0 +1,21 @@
+{
+  "_comment": "系统变量（46 §8.4）：tag id 从 60000 起预留，运行时只读。编辑器按 name 映射到 id，导出时直接写 id。",
+  "base": 60000,
+  "vars": [
+    {"id": 60000, "name": "sys.time",      "type": "string", "desc": "当前时间 HH:MM:SS"},
+    {"id": 60001, "name": "sys.date",      "type": "string", "desc": "当前日期 YYYY-MM-DD"},
+    {"id": 60002, "name": "sys.week",      "type": "string", "desc": "星期（周一…周日）"},
+    {"id": 60003, "name": "sys.hour",      "type": "u16",    "desc": "时 0-23"},
+    {"id": 60004, "name": "sys.minute",    "type": "u16",    "desc": "分 0-59"},
+    {"id": 60005, "name": "sys.second",    "type": "u16",    "desc": "秒 0-59"},
+    {"id": 60006, "name": "sys.year",      "type": "u16",    "desc": "年（四位数）"},
+    {"id": 60007, "name": "sys.month",     "type": "u16",    "desc": "月 1-12"},
+    {"id": 60008, "name": "sys.day",       "type": "u16",    "desc": "日 1-31"},
+    {"id": 60009, "name": "sys.uptime",    "type": "u32",    "desc": "开机秒数"},
+    {"id": 60010, "name": "sys.user",      "type": "string", "desc": "当前登录用户名，未登录为空"},
+    {"id": 60011, "name": "sys.scr",       "type": "string", "desc": "当前页 id"},
+    {"id": 60012, "name": "sys.lang",      "type": "string", "desc": "当前语言代码"},
+    {"id": 60013, "name": "sys.alm",       "type": "u16",    "desc": "活动报警数"},
+    {"id": 60014, "name": "sys.alm_unack", "type": "u16",    "desc": "未确认报警数"}
+  ]
+}

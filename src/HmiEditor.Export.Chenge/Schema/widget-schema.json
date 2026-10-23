@@ -1,0 +1,3136 @@
+{
+  "$schema": "chenge-hmi/widget-schema@1",
+  "version": "1.0",
+  "frozen_at": "2026-10-21",
+  "doc": "控件契约 v1 的唯一真源。docs/chenge-rt/37 的属性表由它生成，loader 用它校验属性名。改动规则见 docs/adr/0004、docs/adr/0006；决定理由见 docs/chenge-rt/44。",
+  "conventions": {
+    "prop": {
+      "type": "int | float | bool | string | color | enum | points | array | object",
+      "default": "缺省值；null 表示无缺省（不写就不生效）",
+      "min/max": "数值或长度范围，越界在加载期报错",
+      "enum": "可选值列表",
+      "unit": "单位说明，仅文档用",
+      "status": "done = 已实现；planned = 契约已定、实现后置（加载期报「已定义但未实现」）",
+      "desc": "一句话说明，进 37 的属性表"
+    },
+    "color": "#RRGGBB；不接受颜色名",
+    "points": "[[x,y],...]，相对控件左上角，2..64 个点"
+  },
+  "common": {
+    "x": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 4096,
+      "desc": "左上角横坐标（相对父容器）"
+    },
+    "y": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 4096,
+      "desc": "左上角纵坐标（相对父容器）"
+    },
+    "w": {
+      "type": "int",
+      "default": 0,
+      "min": 1,
+      "max": 4096,
+      "desc": "宽"
+    },
+    "h": {
+      "type": "int",
+      "default": 0,
+      "min": 1,
+      "max": 4096,
+      "desc": "高"
+    },
+    "visible": {
+      "type": "bool",
+      "default": true,
+      "desc": "是否显示"
+    },
+    "enabled": {
+      "type": "bool",
+      "default": true,
+      "desc": "是否可操作；为假时按 off_style 变灰或隐藏"
+    },
+    "opacity": {
+      "type": "int",
+      "default": 255,
+      "min": 0,
+      "max": 255,
+      "desc": "不透明度 0..255"
+    },
+    "rotation": {"type": "int", "default": 0, "min": 0, "max": 359, "desc": "旋转角度（adr/0019）：图片与图元任意角；文本类仅 0/90/180/270 且不超过 256×256；容器禁止"},
+    "mirror_x": {"type": "bool", "default": false, "desc": "水平镜像（适用边界同 rotation）"},
+    "mirror_y": {"type": "bool", "default": false, "desc": "垂直镜像（适用边界同 rotation）"},
+    "z": {
+      "type": "int",
+      "default": 0,
+      "min": -128,
+      "max": 128,
+      "desc": "叠放顺序，大的在上"
+    },
+    "bg_color": {
+      "type": "color",
+      "default": null,
+      "desc": "背景色；不写则透明（沿用父容器）"
+    },
+    "border_color": {
+      "type": "color",
+      "default": null,
+      "desc": "边框色"
+    },
+    "border_width": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 20,
+      "desc": "边框宽"
+    },
+    "radius": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "desc": "圆角半径"
+    },
+    "perm": {
+      "type": "object",
+      "default": null,
+      "desc": "显现/可用控制：{tag,bit,when:visible|hidden}；带 level 需 auth 子系统",
+      "status": "planned"
+    },
+    "tooltip": {
+      "type": "string",
+      "default": null,
+      "min": 1,
+      "max": 64,
+      "desc": "长按 800ms 弹出这段文字（此时不触发 click/long_press）",
+      "status": "done"
+    },
+    "states": {
+      "type": "array",
+      "default": null,
+      "min": 1,
+      "max": 8,
+      "desc": "状态数组 [{when:{bit|eq|expr}, props:{10 个可覆盖键}}]，按顺序取第一条命中的"
+    }
+  },
+  "figure_common": {
+    "fill_color": {
+      "type": "color",
+      "default": null,
+      "desc": "填充色；不写则不填充"
+    },
+    "fill_opa": {
+      "type": "int",
+      "default": 255,
+      "min": 0,
+      "max": 255,
+      "desc": "填充不透明度；0 = 不填充"
+    },
+    "border_color": {
+      "type": "color",
+      "default": null,
+      "desc": "描边色"
+    },
+    "border_width": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 20,
+      "desc": "描边宽"
+    },
+    "radius": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "desc": "圆角（rect / round_rect / callout 有效）"
+    },
+    "points": {
+      "type": "points",
+      "default": null,
+      "desc": "顶点集，相对控件左上角的像素坐标，按控件框等比缩放"
+    },
+    "angle_start": {
+      "type": "int",
+      "default": 0,
+      "min": -360,
+      "max": 720,
+      "desc": "起始角（0° 在 3 点方向，顺时针）"
+    },
+    "angle_end": {
+      "type": "int",
+      "default": 360,
+      "min": -360,
+      "max": 720,
+      "desc": "结束角，允许超过 360"
+    },
+    "shade": {
+      "type": "object",
+      "default": null,
+      "desc": "渐变：{from,to,dir:v|h|d}",
+      "status": "planned"
+    },
+    "static": {
+      "type": "bool",
+      "default": true,
+      "desc": "参与静态图元离屏缓存",
+      "status": "planned"
+    }
+  },
+  "figures": {
+    "rect": {
+      "title": "矩形",
+      "props": {}
+    },
+    "round_rect": {
+      "title": "圆角矩形",
+      "props": {}
+    },
+    "circle": {
+      "title": "圆",
+      "props": {}
+    },
+    "ellipse": {
+      "title": "椭圆",
+      "props": {}
+    },
+    "arc": {
+      "title": "圆弧",
+      "props": {}
+    },
+    "pie": {
+      "title": "扇形",
+      "props": {}
+    },
+    "polygon": {
+      "title": "多边形",
+      "props": {}
+    },
+    "polyline": {
+      "title": "折线",
+      "props": {}
+    },
+    "line": {
+      "title": "细线",
+      "props": {}
+    },
+    "container": {
+      "title": "容器",
+      "props": {
+        "children": {
+          "type": "array",
+          "default": null,
+          "desc": "子控件数组，坐标相对容器",
+          "status": "done"
+        },
+        "layout": {
+          "type": "enum",
+          "default": "free",
+          "enum": [
+            "free"
+          ],
+          "desc": "布局方式（v1 只有 free）",
+          "status": "done"
+        }
+      }
+    },
+    "parallelogram": {
+      "title": "平行四边形",
+      "props": {
+        "skew": {
+          "type": "float",
+          "default": 0.25,
+          "min": 0,
+          "max": 1,
+          "desc": "倾斜比例"
+        }
+      }
+    },
+    "trapezoid": {
+      "title": "梯形",
+      "props": {
+        "top_w": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0.05,
+          "max": 1,
+          "desc": "上边宽 / 下边宽"
+        }
+      }
+    },
+    "diamond": {
+      "title": "菱形",
+      "props": {}
+    },
+    "octagon": {
+      "title": "八边形",
+      "props": {}
+    },
+    "hexagon": {
+      "title": "六边形",
+      "props": {}
+    },
+    "triangle": {
+      "title": "等腰三角形",
+      "props": {}
+    },
+    "right_triangle": {
+      "title": "直角三角形",
+      "props": {
+        "flip": {
+          "type": "enum",
+          "default": "bl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+          ],
+          "desc": "直角所在角"
+        }
+      }
+    },
+    "star5": {
+      "title": "五角星",
+      "props": {
+        "inner_ratio": {
+          "type": "float",
+          "default": 0.4,
+          "min": 0.1,
+          "max": 0.9,
+          "desc": "内半径 / 外半径"
+        }
+      }
+    },
+    "star": {
+      "title": "星形（芒星）",
+      "props": {
+        "spikes": {
+          "type": "int",
+          "default": 12,
+          "min": 5,
+          "max": 32,
+          "desc": "尖角数"
+        },
+        "inner_ratio": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 0.9,
+          "desc": "内半径 / 外半径"
+        }
+      }
+    },
+    "cross": {
+      "title": "十字形",
+      "props": {
+        "thickness": {
+          "type": "float",
+          "default": 0.3,
+          "min": 0.05,
+          "max": 0.9,
+          "desc": "笔画粗细比例"
+        }
+      }
+    },
+    "callout": {
+      "title": "注释框",
+      "props": {
+        "tail": {
+          "type": "enum",
+          "default": "bl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br",
+            "none"
+          ],
+          "desc": "指向角"
+        },
+        "tail_size": {
+          "type": "int",
+          "default": 12,
+          "min": 0,
+          "max": 80,
+          "desc": "尖角长度"
+        }
+      }
+    },
+    "cube": {
+      "title": "立方体",
+      "props": {
+        "depth": {
+          "type": "float",
+          "default": 0.3,
+          "min": 0.05,
+          "max": 0.6,
+          "desc": "透视深度比例"
+        },
+        "light": {
+          "type": "enum",
+          "default": "tl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+          ],
+          "desc": "受光面"
+        }
+      }
+    },
+    "wedge": {
+      "title": "楔形",
+      "props": {
+        "tip": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0.05,
+          "max": 0.95,
+          "desc": "尖角长度（占宽度比例）"
+        }
+      }
+    },
+    "tank": {
+      "title": "罐形",
+      "props": {
+        "wall": {
+          "type": "float",
+          "default": 0.08,
+          "min": 0,
+          "max": 0.3,
+          "desc": "壁厚比例"
+        },
+        "flare": {
+          "type": "float",
+          "default": 0.15,
+          "min": 0.05,
+          "max": 0.4,
+          "desc": "封头高度比例"
+        },
+        "top": {
+          "type": "bool",
+          "default": true,
+          "desc": "是否画顶盖"
+        }
+      }
+    },
+    "pipe_h": {
+      "title": "横管道",
+      "props": {
+        "wall": {
+          "type": "float",
+          "default": 0.15,
+          "min": 0.02,
+          "max": 0.45,
+          "desc": "管壁厚度比例"
+        }
+      }
+    },
+    "pipe_v": {
+      "title": "竖管道",
+      "props": {
+        "wall": {
+          "type": "float",
+          "default": 0.15,
+          "min": 0.02,
+          "max": 0.45,
+          "desc": "管壁厚度比例"
+        }
+      }
+    },
+    "pipe_elbow": {
+      "title": "弯曲管道",
+      "props": {
+        "bend": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0.1,
+          "max": 1,
+          "desc": "弯曲半径比例"
+        },
+        "wall": {
+          "type": "float",
+          "default": 0.15,
+          "min": 0.02,
+          "max": 0.45,
+          "desc": "管壁厚度比例"
+        }
+      }
+    },
+    "pipe_joint": {
+      "title": "管道接头",
+      "props": {
+        "flaps": {
+          "type": "int",
+          "default": 4,
+          "min": 2,
+          "max": 8,
+          "desc": "法兰螺栓数"
+        }
+      }
+    },
+    "valve_ball": {
+      "title": "球阀",
+      "props": {
+        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀芯转角"}
+      }
+    },
+    "valve_butterfly": {
+      "title": "蝶阀",
+      "props": {
+        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀板角度"}
+      }
+    },
+    "valve_gate": {
+      "title": "闸阀",
+      "props": {
+        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀板上提高度"}
+      }
+    },
+    "plane_concave": {
+      "title": "凹平面",
+      "props": {
+        "light": {
+          "type": "enum",
+          "default": "tc",
+          "enum": [
+            "tl",
+            "tc",
+            "tr",
+            "bl",
+            "bc",
+            "br"
+          ],
+          "desc": "高光方向"
+        }
+      }
+    },
+    "plane_convex": {
+      "title": "凸平面",
+      "props": {
+        "light": {
+          "type": "enum",
+          "default": "tc",
+          "enum": [
+            "tl",
+            "tc",
+            "tr",
+            "bl",
+            "bc",
+            "br"
+          ],
+          "desc": "高光方向"
+        }
+      }
+    },
+    "plane_groove": {
+      "title": "凹槽平面",
+      "props": {
+        "groove_w": {
+          "type": "float",
+          "default": 0.3,
+          "min": 0.05,
+          "max": 0.9,
+          "desc": "槽宽比例"
+        }
+      }
+    },
+    "arrow": {
+      "title": "箭头",
+      "props": {
+        "head": {
+          "type": "float",
+          "default": 0.3,
+          "min": 0.05,
+          "max": 0.8,
+          "desc": "箭头长度比例"
+        },
+        "direction": {
+          "type": "enum",
+          "default": "r",
+          "enum": [
+            "l",
+            "r",
+            "u",
+            "d"
+          ],
+          "desc": "指向"
+        }
+      }
+    },
+    "arrow_thick": {
+      "title": "粗箭头",
+      "props": {
+        "head": {
+          "type": "float",
+          "default": 0.35,
+          "min": 0.05,
+          "max": 0.8,
+          "desc": "箭头长度比例"
+        },
+        "direction": {
+          "type": "enum",
+          "default": "r",
+          "enum": [
+            "l",
+            "r",
+            "u",
+            "d"
+          ],
+          "desc": "指向"
+        }
+      }
+    },
+    "arrow_thin": {
+      "title": "细箭头",
+      "props": {
+        "head": {
+          "type": "float",
+          "default": 0.25,
+          "min": 0.05,
+          "max": 0.8,
+          "desc": "箭头长度比例"
+        },
+        "direction": {
+          "type": "enum",
+          "default": "r",
+          "enum": [
+            "l",
+            "r",
+            "u",
+            "d"
+          ],
+          "desc": "指向"
+        }
+      }
+    },
+    "ball3d": {
+      "title": "三维圆球",
+      "props": {
+        "light": {
+          "type": "enum",
+          "default": "tl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br",
+            "tc",
+            "bc"
+          ],
+          "desc": "高光方向"
+        }
+      }
+    },
+    "torus3d": {
+      "title": "三维圆环",
+      "props": {
+        "thickness": {
+          "type": "float",
+          "default": 0.25,
+          "min": 0.05,
+          "max": 0.45,
+          "desc": "环粗细比例"
+        },
+        "light": {
+          "type": "enum",
+          "default": "tl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+          ],
+          "desc": "高光方向"
+        }
+      }
+    },
+    "cone3d": {
+      "title": "三维椎体",
+      "props": {
+        "light": {
+          "type": "enum",
+          "default": "tl",
+          "enum": [
+            "tl",
+            "tr",
+            "bl",
+            "br"
+          ],
+          "desc": "高光方向"
+        }
+      }
+    }
+  },
+  "widgets": {
+    "label": {
+      "title": "文本",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 512,
+          "desc": "显示的文字；支持 {{tag:0}} 与 {{tag:0|%.1f}} 占位符"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 48,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        },
+        "font_style": {
+          "type": "enum",
+          "default": "normal",
+          "enum": [
+            "normal",
+            "bold",
+            "italic",
+            "underline"
+          ],
+          "desc": "字形",
+          "status": "planned"
+        },
+        "line_spacing": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 40,
+          "desc": "行距（0 = 字体的自然行高）",
+          "status": "planned"
+        },
+        "letter_spacing": {
+          "type": "int",
+          "default": 0,
+          "min": -4,
+          "max": 40,
+          "desc": "字距",
+          "status": "planned"
+        },
+        "wrap": {
+          "type": "bool",
+          "default": true,
+          "desc": "超宽是否换行",
+          "status": "planned"
+        },
+        "decimals": {
+          "type": "int",
+          "default": -1,
+          "min": -1,
+          "max": 6,
+          "desc": "占位符数值的小数位（-1 = 用变量的）"
+        }
+      },
+      "bind": [
+        "text",
+        "color",
+        "bg_color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click",
+        "press",
+        "release"
+      ]
+    },
+    "value": {
+      "title": "数值",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "小数位（不写则用变量上的）"
+        },
+        "unit": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 8,
+          "desc": "单位（不写则用变量上的）"
+        },
+        "prefix": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 8,
+          "desc": "前缀文字",
+          "status": "planned"
+        },
+        "suffix": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 8,
+          "desc": "后缀文字",
+          "status": "planned"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 20,
+          "min": 10,
+          "max": 48,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
+        }
+      },
+      "bind": [
+        "value",
+        "color",
+        "bg_color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click",
+        "press",
+        "release"
+      ]
+    },
+    "enum_text": {
+      "title": "枚举文本",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "map": {
+          "type": "array",
+          "default": null,
+          "desc": "内联映射 [{v,text,color}]，1..16 项；不写则回落到变量的 enum"
+        },
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 32,
+          "desc": "首次显示的文字（之后由绑定刷新）"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 48,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "默认文字颜色"
+        }
+      },
+      "bind": [
+        "value",
+        "color",
+        "bg_color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "button": {
+      "title": "按钮",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 32,
+          "desc": "按钮文字（按下态可另给 pressed.text）"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#FFFFFF",
+          "desc": "文字颜色"
+        },
+        "pressed": {
+          "type": "object",
+          "default": null,
+          "desc": "按下态覆盖 {bg_color,border_color,text_color,text}"
+        },
+        "hold_ms": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5000,
+          "desc": "长按生效门槛：按住不足此时长的 click 被忽略"
+        },
+        "long_press_ms": {
+          "type": "int",
+          "default": 800,
+          "min": 300,
+          "max": 5000,
+          "desc": "长按判定阈值：按住超过此时长即执行 long_press 动作，松开那次 click 不再执行"
+        },
+        "off_style": {
+          "type": "enum",
+          "default": "dim",
+          "enum": [
+            "dim",
+            "hide"
+          ],
+          "desc": "enabled 为假时的表现"
+        },
+        "confirm": {
+          "type": "object",
+          "default": null,
+          "desc": "二次确认 {text,yes,no,wait_ms}：点下去先弹模态框，确定才执行 click 动作；yes/no 省略时用内置「确定/取消」，wait_ms>0 超时算取消"
+        }
+      },
+      "bind": [
+        "text",
+        "color",
+        "bg_color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click",
+        "press",
+        "release",
+        "long_press"
+      ]
+    },
+    "switch": {
+      "title": "开关",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "color_on": {
+          "type": "color",
+          "default": "#38C172",
+          "desc": "打开时的底色"
+        },
+        "color_off": {
+          "type": "color",
+          "default": "#4A5A6A",
+          "desc": "关闭时的底色"
+        },
+        "text_on": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 4,
+          "desc": "打开时显示的文字"
+        },
+        "text_off": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 4,
+          "desc": "关闭时显示的文字"
+        },
+        "knob_color": {
+          "type": "color",
+          "default": "#FFFFFF",
+          "desc": "滑块颜色"
+        }
+      },
+      "bind": [
+        "value",
+        "checked",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change",
+        "click"
+      ]
+    },
+    "checkbox": {
+      "title": "勾选框",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "text": {"type": "string", "default": "", "min": 0, "max": 32, "desc": "文字"},
+        "font_size": {"type": "int", "default": 16, "min": 8, "max": 48, "desc": "字号（manifest.font_sizes 里的一档）"},
+        "color": {"type": "color", "default": "#E6EDF3", "desc": "文字颜色"},
+        "checked": {"type": "bool", "default": false, "desc": "初始是否勾选（bind.checked 覆盖它）"},
+        "box_color": {"type": "color", "default": "#2F70D0", "desc": "勾选后的方块颜色"}
+      },
+      "bind": ["checked", "text", "visible", "enabled"],
+      "events": ["change", "click"]
+    },
+    "spinner": {
+      "title": "加载圈",
+      "group": "扩展",
+      "status": "done",
+      "props": {
+        "color": {"type": "color", "default": "#2F70D0", "desc": "弧线颜色"},
+        "arc_width": {"type": "int", "default": 4, "min": 1, "max": 24, "desc": "弧线宽度"},
+        "arc_len": {"type": "int", "default": 200, "min": 10, "max": 359, "desc": "弧长（度）"},
+        "speed_ms": {"type": "int", "default": 1000, "min": 100, "max": 10000, "desc": "转一圈的毫秒数"}
+      },
+      "bind": ["visible", "enabled"],
+      "events": []
+    },
+    "keyboard": {
+      "title": "键盘",
+      "group": "扩展",
+      "status": "done",
+      "props": {
+        "target": {"type": "string", "default": "", "min": 0, "max": 31, "desc": "要输入的 input 控件 id（必填）；键位按它的类型自动选数字/文本"},
+        "title": {"type": "string", "default": "", "min": 0, "max": 32, "desc": "顶部提示，一般写变量名"}
+      },
+      "bind": ["visible", "enabled"],
+      "events": []
+    },
+    "tabview": {
+      "title": "选项卡",
+      "group": "扩展",
+      "status": "done",
+      "props": {
+        "tabs": {"type": "array", "default": null, "desc": "[{title, widgets:[...]}]，最多 8 个；子控件坐标相对页签内容区，并计入单页 150 上限"},
+        "tab_pos": {"type": "enum", "default": "top", "enum": ["top", "bottom", "left", "right"], "desc": "页签位置"},
+        "tab_h": {"type": "int", "default": 40, "min": 24, "max": 80, "desc": "页签高度（左右位置时是宽度）"}
+      },
+      "bind": ["visible", "enabled"],
+      "events": ["change"]
+    },
+    "knob": {
+      "title": "旋钮",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "min": {"type": "int", "default": 0, "desc": "量程下限"},
+        "max": {"type": "int", "default": 100, "desc": "量程上限"},
+        "step": {"type": "float", "default": 1, "min": 0, "max": 1000, "desc": "松手吸附的刻度间隔（0 = 不吸附）"},
+        "color": {"type": "color", "default": "#2F70D0", "desc": "已选弧段颜色"},
+        "arc_width": {"type": "int", "default": 10, "min": 2, "max": 30, "desc": "弧线宽度"},
+        "decimals": {"type": "int", "default": 0, "min": 0, "max": 3, "desc": "中心读数的小数位"},
+        "show_value": {"type": "bool", "default": true, "desc": "是否显示中心读数"}
+      },
+      "bind": ["value", "visible", "enabled"],
+      "events": ["change", "press", "release"]
+    },
+    "lamp": {
+      "title": "指示灯",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "color": {
+          "type": "color",
+          "default": "#38C172",
+          "desc": "灯色（在 states/ranges 未命中时使用）"
+        },
+        "ranges": {
+          "type": "array",
+          "default": null,
+          "desc": "按值换色 [{lt,color},{color}]"
+        },
+        "size": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 200,
+          "desc": "灯珠直径（0 = 按控件尺寸取小者）"
+        }
+      },
+      "bind": [
+        "color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "bar": {
+      "title": "进度条",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "direction": {
+          "type": "enum",
+          "default": "h",
+          "enum": [
+            "h",
+            "v"
+          ],
+          "desc": "方向"
+        },
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "量程下限（不写则用变量上的）"
+        },
+        "max": {
+          "type": "int",
+          "default": 100,
+          "desc": "量程上限（不写则用变量上的）"
+        },
+        "color": {
+          "type": "color",
+          "default": "#4EA1FF",
+          "desc": "填充色"
+        },
+        "ranges": {
+          "type": "array",
+          "default": null,
+          "desc": "按值分段换色",
+          "status": "planned"
+        },
+        "target": {
+          "type": "object",
+          "default": null,
+          "desc": "目标线：常量或 {tag}，画一条标记线",
+          "status": "planned"
+        },
+        "show_percent": {
+          "type": "bool",
+          "default": false,
+          "desc": "显示百分比"
+        },
+        "show_value": {
+          "type": "bool",
+          "default": false,
+          "desc": "显示工程值",
+          "status": "planned"
+        },
+        "decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "读数小数位",
+          "status": "planned"
+        }
+      },
+      "bind": [
+        "value",
+        "color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "gauge": {
+      "title": "仪表",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "style": {
+          "type": "enum",
+          "default": "arc",
+          "enum": [
+            "arc",
+            "pointer"
+          ],
+          "desc": "弧样式 / 指针样式"
+        },
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "量程下限"
+        },
+        "max": {
+          "type": "int",
+          "default": 100,
+          "desc": "量程上限"
+        },
+        "color": {
+          "type": "color",
+          "default": "#4EA1FF",
+          "desc": "弧/指针颜色"
+        },
+        "ticks": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 11,
+          "desc": "主刻度线数量（含两端），0 = 不画"
+        },
+        "tick_len": {
+          "type": "int",
+          "default": 6,
+          "min": 0,
+          "max": 20,
+          "desc": "刻度线长度",
+          "status": "planned"
+        },
+        "arc_width": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 40,
+          "desc": "弧宽（0 = 按控件尺寸自动）",
+          "status": "planned"
+        },
+        "ranges": {
+          "type": "array",
+          "default": null,
+          "desc": "报警色段 [{lt,color},{color}]",
+          "status": "planned"
+        },
+        "needle_len": {
+          "type": "float",
+          "default": 0.8,
+          "min": 0.3,
+          "max": 1,
+          "desc": "指针长度比例（pointer）",
+          "status": "planned"
+        },
+        "needle_width": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 12,
+          "desc": "指针宽度（pointer）",
+          "status": "planned"
+        },
+        "center_radius": {
+          "type": "int",
+          "default": 6,
+          "min": 0,
+          "max": 20,
+          "desc": "中心圆半径（pointer）",
+          "status": "planned"
+        },
+        "decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "中心读数小数位"
+        },
+        "show_value": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示中心读数"
+        },
+        "label_pos": {
+          "type": "enum",
+          "default": "inside",
+          "enum": [
+            "inside",
+            "outside",
+            "none"
+          ],
+          "desc": "两端数值的位置",
+          "status": "planned"
+        }
+      },
+      "bind": [
+        "value",
+        "color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "input": {
+      "title": "输入框",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "mode": {
+          "type": "enum",
+          "default": "num",
+          "enum": [
+            "num",
+            "text",
+            "password"
+          ],
+          "desc": "输入类型"
+        },
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "允许最小值"
+        },
+        "max": {
+          "type": "int",
+          "default": 1000000,
+          "desc": "允许最大值"
+        },
+        "decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "小数位"
+        },
+        "max_len": {
+          "type": "int",
+          "default": 8,
+          "min": 1,
+          "max": 32,
+          "desc": "最多字符数"
+        },
+        "step": {
+          "type": "float",
+          "default": 0,
+          "min": 0,
+          "max": 1000,
+          "desc": "写回取整步长（0 = 不取整）"
+        },
+        "commit": {
+          "type": "enum",
+          "default": "ok",
+          "enum": [
+            "ok",
+            "blur"
+          ],
+          "desc": "写回时机：按 OK 或失焦",
+          "status": "planned"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled",
+        "color"
+      ],
+      "events": [
+        "change",
+        "click"
+      ]
+    },
+    "slider": {
+      "title": "滑块",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "量程下限"
+        },
+        "max": {
+          "type": "int",
+          "default": 100,
+          "desc": "量程上限"
+        },
+        "step": {
+          "type": "float",
+          "default": 0,
+          "min": 0,
+          "max": 1000,
+          "desc": "写回取整步长"
+        },
+        "color": {
+          "type": "color",
+          "default": "#4EA1FF",
+          "desc": "滑块颜色"
+        },
+        "show_value": {
+          "type": "bool",
+          "default": true,
+          "desc": "是否显示当前值",
+          "status": "planned"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change"
+      ]
+    },
+    "combobox": {
+      "title": "下拉框",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "options": {
+          "type": "array",
+          "default": null,
+          "desc": "静态选项文字数组"
+        },
+        "options_tag": {
+          "type": "int",
+          "default": -1,
+          "desc": "选项来自这个变量的 enum"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change",
+        "click"
+      ]
+    },
+    "image": {
+      "title": "图片",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "src": {
+          "type": "string",
+          "default": "",
+          "min": 1,
+          "max": 48,
+          "desc": "assets/img 下的 .bin 文件名"
+        },
+        "scale": {
+          "type": "enum",
+          "default": "fit",
+          "enum": [
+            "fit",
+            "actual"
+          ],
+          "desc": "拉伸到框内 / 按原始像素显示"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "shape": {
+      "title": "图元",
+      "group": "基础",
+      "status": "done",
+      "props": {
+        "kind": {
+          "type": "enum",
+          "default": "rect",
+          "enum": [
+            "rect",
+            "round_rect",
+            "circle",
+            "ellipse",
+            "arc",
+            "pie",
+            "polygon",
+            "polyline",
+            "line",
+            "container",
+            "parallelogram",
+            "trapezoid",
+            "diamond",
+            "octagon",
+            "hexagon",
+            "triangle",
+            "right_triangle",
+            "star5",
+            "star",
+            "cross",
+            "callout",
+            "cube",
+            "wedge",
+            "tank",
+            "pipe_h",
+            "pipe_v",
+            "pipe_elbow",
+            "pipe_joint",
+            "plane_concave",
+            "plane_convex",
+            "plane_groove",
+            "arrow",
+            "arrow_thick",
+            "arrow_thin",
+            "ball3d",
+            "torus3d",
+            "cone3d"
+          ],
+          "desc": "选哪一种图元（37 种，属性见 figure_common 与各自的 kind 参数）"
+        },
+        "children": {
+          "type": "array",
+          "default": null,
+          "desc": "子控件数组（仅 kind=container），坐标相对容器，参与绑定与事件"
+        }
+      },
+      "bind": [
+        "fill_color",
+        "bg_color",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click",
+        "press",
+        "release"
+      ]
+    },
+    "state_image": {
+      "title": "状态图",
+      "group": "扩展",
+      "requires": "widgets_ext",
+      "status": "done",
+      "props": {
+        "images": {
+          "type": "array",
+          "default": null,
+          "desc": "值到图片的映射 [{v,src}]，1..16 项，v 不可重复"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "table": {
+      "title": "表格",
+      "group": "扩展",
+      "requires": "table",
+      "status": "done",
+      "props": {
+        "row_h": {"type": "int", "default": 0, "min": 0, "max": 200, "desc": "固定行高（0 = 按控件高度等分）"},
+        "col_w": {"type": "array", "default": null, "desc": "各列宽度数组（个数须等于 cols；缺省等分）"},
+        "rows": {
+          "type": "int",
+          "default": 3,
+          "min": 1,
+          "max": 10,
+          "desc": "行数（含表头）"
+        },
+        "cols": {
+          "type": "int",
+          "default": 3,
+          "min": 1,
+          "max": 8,
+          "desc": "列数"
+        },
+        "header": {
+          "type": "bool",
+          "default": true,
+          "desc": "第 0 行是表头"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 28,
+          "desc": "字号"
+        },
+        "cells": {
+          "type": "array",
+          "default": null,
+          "desc": "单元格 [{r,c,text|bind}]"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "qrcode": {
+      "title": "二维码",
+      "group": "扩展",
+      "requires": "widgets_ext",
+      "status": "done",
+      "props": {
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 128,
+          "desc": "静态内容；绑字符串变量时可为空"
+        },
+        "dark_color": {
+          "type": "color",
+          "default": "#000000",
+          "desc": "深色"
+        },
+        "light_color": {
+          "type": "color",
+          "default": "#FFFFFF",
+          "desc": "浅色"
+        }
+      },
+      "bind": [
+        "text",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "pipe": {
+      "title": "管道流动",
+      "group": "扩展",
+      "requires": "pipe",
+      "props": {
+        "direction": {
+          "type": "enum",
+          "default": "h",
+          "enum": [
+            "h",
+            "v"
+          ],
+          "desc": "方向"
+        },
+        "wall": {
+          "type": "float",
+          "default": 0.2,
+          "min": 0.05,
+          "max": 0.45,
+          "desc": "管壁厚度比例"
+        },
+        "color": {
+          "type": "color",
+          "default": "#4EA1FF",
+          "desc": "流动块颜色"
+        },
+        "channel_color": {
+          "type": "color",
+          "default": "",
+          "desc": "通道底色（空 = 取 color 提亮后的浅色）"
+        },
+        "wall_color": {
+          "type": "color",
+          "default": "",
+          "desc": "管壁颜色（空 = 用 border_color）"
+        },
+        "flow_ms": {
+          "type": "int",
+          "default": 120,
+          "min": 40,
+          "max": 2000,
+          "desc": "一个流动块走完全程的时间（毫秒）"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled",
+        "value"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "frame_anim": {
+      "title": "序列帧",
+      "group": "扩展",
+      "requires": "widgets_ext",
+      "props": {
+        "frames": {
+          "type": "array",
+          "default": null,
+          "desc": "帧图片列表（assets/img 下的 .bin）"
+        },
+        "interval_ms": {
+          "type": "int",
+          "default": 120,
+          "min": 40,
+          "max": 5000,
+          "desc": "每帧时长"
+        },
+        "loop": {
+          "type": "bool",
+          "default": true,
+          "desc": "是否循环"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled",
+        "running"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "realtime_curve": {
+      "title": "实时曲线",
+      "group": "数据",
+      "requires": "curves",
+      "status": "done",
+      "props": {
+        "curves": {
+          "type": "array",
+          "default": null,
+          "desc": "1..4 条 {tag|expr, color, label, axis}"
+        },
+        "sample_ms": {
+          "type": "int",
+          "default": 1000,
+          "min": 200,
+          "max": 60000,
+          "desc": "采样周期"
+        },
+        "span_s": {
+          "type": "int",
+          "default": 60,
+          "min": 1,
+          "max": 3600,
+          "desc": "窗口宽度（秒）；图点数 = span_s*1000/sample_ms，钳到 2..300"
+        },
+        "history_s": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 7200,
+          "desc": "可回看时长（秒），0 = 不能拖动"
+        },
+        "y_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "左轴下限"
+        },
+        "y_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "左轴上限"
+        },
+        "y2_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "右轴下限（有曲线用 axis:right 时生效）"
+        },
+        "y2_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "右轴上限"
+        },
+        "y_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "刻度小数位"
+        },
+        "y_digits": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 10,
+          "desc": "刻度总位数（右对齐补空格）"
+        },
+        "y2_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "右轴刻度小数位"
+        },
+        "y2_digits": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 10,
+          "desc": "右轴刻度总位数"
+        },
+        "y_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "Y 主分隔数"
+        },
+        "y_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "Y 次分隔数"
+        },
+        "x_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "X 主分隔数"
+        },
+        "x_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "X 次分隔数"
+        },
+        "x_format": {
+          "type": "enum",
+          "default": "rel",
+          "enum": [
+            "rel",
+            "elapsed",
+            "clock",
+            "clock_short"
+          ],
+          "desc": "X 轴标签格式"
+        },
+        "x_label_step": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 10,
+          "desc": "每隔几个主分隔标一次；0 = 按宽度自动抽稀"
+        },
+        "grid": {
+          "type": "bool",
+          "default": true,
+          "desc": "辅助线"
+        },
+        "legend": {
+          "type": "bool",
+          "default": true,
+          "desc": "图例"
+        },
+        "axis_color": {
+          "type": "color",
+          "default": "#4A5A6A",
+          "desc": "轴线颜色"
+        },
+        "grid_color": {
+          "type": "color",
+          "default": "#2F3D4C",
+          "desc": "辅助线颜色"
+        },
+        "tick_color": {
+          "type": "color",
+          "default": "#9AA7B5",
+          "desc": "刻度短线颜色"
+        },
+        "label_color": {
+          "type": "color",
+          "default": "#C8D2DC",
+          "desc": "标签颜色"
+        },
+        "bg_color": {
+          "type": "color",
+          "default": "#141C26",
+          "desc": "绘图区底色"
+        },
+        "border_color": {
+          "type": "color",
+          "default": "#3A4A5A",
+          "desc": "绘图区边框"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 32,
+          "desc": "刻度与图例字号"
+        },
+        "show_axis": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示轴线"
+        },
+        "show_ticks": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示刻度短线"
+        },
+        "show_labels": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示刻度标签"
+        },
+        "direction": {
+          "type": "enum",
+          "default": "lr",
+          "enum": [
+            "lr"
+          ],
+          "desc": "数据生长方向（v1 只有从左到右）"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "history_curve": {
+      "title": "历史曲线",
+      "group": "数据",
+      "requires": "curves",
+      "status": "done",
+      "props": {
+        "group": {
+          "type": "string",
+          "default": "",
+          "min": 1,
+          "max": 31,
+          "desc": "trends.json 里的采集组 id"
+        },
+        "range": {
+          "type": "object",
+          "default": {
+            "last_min": 30
+          },
+          "desc": "绝对区间 {last_min} 或 {from,to}"
+        },
+        "refresh_ms": {
+          "type": "int",
+          "default": 5000,
+          "min": 0,
+          "max": 600000,
+          "desc": "重新读文件的周期，0 = 只读一次"
+        },
+        "curves": {
+          "type": "array",
+          "default": null,
+          "desc": "1..4 条 {tag, color, label, axis}"
+        },
+        "span_s": {
+          "type": "int",
+          "default": 900,
+          "min": 1,
+          "max": 3600,
+          "desc": "窗口宽度（秒）"
+        },
+        "x_format": {
+          "type": "enum",
+          "default": "clock",
+          "enum": [
+            "clock",
+            "clock_short",
+            "elapsed",
+            "rel"
+          ],
+          "desc": "X 轴时间格式"
+        },
+        "x_label_step": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 10,
+          "desc": "X 标签每隔几个主分隔标一个（0 = 自动抽稀）"
+        },
+        "y_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "左轴下限"
+        },
+        "y_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "左轴上限"
+        },
+        "y2_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "右轴下限"
+        },
+        "y2_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "右轴上限"
+        },
+        "y_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "左轴读数小数位"
+        },
+        "y_digits": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 8,
+          "desc": "左轴读数整数位（右对齐用）"
+        },
+        "y2_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "右轴读数小数位"
+        },
+        "y2_digits": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 8,
+          "desc": "右轴读数整数位"
+        },
+        "y_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "Y 主分隔数"
+        },
+        "y_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "Y 次分隔数"
+        },
+        "x_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "X 主分隔数"
+        },
+        "x_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "X 次分隔数"
+        },
+        "grid": {
+          "type": "bool",
+          "default": true,
+          "desc": "辅助线"
+        },
+        "legend": {
+          "type": "bool",
+          "default": true,
+          "desc": "图例"
+        },
+        "show_axis": {
+          "type": "bool",
+          "default": true,
+          "desc": "画轴线"
+        },
+        "show_ticks": {
+          "type": "bool",
+          "default": true,
+          "desc": "画刻度短线"
+        },
+        "show_labels": {
+          "type": "bool",
+          "default": true,
+          "desc": "画刻度标签"
+        },
+        "direction": {
+          "type": "enum",
+          "default": "lr",
+          "enum": [
+            "lr",
+            "rl"
+          ],
+          "desc": "拖动回看的方向"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 32,
+          "desc": "刻度字号"
+        },
+        "axis_color": {
+          "type": "color",
+          "default": "#4A5A6A",
+          "desc": "轴线颜色"
+        },
+        "grid_color": {
+          "type": "color",
+          "default": "#2F3D4C",
+          "desc": "辅助线颜色"
+        },
+        "tick_color": {
+          "type": "color",
+          "default": "#9AA7B5",
+          "desc": "刻度短线颜色"
+        },
+        "label_color": {
+          "type": "color",
+          "default": "#C8D2DC",
+          "desc": "刻度标签颜色"
+        },
+        "bg_color": {
+          "type": "color",
+          "default": "#141C26",
+          "desc": "绘图区背景"
+        },
+        "border_color": {
+          "type": "color",
+          "default": "#3A4A5A",
+          "desc": "绘图区边框"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "xy_curve": {
+      "title": "XY 曲线",
+      "group": "数据",
+      "requires": "curves",
+      "props": {
+        "x": {
+          "type": "object",
+          "default": null,
+          "desc": "X 值来源 {tag|expr}"
+        },
+        "y": {
+          "type": "object",
+          "default": null,
+          "desc": "Y 值来源 {tag|expr}"
+        },
+        "sample_ms": {
+          "type": "int",
+          "default": 1000,
+          "min": 200,
+          "max": 60000,
+          "desc": "采样周期"
+        },
+        "span_s": {
+          "type": "int",
+          "default": 60,
+          "min": 1,
+          "max": 3600,
+          "desc": "窗口宽度（秒）"
+        },
+        "dot": {
+          "type": "bool",
+          "default": true,
+          "desc": "画点"
+        },
+        "line": {
+          "type": "bool",
+          "default": false,
+          "desc": "连成线"
+        },
+        "x_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "X 轴下限"
+        },
+        "x_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "X 轴上限"
+        },
+        "y_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "Y 轴下限"
+        },
+        "y_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "Y 轴上限"
+        },
+        "grid": {
+          "type": "bool",
+          "default": true,
+          "desc": "辅助线"
+        },
+        "x_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "X 主分隔数"
+        },
+        "y_div": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 10,
+          "desc": "Y 主分隔数"
+        },
+        "x_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "X 次分隔数"
+        },
+        "y_minor": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 5,
+          "desc": "Y 次分隔数"
+        },
+        "x_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "X 刻度小数位"
+        },
+        "y_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "Y 刻度小数位"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 32,
+          "desc": "刻度字号"
+        },
+        "axis_color": {
+          "type": "color",
+          "default": "#4A5A6A",
+          "desc": "轴线颜色"
+        },
+        "grid_color": {
+          "type": "color",
+          "default": "#2F3D4C",
+          "desc": "辅助线颜色"
+        },
+        "tick_color": {
+          "type": "color",
+          "default": "#9AA7B5",
+          "desc": "刻度短线颜色"
+        },
+        "label_color": {
+          "type": "color",
+          "default": "#C8D2DC",
+          "desc": "刻度标签颜色"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "history_table": {
+      "title": "历史表格",
+      "group": "数据",
+      "requires": "table",
+      "props": {
+        "source": {
+          "type": "object",
+          "default": null,
+          "desc": "数据源 {group, last_min|from,to}"
+        },
+        "columns": {
+          "type": "array",
+          "default": null,
+          "desc": "列 [{key,label,w,decimals}]；key 取 time/level/name/value/text/state/ack 或某变量 tag"
+        },
+        "row_height": {
+          "type": "int",
+          "default": 26,
+          "min": 16,
+          "max": 60,
+          "desc": "行高"
+        },
+        "max_rows": {
+          "type": "int",
+          "default": 500,
+          "min": 10,
+          "max": 2000,
+          "desc": "最多显示的行数"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 28,
+          "desc": "字号"
+        },
+        "scrollbar": {
+          "type": "bool",
+          "default": true,
+          "desc": "右侧滚动条（数据区手指上下滚动）"
+        },
+        "refresh_ms": {
+          "type": "int",
+          "default": 5000,
+          "min": 0,
+          "max": 600000,
+          "desc": "重新读趋势文件的周期，0 = 只读一次"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "alarm_bar": {
+      "title": "报警条",
+      "group": "数据",
+      "requires": "alarm",
+      "props": {
+        "source": {
+          "type": "object",
+          "default": null,
+          "desc": "{alarm_group} 引用报警组（空 = 全部）"
+        },
+        "only_unacked": {
+          "type": "bool",
+          "default": true,
+          "desc": "只显示未确认"
+        },
+        "scroll": {
+          "type": "enum",
+          "default": "auto",
+          "enum": [
+            "auto",
+            "none"
+          ],
+          "desc": "自动循环 / 只显示最新"
+        },
+        "scroll_ms": {
+          "type": "int",
+          "default": 3000,
+          "min": 500,
+          "max": 60000,
+          "desc": "每条停留时长 / 跑马灯间隔"
+        },
+        "scroll_chars": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 32,
+          "desc": "跑马灯每次滚几个字符（0 = 不逐字滚动）"
+        },
+        "blink": {
+          "type": "bool",
+          "default": true,
+          "desc": "有未确认时闪烁"
+        },
+        "blink_ms": {
+          "type": "int",
+          "default": 600,
+          "min": 200,
+          "max": 5000,
+          "desc": "闪烁周期"
+        },
+        "show_date": {
+          "type": "bool",
+          "default": false,
+          "desc": "显示报警发生日期"
+        },
+        "show_time": {
+          "type": "bool",
+          "default": false,
+          "desc": "显示报警发生时间"
+        },
+        "date_format": {
+          "type": "string",
+          "default": "yyyy/MM/dd",
+          "min": 1,
+          "max": 15,
+          "desc": "日期格式（yyyy MM DD 组合 + 分隔符）"
+        },
+        "time_format": {
+          "type": "string",
+          "default": "hh:mm:ss",
+          "min": 1,
+          "max": 15,
+          "desc": "时间格式（hh mm ss 组合 + 分隔符）"
+        },
+        "order": {
+          "type": "enum",
+          "default": "newest_first",
+          "enum": [
+            "newest_first",
+            "newest_last"
+          ],
+          "desc": "先显示最新 / 最旧"
+        },
+        "normal_text": {
+          "type": "string",
+          "default": "系统正常",
+          "min": 0,
+          "max": 32,
+          "desc": "无报警时显示的文字"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "alarm_list": {
+      "title": "报警列表",
+      "group": "数据",
+      "requires": "alarm",
+      "props": {
+        "source": {
+          "type": "object",
+          "default": null,
+          "desc": "{alarm_group} 报警组（空 = 全部）"
+        },
+        "mode": {
+          "type": "enum",
+          "default": "active",
+          "enum": [
+            "active",
+            "history"
+          ],
+          "desc": "实时（活动表）/ 历史（事件文件）"
+        },
+        "filter": {
+          "type": "object",
+          "default": null,
+          "desc": "{group,level:'2'|'2~3',state:'unacked'|'acked',range:'1d'|'7d'|'30d'|'all'}"
+        },
+        "columns": {
+          "type": "array",
+          "default": null,
+          "desc": "列 [{key,label,w}]，key: id/date/time/name/type/event/value/limit/text/ack_time/end_time/duration/group/level/state/ack"
+        },
+        "group_by": {
+          "type": "enum",
+          "default": "none",
+          "enum": [
+            "none"
+          ],
+          "desc": "同等级合并（v1 只支持 none）"
+        },
+        "ack_on": {
+          "type": "enum",
+          "default": "click",
+          "enum": [
+            "click",
+            "dblclick",
+            "none"
+          ],
+          "desc": "点行确认（dblclick 暂按 click 处理）"
+        },
+        "blink": {
+          "type": "bool",
+          "default": true,
+          "desc": "未确认行闪烁"
+        },
+        "blink_ms": {
+          "type": "int",
+          "default": 600,
+          "min": 200,
+          "max": 5000,
+          "desc": "闪烁周期"
+        },
+        "order": {
+          "type": "enum",
+          "default": "newest_first",
+          "enum": [
+            "newest_first",
+            "newest_last"
+          ],
+          "desc": "新报警在上 / 在下"
+        },
+        "grid": {
+          "type": "enum",
+          "default": "all",
+          "enum": [
+            "all",
+            "rows",
+            "border",
+            "none"
+          ],
+          "desc": "表格线"
+        },
+        "max_rows": {
+          "type": "int",
+          "default": 500,
+          "min": 10,
+          "max": 2000,
+          "desc": "最多行数"
+        },
+        "row_height": {
+          "type": "int",
+          "default": 26,
+          "min": 16,
+          "max": 60,
+          "desc": "行高"
+        },
+        "scrollbar": {
+          "type": "bool",
+          "default": true,
+          "desc": "右侧滚动条（手指上下滚动）"
+        },
+        "refresh_ms": {
+          "type": "int",
+          "default": 500,
+          "min": 100,
+          "max": 60000,
+          "desc": "重新拉数据的周期"
+        },
+        "date_format": {
+          "type": "string",
+          "default": "yyyy/MM/dd",
+          "min": 1,
+          "max": 15,
+          "desc": "日期格式"
+        },
+        "time_format": {
+          "type": "string",
+          "default": "hh:mm:ss",
+          "min": 1,
+          "max": 15,
+          "desc": "时间格式"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 28,
+          "desc": "字号"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "recipe_table": {
+      "title": "配方表",
+      "group": "数据",
+      "requires": "recipe",
+      "props": {
+        "source": {
+          "type": "object",
+          "default": null,
+          "desc": "{recipe_group}"
+        },
+        "columns": {
+          "type": "array",
+          "default": null,
+          "desc": "列 [{key,label,w,editable,decimals}]；key = name / desc / 成员序号(\"0\"..\"31\")"
+        },
+        "show_unit": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示单位"
+        },
+        "row_height": {
+          "type": "int",
+          "default": 26,
+          "min": 16,
+          "max": 60,
+          "desc": "行高"
+        },
+        "scrollbar": {
+          "type": "bool",
+          "default": true,
+          "desc": "右侧滚动条（手指上下滚动）"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 14,
+          "min": 10,
+          "max": 28,
+          "desc": "字号"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "chart": {
+      "title": "图表",
+      "group": "数据",
+      "requires": "widgets_ext",
+      "props": {
+        "kind": {
+          "type": "enum",
+          "default": "bar",
+          "enum": [
+            "bar",
+            "pie",
+            "donut"
+          ],
+          "desc": "柱 / 饼 / 环"
+        },
+        "series": {
+          "type": "array",
+          "default": null,
+          "desc": "1..8 项 {label, value:{tag|expr}, color}"
+        },
+        "show_value": {
+          "type": "bool",
+          "default": true,
+          "desc": "在图上显示数值"
+        },
+        "show_legend": {
+          "type": "bool",
+          "default": true,
+          "desc": "显示图例"
+        },
+        "y_min": {
+          "type": "int",
+          "default": 0,
+          "desc": "柱状图量程下限"
+        },
+        "y_max": {
+          "type": "int",
+          "default": 100,
+          "desc": "柱状图量程上限"
+        },
+        "y_decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 6,
+          "desc": "读数小数位"
+        }
+      },
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "message": {
+      "title": "消息栏",
+      "group": "数据",
+      "requires": "widgets_ext",
+      "status": "done",
+      "props": {
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 128,
+          "desc": "显示的文字；可绑字符串变量"
+        },
+        "level": {
+          "type": "enum",
+          "default": "info",
+          "enum": [
+            "info",
+            "warn",
+            "error"
+          ],
+          "desc": "决定底色与图标"
+        },
+        "auto_hide_ms": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 600000,
+          "desc": "到点自动清空；0 = 常驻"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        },
+        "marquee": {
+          "type": "bool",
+          "default": false,
+          "desc": "超宽时滚动（占 CPU，缺省关）"
+        }
+      },
+      "bind": [
+        "text",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "click"
+      ]
+    },
+    "roller": {
+      "title": "滚轮",
+      "group": "数据",
+      "requires": "widgets_ext",
+      "props": {
+        "options": {
+          "type": "array",
+          "default": null,
+          "desc": "选项文字数组"
+        },
+        "visible_rows": {
+          "type": "int",
+          "default": 3,
+          "min": 3,
+          "max": 7,
+          "desc": "可见行数（奇数）"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change",
+        "click"
+      ]
+    },
+    "ascii_display": {
+      "title": "多字节文本",
+      "group": "数据",
+      "requires": "widgets_ext",
+      "props": {
+        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "max_len": {
+          "type": "int",
+          "default": 32,
+          "min": 1,
+          "max": 64,
+          "desc": "最多显示字符数"
+        },
+        "encoding": {
+          "type": "enum",
+          "default": "gbk",
+          "enum": [
+            "gbk",
+            "utf8"
+          ],
+          "desc": "解码方式"
+        },
+        "align": {
+          "type": "enum",
+          "default": "left",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "desc": "水平对齐"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 10,
+          "max": 32,
+          "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
+        }
+      },
+      "bind": [
+        "value",
+        "visible",
+        "enabled",
+        "color"
+      ],
+      "events": [
+        "click"
+      ]
+    }
+  },
+  "events": {
+    "click": {
+      "desc": "按下后在长按阈值内松开"
+    },
+    "press": {
+      "desc": "按下立即触发"
+    },
+    "release": {
+      "desc": "松开（含长按后松开）"
+    },
+    "long_press": {
+      "desc": "按住超过 long_press_ms 即执行；松开时那次 click 不再执行"
+    },
+    "change": {
+      "desc": "值被用户改变（开关、滑块、输入框、下拉框）"
+    }
+  },
+  "actions": {
+    "write_tag": {
+      "status": "done",
+      "params": [
+        "tag",
+        "value|from_tag"
+      ],
+      "desc": "写变量"
+    },
+    "toggle_tag": {
+      "status": "done",
+      "params": [
+        "tag"
+      ],
+      "desc": "布尔取反"
+    },
+    "add_var": {
+      "status": "done",
+      "params": [
+        "tag",
+        "delta|from_tag"
+      ],
+      "desc": "变量加减"
+    },
+    "set_bit": {
+      "status": "done",
+      "params": [
+        "tag",
+        "bit"
+      ],
+      "desc": "置位（0..31）"
+    },
+    "clear_bit": {
+      "status": "done",
+      "params": [
+        "tag",
+        "bit"
+      ],
+      "desc": "清位"
+    },
+    "write_device": {
+      "status": "done",
+      "params": [
+        "device",
+        "area",
+        "addr",
+        "datatype",
+        "count",
+        "value|from_tag|values"
+      ],
+      "desc": "直接写设备"
+    },
+    "goto_page": {
+      "status": "done",
+      "params": [
+        "page"
+      ],
+      "desc": "替换当前页"
+    },
+    "open_page": {
+      "status": "done",
+      "params": [
+        "page"
+      ],
+      "desc": "压栈打开"
+    },
+    "close_page": {
+      "status": "done",
+      "params": [
+        "page?"
+      ],
+      "desc": "关闭当前页或指定页"
+    },
+    "back": {
+      "status": "done",
+      "params": [],
+      "desc": "返回上一页"
+    },
+    "show_message": {
+      "status": "done",
+      "params": [
+        "text"
+      ],
+      "desc": "弹提示"
+    },
+    "script": {
+      "status": "done",
+      "params": [
+        "（事件对象里的 script 字段，不是 do=script）"
+      ],
+      "desc": "执行一段 Lua：事件里写 \"script\": \"<源码>\" 代替 actions 数组"
+    },
+    "save_now": {
+      "status": "done",
+      "requires": "savecfg",
+      "params": [
+        "group?"
+      ],
+      "desc": "立即写存盘组（空 = 全部）"
+    },
+    "ack_alarm": {
+      "status": "done",
+      "requires": "alarm",
+      "params": [
+        "alarm|group"
+      ],
+      "desc": "确认报警：给规则 id 或组名，都省略 = 全部"
+    },
+
+    "shelve_alarm": {"status": "done", "params": ["alarm|group", "minutes"],
+      "desc": "搁置报警：alarm=规则 id（省略=全部活动报警），minutes 1..480；到期自动恢复"},
+    "load_recipe": {
+      "status": "done",
+      "requires": "recipe",
+      "params": [
+        "group",
+        "name"
+      ],
+      "desc": "按名字下载配方到成员变量，并设为当前配方"
+    },
+    "save_recipe": {
+      "status": "done",
+      "requires": "recipe",
+      "params": [
+        "group",
+        "name?"
+      ],
+      "desc": "把成员变量当前值存成一条配方（名字空则自动编号）"
+    },
+    "new_recipe": {
+      "status": "done",
+      "requires": "recipe",
+      "params": [
+        "group"
+      ],
+      "desc": "起名后新建一条配方（重名拒绝，初值取当前变量值）"
+    },
+    "export_recipes": {
+      "status": "done",
+      "requires": "recipe",
+      "params": [],
+      "desc": "全部配方导出到 U 盘"
+    },
+    "import_recipes": {
+      "status": "done",
+      "requires": "recipe",
+      "params": [],
+      "desc": "从 U 盘导入配方"
+    },
+    "open_history_query": {
+      "status": "planned",
+      "requires": "trend",
+      "params": [
+        "group?"
+      ],
+      "desc": "打开历史查询对话框（原生页）"
+    },
+    "login": {
+      "status": "done",
+      "requires": "auth",
+      "params": [],
+      "desc": "打开登录框（ADR-0012）"
+    },
+    "logout": {
+      "status": "done",
+      "requires": "auth",
+      "params": [],
+      "desc": "清会话并重建当前页（ADR-0012）"
+    },
+    "set_language": {
+      "status": "done",
+      "requires": "i18n",
+      "params": [
+        "lang"
+      ],
+      "desc": "切换语言并重建当前页"
+    }
+  },
+  "actions_not_supported": {
+    "print_window": "运行时没有打印通道",
+    "exit_system": "进程生死由外壳（launcher）管"
+  },
+  "binding_kinds": [
+    "direct",
+    "fmt",
+    "enum",
+    "ranges",
+    "bit",
+    "expr"
+  ],
+  "bindable_props": [
+    "text",
+    "color",
+    "bg_color",
+    "visible",
+    "enabled",
+    "value",
+    "checked"
+  ],
+  "tag": {
+    "id": {
+      "type": "int",
+      "min": 0,
+      "max": 1999
+    },
+    "name": {
+      "type": "string",
+      "min": 1,
+      "max": 31
+    },
+    "type": {
+      "type": "enum",
+      "enum": [
+        "int32",
+        "float",
+        "bool",
+        "string"
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "max": 8,
+      "desc": "显示单位"
+    },
+    "decimals": {
+      "type": "int",
+      "min": 0,
+      "max": 6,
+      "desc": "显示小数位"
+    },
+    "scale": {
+      "type": "float",
+      "default": 1,
+      "desc": "工程量 = 原始值 × scale + offset"
+    },
+    "offset": {
+      "type": "float",
+      "default": 0
+    },
+    "min": {
+      "type": "float",
+      "desc": "量程下限（控件的默认值）"
+    },
+    "max": {
+      "type": "float",
+      "desc": "量程上限（控件的默认值）"
+    },
+    "rw": {
+      "type": "bool",
+      "default": true
+    },
+    "enum": {
+      "type": "array",
+      "desc": "[{v,text}]，最多 32 项"
+    },
+    "device": {
+      "type": "object",
+      "desc": "{port,slave,area,addr,datatype}"
+    },
+    "string": {
+      "type": "object",
+      "desc": "type=string 时：{len(1..64),encoding:gbk|utf8,swap_words}"
+    }
+  },
+  "counts": {
+    "widgets": 34,
+    "figures": 40,
+    "common": 18,
+    "actions": 24,
+    "events": 5
+  }
+}

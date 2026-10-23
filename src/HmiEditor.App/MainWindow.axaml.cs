@@ -14,7 +14,6 @@ using HmiEditor.App.Controls;
 using HmiEditor.App.Resources;
 using HmiEditor.App.Services;
 using HmiEditor.App.Views;
-using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.Alarm;
 using HmiEditor.Core.Models.Scripting;
@@ -22,7 +21,7 @@ using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Diagnostics;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
-using HmiEditor.Device.Build;
+using HmiEditor.Export.Chenge;
 using Hmi.Hardware.Builtin;
 using Hmi.Hardware.Contracts;
 using Hmi.Hardware.Loader;
@@ -65,7 +64,7 @@ public partial class MainWindow : Window
     private string? _projectDirectory;
 
     // 编译/导出流水线（产物状态与交叉编译逻辑见 BuildPipelineService）
-    private readonly BuildPipelineService _buildPipeline;
+    private readonly ChengeExportService _chengeExport = new();
 
     // 设计时数据预览运行时（仿真器/绑定引擎/真实设备连接/动作执行器的所有权见 PreviewRuntimeService）
     private readonly PreviewRuntimeService _previewRuntime;
@@ -166,43 +165,6 @@ public partial class MainWindow : Window
         // 状态行，失败信息回落到主窗口状态栏，保证「点了没反应」不再发生。
         UiOperationGuard.UiSink = ShowGlobalStatus;
 
-        // 编译/导出流水线：宿主回调注入 UI/i18n/工具链依赖，
-        // 产物状态由服务独占（原先散落在 _compiledOutputFiles/_compiledOutputDir/_lastSoBuildError）
-        _buildPipeline = new BuildPipelineService
-        {
-            GetProject = () => _currentProject,
-            GetAssetLibrary = () => _assetLibrary,
-            GetProjectDirectory = () => _projectDirectory,
-            SetStatus = msg => StatusText.Text = msg,
-            PostStatus = msg => Dispatcher.UIThread.Post(() => StatusText.Text = msg),
-            SetCompileBarVisible = v => CompileBarPanel.IsVisible = v,
-            SetCompileBarValue = v => CompileBar.Value = v,
-            SetCompileStatusText = msg => CompileStatusText.Text = msg,
-            SetCompileBusy = busy =>
-            {
-                BtnCompile.IsEnabled = !busy;
-                MenuCompile.IsEnabled = !busy;
-            },
-            SetDownloadEnabled = enabled =>
-            {
-                BtnDownloadHmi.IsEnabled = enabled;
-                MenuDownload.IsEnabled = enabled;
-            },
-            PickExportDirectory = async () =>
-            {
-                var folder = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-                {
-                    Title = LocService["dialog.select.export.dir"]
-                });
-                return folder.Count == 1 ? folder[0].Path.LocalPath : null;
-            },
-            AuditExport = (message, success) =>
-                _authService.RecordAudit(AuditAction.DataExported, message, success),
-            GetT113SdkRoot = () => _settingsService.Device.T113SdkRoot,
-            GetT113ToolchainGcc = () => _settingsService.Device.T113ToolchainGcc,
-            GetKinSealToolchainGcc = () => _settingsService.KinSeal.ToolchainGcc,
-            GetKinSealRuntimeDir = () => _settingsService.KinSeal.RuntimeDir,
-        };
 
         // 设计时数据预览运行时：宿主回调注入 UI/画布/模型解析依赖，
         // 仿真器与真实设备连接的生命周期由服务独占（关闭时 Dispose 统一释放）。
@@ -1395,171 +1357,113 @@ public partial class MainWindow : Window
         dialog.ShowDialog(this);
     }
 
-    private async void ExportCode()
+    // ── chenge-runtime 导出（本分支单轨：产物只有 37 工程目录） ──
+
+    private async void ExportChengeProject()
     {
-        try { await ExportCodeCore(); }
+        try { await ExportChengeProjectCore(); }
         catch (Exception ex) { ReportOperationFailure(Lang.UiOpExportCode, ex); }
     }
 
-    private Task ExportCodeCore() => _buildPipeline.ExportAsync();
-
-    // ── 编译转换 + 下载到 HMI ──
-
-    /// <summary>
-    /// 编译转换 —— 将工程编译转换为可部署的源码工程（libhmi_ui.so 源码 + 构建文件）。
-    /// 展示进度与结果状态；成功后启用"下载到HMI"。
-    /// </summary>
-    private async void CompileProject()
+    private ChengeExportOptions BuildChengeExportOptions()
     {
-        try { await CompileProjectCore(); }
-        catch (Exception ex) { ReportOperationFailure(Lang.UiOpCompileProject, ex); }
-    }
-
-    private Task CompileProjectCore() => CompileProjectWithSdkAsync();
-
-    /// <summary>
-    /// 下载到 HMI —— 打开下载对话框，将编译产物传输到指定 HMI 设备。
-    /// 仅在编译转换成功后可用。
-    /// </summary>
-    private async void DownloadToHmi()
-    {
-        try { await DownloadToHmiCore(); }
-        catch (Exception ex) { ReportOperationFailure(Lang.UiOpDownloadHmi, ex); }
-    }
-
-    private async Task DownloadToHmiCore()
-    {
-        if (_currentProject == null) return;
-        if (_buildPipeline.CompiledOutputFiles.Count == 0)
+        var screen = _currentScreen ?? _currentProject?.Screens.FirstOrDefault();
+        return new ChengeExportOptions
         {
-            StatusText.Text = LocService["download.need.compile"];
-            return;
-        }
-
-        // 确保存在可部署的 libhmi_ui.so 产物：SharedLibrary 模式直接复用编译产物，
-        // 否则以 SharedLibrary 变体重建并交叉编译（固件 .so 架构强制逻辑见 BuildPipelineService）。
-        if (!await _buildPipeline.EnsureSharedLibraryArtifactsAsync()) return;
-
-        // 部署资源清单：仅部署被控件引用的资源（生成代码 IMG_PATH 引用其文件名，
-        // 设备端路径固定 /mnt/UDISK/hmi/assets/<文件名>，与 SIM_ASSET_DIR 契约一致）
-        var deployAssets = new List<HmiEditor.Device.Updates.HmiDeployAsset>();
-        foreach (var asset in _assetLibrary.Assets)
-        {
-            if (asset.ReferenceCount <= 0) continue;
-            if (string.IsNullOrWhiteSpace(asset.FilePath)) continue;
-            var normalized = asset.FilePath.Replace('\\', '/');
-            var localPath = Path.IsPathRooted(asset.FilePath)
-                ? asset.FilePath
-                : System.IO.Path.Combine(_projectDirectory ?? "", asset.FilePath);
-            if (!System.IO.File.Exists(localPath)) continue;
-            deployAssets.Add(new HmiEditor.Device.Updates.HmiDeployAsset(
-                localPath, System.IO.Path.GetFileName(normalized)));
-        }
-
-        // 运行时连接配置（comm_config.ini）：IDE 通讯设置随下载下发，宿主启动读取，
-        // 改连接参数（TCP host/端口、RTU 串口/波特率等）免重编固件。
-        var runtimeConfigText = HmiEditor.Core.Services.CommConfigCodeGen
-            .GenerateRuntimeConfigText(_currentProject.VariableManager.Connections);
-
-        var dialog = new Views.DownloadToHmiView(
-            _buildPipeline.CompiledOutputFiles, _buildPipeline.CompiledOutputDir,
-            deployAssets, runtimeConfigText);
-        await dialog.ShowDialog(this);
+            ScreenWidth = (int)Math.Round(screen?.Width ?? 800),
+            ScreenHeight = (int)Math.Round(screen?.Height ?? 480),
+        };
     }
 
-    // ── I11: 生成代码验证 + 模拟器工程导出 ──
+    /// <summary>导出目录名取工程名（路径分隔符等非法字符换成下划线）。</summary>
+    private static string ChengeFolderName(HmiProject project)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in project.Name ?? "")
+            sb.Append(invalid.Contains(ch) || ch == ' ' ? '_' : ch);
+        var slug = sb.ToString().Trim('_');
+        return slug.Length == 0 ? "chenge-project" : slug;
+    }
 
-    /// <summary>验证生成代码 —— 运行静态质量门并展示问题清单。</summary>
-    private void ValidateGeneratedCode()
+    /// <summary>导出到用户选的目录；有任何诊断（错误或警告）就把清单摊开给人看。</summary>
+    private async Task ExportChengeProjectCore()
     {
         if (_currentProject == null)
         {
-            StatusText.Text = LocService["gen.create.or.open.project"];
-            return;
-        }
-
-        try
-        {
-            var generator = new CodeGenerator();
-            var code = generator.GenerateFullProject(_currentProject, _assetLibrary);
-            var findings = HmiEditor.Core.Services.GeneratedCodeValidator.Validate(_currentProject, code);
-
-            var errors = findings.Count(f => f.Severity == HmiEditor.Core.Services.FindingSeverity.Error);
-            var warnings = findings.Count(f => f.Severity == HmiEditor.Core.Services.FindingSeverity.Warning);
-
-            var dialog = new Views.ValidationResultView(findings);
-            dialog.ShowDialog(this);
-
-            StatusText.Text = LocService.Format("status.verify.completed", errors, warnings);
-            _authService.RecordAudit(AuditAction.DataExported,
-                LocService.Format("status.verify.generated", errors, warnings), errors == 0);
-        }
-        // ⚠ 这两条**刻意保留 ex.Message**（登记 #61a 尾巴，阶段 101 —— 与 #61t / #61u 同款
-        //   「诚实边界」）：本 try 体内**没有产出方** —— GenerateFullProject 与
-        //   GeneratedCodeValidator.Validate 全程零 IO、零用户可触发 throw（实测 CodeGen
-        //   只有两个 throw，都是程序员错误档）⇒ 换出口只会落回落分支、用户所见一字不变。
-        catch (Exception ex)
-        {
-            StatusText.Text = LocService.Format("status.verify.failed", ex.Message);
-            _authService.RecordAudit(AuditAction.DataExported, LocService.Format("audit.verify.code.failed", ex.Message), false);
-        }
-    }
-
-    /// <summary>
-    /// 编译并运行 —— 一键编译为 LVGL+SDL2 PC 模拟器并自动运行。
-    /// 实现（含 kinseal SDK 首次安装与 LVGL 树探测）见 <c>MainWindow.KinSealSdk.cs</c>。
-    /// </summary>
-    private void BuildAndRunSimulator() => _ = BuildAndRunSimulatorAsync();
-
-    private async void ExportSimulatorProject()
-    {
-        try { await ExportSimulatorProjectCore(); }
-        catch (Exception ex) { ReportOperationFailure(Lang.UiOpExportSimulator, ex); }
-    }
-
-    private async Task ExportSimulatorProjectCore()
-    {
-        if (_currentProject == null)
-        {
-            StatusText.Text = LocService["gen.create.or.open.project"];
+            StatusText.Text = LocService["chenge.export.no_project"];
             return;
         }
 
         var folder = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = LocService["dialog.select.simulator.dir"]
+            Title = LocService["dialog.select.chenge.dir"],
+            AllowMultiple = false,
         });
         if (folder.Count != 1) return;
-        var outputPath = System.IO.Path.Combine(folder[0].Path.LocalPath, "hmi_simulator");   // try 外承接（登记 #61h 第二刀）
+
+        var outputDir = Path.Combine(folder[0].Path.LocalPath, ChengeFolderName(_currentProject));
+        var result = _chengeExport.Export(_currentProject, _assetLibrary, _projectDirectory,
+            BuildChengeExportOptions(), outputDir);
+
+        ReportChengeResult(result, outputDir);
+        if (!result.Success || result.Issues.WarningCount > 0)
+            ShowChengeDiagnostics(result, null);
+    }
+
+    /// <summary>导出并预览：导出到临时目录，用宿主 chenge-runtime 截图（与板上同一套渲染代码）。</summary>
+    private async void ExportAndPreview()
+    {
         try
         {
-            var generator = new CodeGenerator();
-            // 模拟器工程使用不含 main() 的 HMI 模块代码（main.c 提供 LVGL+SDL2 入口）
-            var code = generator.GenerateSimulatorModule(_currentProject, _assetLibrary);
-
-            // 导出前自动验证,Error 级问题阻断
-            var findings = HmiEditor.Core.Services.GeneratedCodeValidator.Validate(_currentProject, code);
-            if (HmiEditor.Core.Services.GeneratedCodeValidator.HasErrors(findings))
+            if (_currentProject == null)
             {
-                StatusText.Text = LocService["status.simulator.blocked.errors"];
-                _authService.RecordAudit(AuditAction.DataExported,
-                    LocService.Format("status.simulator.blocked.count", findings.Count(f => f.Severity == HmiEditor.Core.Services.FindingSeverity.Error)),
-                    false);
+                StatusText.Text = LocService["chenge.export.no_project"];
                 return;
             }
 
-            var result = HmiEditor.Core.Services.SimulatorProjectExporter.Export(_currentProject, code, outputPath);
+            var options = BuildChengeExportOptions();
+            var preview = await _chengeExport.PreviewAsync(_currentProject, _assetLibrary, _projectDirectory,
+                options, _settingsService, null);
 
-            StatusText.Text = LocService.Format("status.simulator.exported", result.DirectoryPath, result.ScreenFunctions.Count);
-            _authService.RecordAudit(AuditAction.DataExported,
-                LocService.Format("audit.simulator.export", result.DirectoryPath), true);
+            ReportChengeResult(preview.Export, preview.Export.OutputDirectory);
+
+            var dialog = new Views.ChengePreviewView(_chengeExport, _currentProject, _assetLibrary,
+                _projectDirectory, options, _settingsService, preview, null);
+            await dialog.ShowDialog(this);
         }
         catch (Exception ex)
         {
-            var failure = UiOperationGuard.FailureDetail(Lang.UiOpExportSimulator, outputPath, ex);   // 状态栏与审计行共用同一句
-            StatusText.Text = failure;
-            _authService.RecordAudit(AuditAction.DataExported, failure, false);
+            ReportOperationFailure(Lang.UiOpExportCode, ex);
         }
+    }
+
+    private void ReportChengeResult(ChengeExportResult result, string outputDir)
+    {
+        if (result.Success)
+        {
+            StatusText.Text = LocService.Format("status.chenge.export.ok", outputDir);
+            _authService.RecordAudit(AuditAction.DataExported,
+                LocService.Format("audit.chenge.export", outputDir), true);
+        }
+        else
+        {
+            StatusText.Text = LocService.Format("status.chenge.export.failed", result.Issues.ErrorCount);
+            _authService.RecordAudit(AuditAction.DataExported,
+                ChengeExportService.DescribeIssues(result), false);
+        }
+    }
+
+    /// <summary>导出诊断窗口：错误先列、警告在后，每条带页面/控件位置与契约原因。</summary>
+    private void ShowChengeDiagnostics(ChengeExportResult result, string? runtimeLog)
+    {
+        if (_currentProject == null) return;
+        var text = ChengeExportService.DescribeIssues(result) +
+                   (string.IsNullOrWhiteSpace(runtimeLog) ? "" : "\n" + runtimeLog);
+        var preview = new ChengePreviewResult(result, null, text, -1, false);
+        var dialog = new Views.ChengePreviewView(_chengeExport, _currentProject, _assetLibrary,
+            _projectDirectory, BuildChengeExportOptions(), _settingsService, preview, null);
+        dialog.ShowDialog(this);
     }
 
     // ── 辅助方法 ──
@@ -2060,7 +1964,7 @@ public partial class MainWindow : Window
             GetAuthService = () => _authService,
             GetRecipeManager = () => _recipeManager,
             SaveProject = () => { SaveProject(); return Task.CompletedTask; },
-            ExportCode = () => { ExportCode(); return Task.CompletedTask; }
+            ExportCode = () => { ExportChengeProject(); return Task.CompletedTask; }
         });
         host.SetProvider(AiManager.CurrentProvider, AiManager.Config.ForceXmlProtocol);
         return host;

@@ -86,5 +86,8 @@ internal static class ControlTypeTextKeys
         HmiControlType.Ellipse => AppLocalization.Service[Lang.TbEllipse],
         HmiControlType.Polyline => AppLocalization.Service[Lang.TbPolyline],
         HmiControlType.Arc => AppLocalization.Service[Lang.TbArc],
+        HmiControlType.Value => AppLocalization.Service[Lang.TbValue],
+        HmiControlType.AlarmList => AppLocalization.Service[Lang.TbAlarmList],
+        HmiControlType.HistoryCurve => AppLocalization.Service[Lang.TbHistoryCurve],
     };
 }

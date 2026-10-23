@@ -1,0 +1,76 @@
+{
+  "note": "命名权限位词表（37 §6.9）。users.json 每组的 perms[] 写这里的 name；位号必须与编辑器 Permission 枚举（lvgl-hmi-studio: HmiEditor.Core/Models/User/Permission.cs）和运行时 src/core/perm.h 逐位一致。改这里要跑 tools/check_perm.py。",
+  "enabled_when": "users.json 里至少有一个组声明了 perms[]（否则只有 perm 组掩码的老行为）",
+  "bits": [
+    {
+      "bit": 0,
+      "name": "view",
+      "zh": "查看画面",
+      "en": "View screens",
+      "runtime": "切页动作 goto_page / open_page / close_page / back、cg.openScreen"
+    },
+    {
+      "bit": 1,
+      "name": "operate",
+      "zh": "操作控件",
+      "en": "Operate controls",
+      "runtime": "写类动作（write_tag / toggle_tag / add_var / set_bit / clear_bit / 脚本）、控件自动写回、cg.setTag"
+    },
+    {
+      "bit": 2,
+      "name": "edit_recipe",
+      "zh": "编辑配方",
+      "en": "Edit recipes",
+      "runtime": "load_recipe / save_recipe / new_recipe、配方表编辑与下载、import_recipes"
+    },
+    {
+      "bit": 3,
+      "name": "ack_alarm",
+      "zh": "确认报警",
+      "en": "Acknowledge alarms",
+      "runtime": "ack_alarm 动作、alarm_list 点行确认、cg.ackAlarm"
+    },
+    {
+      "bit": 4,
+      "name": "change_config",
+      "zh": "修改系统配置",
+      "en": "Change configuration",
+      "runtime": "save_now 动作（存盘组写盘）、cg.saveNow"
+    },
+    {
+      "bit": 5,
+      "name": "manage_users",
+      "zh": "管理用户",
+      "en": "Manage users",
+      "runtime": "登录框里给别人改口令（改自己的不需要）"
+    },
+    {
+      "bit": 6,
+      "name": "view_history",
+      "zh": "查看历史",
+      "en": "View history",
+      "runtime": "history_table 控件、alarm_list 的 mode=history（无权时隐藏并记日志）"
+    },
+    {
+      "bit": 7,
+      "name": "export",
+      "zh": "导出数据",
+      "en": "Export data",
+      "runtime": "export_recipes 动作（配方导出到 U 盘）"
+    },
+    {
+      "bit": 8,
+      "name": "debug",
+      "zh": "调试",
+      "en": "Debug",
+      "runtime": "直接写设备寄存器/线圈：write_device 动作与 cg.setDevice（绕过变量表与量程）"
+    },
+    {
+      "bit": 9,
+      "name": "shelve",
+      "zh": "搁置报警",
+      "en": "Shelve alarms",
+      "runtime": "shelve_alarm 动作、cg.shelveAlarm / unshelveAlarm"
+    }
+  ]
+}

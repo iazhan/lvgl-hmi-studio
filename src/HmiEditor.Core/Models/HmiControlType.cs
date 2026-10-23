@@ -36,4 +36,9 @@ public enum HmiControlType
     Ellipse,     // 椭圆/圆（填充 + 边框）
     Polyline,    // 折线（顶点列表 HmiControl.Points，线色 BgColor、线宽 BorderWidth）
     Arc,         // 圆弧（角度范围 MinValue..MaxValue，当前值 Value；轨道色 BgColor、指示色 IndicatorColor/TextColor）
+
+    // chenge-runtime 目标新增（导出契约见 docs/chenge-rt/37）
+    Value,       // 数值显示（decimals/unit；绑定 value 后自动刷新）
+    AlarmList,   // 报警列表（数据来自 alarms.json，可确认）
+    HistoryCurve // 历史曲线（数据来自 trends.json / savecfg.json 的存盘组）
 }

@@ -905,9 +905,10 @@ public static class AgentToolFactory
     /// </summary>
     private static AgentTool UpdateRuntimeTool(AgentHostBridge bridge, Action<HmiProject, string> bw, Action aw) =>
         new("update_runtime",
-            $"修改运行时配置。可选参数: scan_interval_ms(扫描周期), boot_screen_id(启动屏幕), log_level(日志级别: {AiSchemaEnums.Csv<LogLevel>()})。（看门狗超时 / 允许重启两项在设备端当前没有执行路径，不在此工具的可改范围内。）",
-            $$"""
-            { "type":"object", "properties": { "scan_interval_ms":{"type":"number"}, "boot_screen_id":{"type":"string"}, "log_level":{"type":"string","enum":{{AiSchemaEnums.JsonArray<LogLevel>()}}} }, "required":[] }
+            "修改运行时配置。可选参数: boot_screen_id(启动屏幕)。" +
+            "（扫描周期 / 日志级别 / 看门狗超时 / 允许重启在设备端当前没有执行路径，不在此工具的可改范围内。）",
+            """
+            { "type":"object", "properties": { "boot_screen_id":{"type":"string"} }, "required":[] }
             """,
             (call, ctx, _) =>
             {
@@ -916,9 +917,7 @@ public static class AgentToolFactory
                 var applied = new List<string>();
 
                 bw(ctx.Project, call.Name);
-                if (Has(args, "scan_interval_ms")) { rc.ScanIntervalMs = GetI(args, "scan_interval_ms"); applied.Add("scan_interval_ms"); }
                 if (Has(args, "boot_screen_id")) { rc.BootScreenId = GetS(args, "boot_screen_id").IfNullOrEmpty(null); applied.Add("boot_screen_id"); }
-                if (Has(args, "log_level")) { rc.LogLevel = ParseEnum<HmiEditor.Core.Models.LogLevel>(GetS(args, "log_level"), rc.LogLevel); applied.Add("log_level"); }
 
                 if (applied.Count == 0) return Task.FromResult(AgentToolResult.Failure("未提供任何可修改参数"));
 

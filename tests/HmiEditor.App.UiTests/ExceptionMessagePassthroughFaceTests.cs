@@ -239,8 +239,8 @@ public class ExceptionMessagePassthroughFaceTests
     /// </summary>
     private static readonly Dictionary<(string File, string Key), int> Baseline = new()
     {
-        [("src/HmiEditor.App/MainWindow.axaml.cs", "audit.verify.code.failed")] = 1,
-        [("src/HmiEditor.App/MainWindow.axaml.cs", "status.verify.failed")] = 1,
+        // 阶段 126：`status.verify.failed` / `audit.verify.code.failed` 随「验证生成代码」入口
+        // 一起移除（C 源码导出路径 removed）⇒ 基线里这两行删掉。
         // ⚠ 阶段 103 删掉的行：`BuildRunDialog.axaml.cs` · `buildrun.log.error`（原 1 处）——
         //    产出方（`SimulatorBuildService` 两条前置校验 + `BuildRunDialog.RunSimulatorAsync`
         //    的进程启动）换成带码异常 `SimulatorBuildException`（3 码 / `sim.build.issue.*`），

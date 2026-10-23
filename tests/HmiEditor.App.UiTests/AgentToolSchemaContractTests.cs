@@ -162,8 +162,16 @@ public class AgentToolSchemaContractTests
         => Assert.Equal(Enum.GetNames<OperationMode>(), EnumOf("update_security", "operation_mode"));
 
     [Fact]
-    public void UpdateRuntime_LogLevelEnum_MatchesProductEnum()
-        => Assert.Equal(Enum.GetNames<LogLevel>(), EnumOf("update_runtime", "log_level"));
+    public void UpdateRuntime_DoesNotAdvertiseFieldsWithoutAWriter()
+    {
+        // 日志级别 / 扫描周期随运行时 ini 生成器一起移除（本分支不再写这两项到产物），
+        // 所以 update_runtime 的 schema 里**必须没有**这两个参数 —— 广告一个没人写的字段
+        // 等于让模型"改了却没效果"。
+        var tool = CreateTools().Single(t => t.Name == "update_runtime");
+        Assert.NotNull(tool.ArgumentsSchema);
+        Assert.DoesNotContain("log_level", tool.ArgumentsSchema);
+        Assert.DoesNotContain("scan_interval_ms", tool.ArgumentsSchema);
+    }
 
     [Fact]
     public void CreateConnection_DriverEnum_MatchesBuiltinDriverCatalog()
@@ -182,7 +190,6 @@ public class AgentToolSchemaContractTests
             ("alarmCondition", EnumOf("create_alarm", "type")),
             ("alarmSeverity", EnumOf("create_alarm", "severity")),
             ("operationMode", EnumOf("update_security", "operation_mode")),
-            ("logLevel", EnumOf("update_runtime", "log_level")),
             ("driver", EnumOf("create_connection", "driver")),
         };
 
@@ -238,7 +245,7 @@ public class AgentToolSchemaContractTests
             .EnumerateObject().Select(p => p.Name).ToList();
 
         // 自检：真的读到了参数（空集合会让下面的断言恒绿）
-        Assert.True(advertised.Count >= 3,
+        Assert.True(advertised.Count >= 1,
             $"只读到 {advertised.Count} 个参数，schema 结构可能变了：{string.Join(", ", advertised)}");
 
         var sources = SourceScanner.ProductSources();

@@ -5,6 +5,7 @@ using HmiEditor.AI.Validation;
 using HmiEditor.App.Resources;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
+using HmiEditor.Export.Chenge;
 using HmiEditor.Simulator;
 
 namespace HmiEditor.App.Services;
@@ -35,12 +36,13 @@ namespace HmiEditor.App.Services;
 ///   码来自 <c>HmiEditor.Core.Services.SvgParseIssueCodes</c>（阶段 87 新增，登记 <b>#61a</b>）。</item>
 ///   <item>CSV 变量导入问题 <c>csv.issue.&lt;码小写&gt;</c> —— 见 <see cref="CsvIssueKey"/>，
 ///   码来自 <c>HmiEditor.Core.Services.CsvImportIssueCodes</c>（阶段 88 新增，登记 <b>#61f</b>）。</item>
-///   <item>生成代码验证结果 <c>gen.issue.&lt;码小写&gt;</c>（消息）与
-///   <c>gen.loc.&lt;码小写&gt;</c>（定位串）—— 见 <see cref="GenIssueKey"/> /
-///   <see cref="GenLocationKey"/>，码来自
-///   <c>HmiEditor.Core.Services.GeneratedCodeIssueCodes</c> /
-///   <c>FindingLocationCodes</c>（阶段 89 新增，登记 <b>#61g</b>）。
-///   ⚠ 这一条**两条键族**：定位与消息的生命周期不同（定位还要被复制/筛选）。</item>
+///   <item>chenge 导出诊断 <c>chenge.issue.&lt;码小写&gt;</c> —— 见 <see cref="ChengeIssueKey"/>，
+///   码来自 <c>HmiEditor.Export.Chenge.ChengeIssue</c>（导出器逐条给出的 Error/Warning）。
+///   ⚠ 这一族是**返回值**（导出结果带 issues 列表），走 <see cref="Describe(ChengeIssue)"/>、
+///   不走 <see cref="FailureReason"/>。</item>
+///   <item>生成代码验证结果 <c>gen.issue.</c> / <c>gen.loc.</c> —— **已随 C 源码导出路径移除**（removed）：
+///   本分支不生成 C，没有产物注释可翻，也没有「生成代码验证」对话框。定位码族只剩
+///   <c>FindingLocationCodes</c> 的三条（悬空引用定位，仍由交叉引用面板用）。</item>
 ///   <item>表达式语法失败 <c>expr.syntax.&lt;码小写&gt;</c> —— 见 <see cref="ExprSyntaxKey"/>，
 ///   码来自 <c>HmiEditor.Core.Services.ExpressionSyntaxIssueCodes</c>（阶段 91 新增，登记 <b>#61i</b>）。
 ///   ⚠ 这一族是上面 <c>gen.issue.expression_syntax</c> 那条的**第二层**：它不出现在顶层消息里，
@@ -228,35 +230,10 @@ internal static class ExternalText
     /// </summary>
     internal static string CsvIssueKey(string code) => CsvIssueKeyPrefix + code.ToLowerInvariant();
 
-    /// <summary>生成代码验证结果（消息）诊断码文案键的前缀。</summary>
-    internal const string GenIssueKeyPrefix = "gen.issue.";
+    // gen.issue.* / gen.loc.* 两族**已随 C 源码导出路径移除**（removed）：没有产物就没有
+    // 「生成代码验证结果」，也没有需要翻译的产物注释。悬空引用的定位串现在由交叉引用面板
+    // 直出（`DanglingRefLocation.Message`，与语言无关的模型路径），不再走字典。
 
-    /// <summary>
-    /// 生成代码验证结果（消息）诊断码（<c>GeneratedCodeIssueCodes</c> 里那些
-    /// <c>const string</c> 的值）→ 文案键。
-    ///
-    /// <para><b>与前六条同形，单一来源</b>：<see cref="Describe(GeneratedCodeFinding)"/> 自己、
-    /// <c>GenFindingLocalizationGuardTests</c> 与可达性机制的取数段都调它，不各写一份
-    /// （推导规则分家过的亏本项目吃过 —— 分家的表现正是「守卫绿着、界面却是中文」）。</para>
-    ///
-    /// <para>⚠ <b>有一个码刻意没有键</b>：<c>GENERATOR_WARNING_COMMENT</c> ——
-    /// 那条消息的内容是**产物（<c>generated_ui.c</c>）里的注释原文**，翻译它等于改写产物
-    /// ⇒ 走 <see cref="Resolve"/> 的回落分支。由判据的 <c>MessageNoKey</c> 表**双向**守住。</para>
-    /// </summary>
-    internal static string GenIssueKey(string code) => GenIssueKeyPrefix + code.ToLowerInvariant();
-
-    /// <summary>finding 定位串文案键的前缀。</summary>
-    internal const string GenLocationKeyPrefix = "gen.loc.";
-
-    /// <summary>
-    /// finding 定位码（<c>FindingLocationCodes</c> 里那些 <c>const string</c> 的值）→ 文案键。
-    ///
-    /// <para>只有 4 种**面向用户的定位文案**有码；另 4 种定位（<c>-</c> / 屏幕 id 列表 /
-    /// <c>SecurityConfig.RuntimeUsers[…]</c> 这类**模型路径**）**与语言无关**、
-    /// 刻意不建码 ⇒ <c>LocationCode == ""</c>，直出。那条分界由判据的 <c>NeutralLocation</c>
-    /// 表**双向**守住（往这一档塞一条新中文文案 ⇒ 判据红）。</para>
-    /// </summary>
-    internal static string GenLocationKey(string code) => GenLocationKeyPrefix + code.ToLowerInvariant();
 
     /// <summary>表达式**语法**失败诊断码文案键的前缀。</summary>
     internal const string ExprSyntaxKeyPrefix = "expr.syntax.";
@@ -277,6 +254,18 @@ internal static class ExternalText
     /// 同一件事（先 <see cref="FailureReason"/>、再填参）。</para>
     /// </summary>
     internal static string ExprSyntaxKey(string code) => ExprSyntaxKeyPrefix + code.ToLowerInvariant();
+
+    /// <summary>chenge 导出诊断码的键前缀（码由 <c>ChengeIssue</c> 自带，这里只做前缀推导）。</summary>
+    internal const string ChengeIssueKeyPrefix = "chenge.issue.";
+
+    internal static string ChengeIssueKey(string code) => ChengeIssueKeyPrefix + code.ToLowerInvariant();
+
+    /// <summary>
+    /// 把一条导出诊断渲染成用户可读文本：码 → 键 → 模板，字典缺键才回落
+    /// <paramref name="issue"/> 自带的中文原文（与 CsvImportIssue / SvgParseError 同形）。
+    /// </summary>
+    internal static string Describe(ChengeIssue issue)
+        => Resolve(ChengeIssueKey(issue.Code), issue.Message, null);
 
     /// <summary>登录失败诊断码文案键的前缀。</summary>
     internal const string LoginIssueKeyPrefix = "login.issue.";
@@ -466,26 +455,6 @@ internal static class ExternalText
     }
 
     /// <summary>
-    /// 把一条**生成代码验证结果**的消息渲染成用户可读文本（登记 <b>#61g</b>，阶段 89）。
-    ///
-    /// <para><b>为什么它必须存在</b>：<c>GeneratedCodeValidator.Validate</c> 是纯函数、
-    /// 失败是**返回值**（findings 列表），走不到 <see cref="FailureReason"/>。
-    /// 这条是本族唯一的归一化点：<c>ValidationResultView</c> 的列表项与「复制全部」
-    /// 都调它，不各写一份。</para>
-    ///
-    /// <para><b>与 <see cref="Describe(CsvImportIssue)"/> 同形</b>：码 → 键 → 模板 → 填
-    /// <c>Args</c>，字典缺键才回落 <c>Message</c>（中文）。<c>GENERATOR_WARNING_COMMENT</c>
-    /// **本来就没有键**（产物注释原文），走的就是这条回落 —— 那是有意的，不是缺翻译。</para>
-    ///
-    /// <para><b>⚠ 实参里有**记录体**时先渲染</b>（阶段 91 / #61i）：<c>EXPRESSION_SYNTAX</c> 的
-    /// <c>Args[1]</c> 装的是 <see cref="ExpressionSyntaxError"/> —— Core 拿不到字典服务，
-    /// 只能给「码 + 中文回落 + 实参」。这就是 <see cref="RenderNestedArgs"/> 的用途；
-    /// 少了它，用户看到的是 <c>ExpressionSyntaxError { Code = …, Message = … }</c> 这种转储。</para>
-    /// </summary>
-    internal static string Describe(GeneratedCodeFinding finding)
-        => Resolve(GenIssueKey(finding.Code), finding.Message, RenderNestedArgs(finding.Args));
-
-    /// <summary>
     /// 把一条**表达式语法失败**渲染成用户可读文本 —— **返回值档**的渲染出口
     /// （登记 <b>#61i</b>，阶段 91）。
     ///
@@ -494,6 +463,9 @@ internal static class ExternalText
     /// 码化之前它抛的是裸 <c>FormatException</c>，消息只有中文；两个站点直接拿
     /// <c>ex.Message</c> 当文案用 —— <c>GeneratedCodeValidator</c> 塞进 finding 的 <c>{1}</c>、
     /// <c>PropertyPanelView</c> 直显在表达式输入框下方的红字里 ⇒ 英文界面下那一半照旧中文。</para>
+    ///
+    /// <para><b>removed</b>：本节提到的 C 代码生成路径已从本分支删除（只导 chenge JSON 工程），
+    /// 下面对产物注释的描述仅存作历史背景。</para>
     ///
     /// <para>⚠ 第三条路径（<c>CodeGenerator.Screen.cs</c> 写进产物 <c>generated_ui.c</c> 的
     /// <c>// WARNING:</c> 注释）**刻意不调它**：那句注释的读者是看 C 代码的人、不随界面语言变，
@@ -553,18 +525,6 @@ internal static class ExternalText
         }
         return copy ?? args;
     }
-
-    /// <summary>
-    /// 把一条 finding 的**定位串**渲染成用户可读文本。
-    ///
-    /// <para><b><c>LocationCode</c> 为空 ⇒ 直出</b>：那表示该定位**与语言无关**
-    /// （<c>-</c> / 屏幕 id 列表 / <c>SecurityConfig.RuntimeUsers[…]</c> 这类模型路径）。
-    /// 走字典反而会让界面语言影响一个"指向代码里某个位置"的坐标。</para>
-    /// </summary>
-    internal static string DescribeLocation(GeneratedCodeFinding finding)
-        => string.IsNullOrEmpty(finding.LocationCode)
-            ? finding.Location
-            : Resolve(GenLocationKey(finding.LocationCode), finding.Location, finding.LocationArgs);
 
     /// <summary>
     /// 把一条**操作失败**的异常渲染成用户可读的「原因」那一半。
@@ -659,17 +619,6 @@ internal static class ExternalText
         //     SystemFailureCodes 的表里也没有它（那张表是**实测过才加**的）。
         if (ex is SimulatorNotConnectedException simNotConnected)
             return Resolve(SimulatorIssueKey(simNotConnected.Code), simNotConnected.Message, null);
-
-        // ②‴ 模拟器编译 / 启动（登记 #61c 更正后重归 A 类异常档；阶段 103）：产出方
-        //     SimulatorBuildService 的两条前置校验 + BuildRunDialog 的进程启动原先抛
-        //     new InvalidOperationException("<中文>")，而 InvalidOperationException **没有码**
-        //     —— SystemFailureCodes 那张表是探针**实测过才加**的（阶段 85），里面没有它
-        //     ⇒ 只能落 ④ 渲染中文原文（英文界面下中英混排；中文界面下则是**作者口吻**的
-        //     「请安装 CMake 后重试（Linux: sudo apt install cmake）」）。
-        //     ⚠ 本条与 ②″ 的区别是**码的来源**：②″ 的码定义在产出方所在项目
-        //     （HmiEditor.Simulator），本条的产出方**就在余下这一支所在的程序集里**。
-        if (ex is SimulatorBuildException simBuild)
-            return Resolve(SimulatorBuildIssueKey(simBuild.Code), simBuild.Message, simBuild.Args);
 
         if (SystemFailureCodes.CodeFor(ex) is { } code)
             return Resolve(SystemIssueKey(code), ex.Message, null);

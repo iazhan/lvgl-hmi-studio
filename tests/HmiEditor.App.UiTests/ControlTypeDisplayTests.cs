@@ -87,7 +87,7 @@ public class ControlTypeDisplayTests
         (string File, int Count)[] surfaces =
         [
             ("Controls/DesignCanvas.cs", 1),                                  // Text 为空时的回落标签
-            ("Controls/DesignCanvas.Renderers.cs", 1),
+            ("Controls/DesignCanvas.Renderers.cs", 2),                        // 缺 Text 回落 ＋ 数据控件占位标题
             ("Controls/DesignCanvas.Editing.cs", 1),                          // 新建控件的默认**显示文案**
             ("Views/PropertyPanelView.axaml.cs", 2),                          // 标题行（已命名 / 未命名两档）
             ("Views/ProjectExplorerView.axaml.cs", 1),                        // 工程树节点
@@ -95,7 +95,7 @@ public class ControlTypeDisplayTests
             ("Views/FaceplateTemplateEditorView.axaml.cs", 1),                // 面单「控件摘要」的类型列表
             ("Views/ReferenceRow.cs", 1),                                     // 交叉引用「类型」列（阶段 96 就在了）
             ("MainWindow.axaml.cs", 2),                                       // 多选 / 单选两条状态栏
-            ("Views/ToolboxView.axaml.cs", 26),                               // 工具箱条目名（原始消费者）
+            ("Views/ToolboxView.axaml.cs", 29),                               // 工具箱条目名（chenge 数据控件 3 类后：26 → 29）
         ];
 
         var problems = new List<string>();

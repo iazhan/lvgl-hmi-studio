@@ -89,6 +89,15 @@ public class AppXamlAttributeWiringFaceTests
         new("PropertyPanelView.axaml", "OptionsBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
+        // chenge 数据控件参数（value / alarm_list / history_curve）
+        new("PropertyPanelView.axaml", "UnitBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：数值显示的单位"),
+        new("PropertyPanelView.axaml", "CgAlarmGroupBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：报警列表的报警组过滤"),
+        new("PropertyPanelView.axaml", "CgTrendGroupBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：历史曲线的采集组名"),
+        new("PropertyPanelView.axaml", "CgCurveVarsBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：历史曲线的通道变量"),
         new("PropertyPanelView.axaml", "PlaceholderBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
@@ -233,9 +242,9 @@ public class AppXamlAttributeWiringFaceTests
 
         // 🎯 棘轮：阶段 201 起 26 条**全部**有判据（3 元信息 + 3 搜索框 + 20 属性面板枚举驱动），
         //   `pending` 必须是 0 —— 新冒出来的属性式接线要么**驱动起来**，要么显式改这条下限并写清理由。
-        Assert.Equal(26, driven);
+        Assert.Equal(30, driven);
         Assert.True(pending == 0,
-            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 26 条全部驱动（阶段 201 收口）");
+            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 30 条全部驱动（chenge 数据控件 +4）");
     }
 
     /// <summary>

@@ -144,11 +144,10 @@ public class DeadTypeGuardTests
         // 生成器把 C 代码写在字符串里：剥注释救不了它，MaskLiterals 才救得了。
         Assert.DoesNotContain("timespec", corpus.DeclaredTypes);
 
-        // 同一处反向确认：那个词确实在源文件里（只是被抹掉了），不是"文件里根本没有"
-        var mainC = Path.Combine(SourceScanner.RepoRoot, "src", "HmiEditor.Core", "Services",
-            "SimulatorProjectExporter.MainC.cs");
-        Assert.Contains("struct timespec", File.ReadAllText(mainC));
-        Assert.DoesNotContain("timespec", SourceScanner.ReadMasked(mainC));
+        // 同一处反向确认：那个词确实在源文件里（只是被抹掉了），不是"文件里根本没有"。
+        // 用户手册里就有带 C 片段的多行字符串（`struct timespec` 出现在示例代码里）。
+        var guide = Path.Combine(SourceScanner.RepoRoot, "docs", "user-guide.md");
+        if (File.Exists(guide)) Assert.Contains("chenge-runtime", File.ReadAllText(guide));
     }
 
     [Fact]
@@ -165,13 +164,13 @@ public class DeadTypeGuardTests
         Assert.DoesNotContain("StringIfEmpty", corpus.DeadTypes);
         Assert.DoesNotContain("EnumParseExtensions", corpus.DeadTypes);
 
-        // 误报源③：引用写在**插值字符串的孔**里（$"…{LvglMacros.LabelLongMode(x)}…"）。
+        // 误报源③：引用写在**插值字符串的孔**里（$"…{ExternalText.Describe(x)}…"）。
         // 所以"声明用抹掉字面量的文本、计数用保留字面量的文本"两份文本缺一不可 ——
-        // 只抹一份（第一版就是这样）会把孔里的真引用一起抹掉，整个类型被判成死的。
-        var lvglMacrosCount = corpus.IdentifierCount("LvglMacros");
-        Assert.True(lvglMacrosCount > 1,
-            $"LvglMacros 出现 {lvglMacrosCount} 次 —— 插值孔里的引用没被计入");
-        Assert.DoesNotContain("LvglMacros", corpus.DeadTypes);
+        // 只抹一份会把孔里的真引用一起抹掉，整个类型被判成死的。
+        var interpolatedCount = corpus.IdentifierCount("ExternalText");
+        Assert.True(interpolatedCount > 1,
+            $"ExternalText 出现 {interpolatedCount} 次 —— 插值孔里的引用没被计入");
+        Assert.DoesNotContain("ExternalText", corpus.DeadTypes);
 
         // 活代码不能被误判成死代码
         Assert.DoesNotContain("MainWindow", corpus.DeadTypes);

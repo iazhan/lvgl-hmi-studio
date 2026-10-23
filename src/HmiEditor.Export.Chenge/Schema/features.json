@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "doc": "能力词汇表：manifest.features[] 只能取 features 里的键；每个能力依赖一个编译模块。模块是否编入由 chenge-runtime 的构建开关决定（build 字段给出开关名，null 表示常编）。本文件是运行时 C 表（chenge-runtime/src/core/caps.c）的契约副本，tools/check_caps.py 双向核对；编辑器读同一份来决定哪些控件/属性可用。",
+  "modules": {
+    "sim": {
+      "build": "WITH_SIM",
+      "default": 1,
+      "desc": "模拟设备（sim.json / sim.lua）"
+    },
+    "lua": {
+      "build": null,
+      "default": 1,
+      "desc": "Lua 5.4.7 沙箱（cg.* 与策略）"
+    },
+    "expr": {
+      "build": null,
+      "default": 1,
+      "desc": "表达式求值"
+    },
+    "alarm": {
+      "build": null,
+      "default": 1,
+      "desc": "报警引擎与报警事件"
+    },
+    "trend": {
+      "build": null,
+      "default": 1,
+      "desc": "趋势采集与存盘"
+    },
+    "recipe": {
+      "build": null,
+      "default": 1,
+      "desc": "配方"
+    },
+    "users": {
+      "build": null,
+      "default": 1,
+      "desc": "用户、权限与登录"
+    },
+    "i18n": {
+      "build": null,
+      "default": 1,
+      "desc": "多语言"
+    },
+    "ui_ext": {
+      "build": null,
+      "default": 1,
+      "desc": "扩展控件（表格/曲线/图表/管道等）"
+    },
+    "anim": {
+      "build": "WITH_ANIM",
+      "default": 1,
+      "desc": "属性动画（页面级 animations[]）"
+    },
+    "anim3": {
+      "build": "WITH_ANIM3",
+      "default": 0,
+      "desc": "三维动画（未实现）"
+    },
+    "theme": {
+      "build": null,
+      "default": 0,
+      "desc": "主题令牌（未实现）"
+    },
+    "modbus_tcp": {
+      "build": "WITH_MODBUS_TCP",
+      "default": 0,
+      "desc": "Modbus TCP 主站（未实现）"
+    },
+    "mqtt": {
+      "build": "WITH_MQTT",
+      "default": 0,
+      "desc": "MQTT 客户端（未实现）"
+    },
+    "s7": {
+      "build": "WITH_S7",
+      "default": 0,
+      "desc": "西门子 S7 主站（未实现）"
+    }
+  },
+  "features": {
+    "lua": {
+      "module": "lua",
+      "doc": "工程带 Lua 脚本（事件/页面/策略）"
+    },
+    "expr": {
+      "module": "expr",
+      "doc": "绑定或动作里用了 expr"
+    },
+    "alarm": {
+      "module": "alarm",
+      "doc": "有 alarms.json"
+    },
+    "trend": {
+      "module": "trend",
+      "doc": "有 trends.json / 曲线存盘"
+    },
+    "recipe": {
+      "module": "recipe",
+      "doc": "有 recipes/"
+    },
+    "users": {
+      "module": "users",
+      "doc": "有 users.json / perm"
+    },
+    "i18n": {
+      "module": "i18n",
+      "doc": "有 strings.json"
+    },
+    "table": {
+      "module": "ui_ext",
+      "doc": "用了 table / history_table"
+    },
+    "curves": {
+      "module": "ui_ext",
+      "doc": "用了 realtime_curve / history_curve / xy_curve"
+    },
+    "pipe": {
+      "module": "ui_ext",
+      "doc": "用了 pipe 控件或管道图元"
+    },
+    "widgets_ext": {
+      "module": "ui_ext",
+      "doc": "用了扩展控件（chart/qrcode/roller/frame_anim/ascii_display/message）"
+    },
+    "anim": {
+      "module": "anim",
+      "doc": "用了属性动画"
+    },
+    "anim3": {
+      "module": "anim3",
+      "doc": "用了三维动画"
+    },
+    "theme": {
+      "module": "theme",
+      "doc": "用了 theme.json"
+    },
+    "modbus_tcp": {
+      "module": "modbus_tcp",
+      "doc": "设备协议含 modbus_tcp"
+    },
+    "mqtt": {
+      "module": "mqtt",
+      "doc": "设备协议含 mqtt"
+    },
+    "s7": {
+      "module": "s7",
+      "doc": "设备协议含 s7"
+    }
+  }
+}

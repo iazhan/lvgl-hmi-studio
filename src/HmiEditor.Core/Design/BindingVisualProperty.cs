@@ -21,7 +21,8 @@ public enum BindingVisualKind
 /// 生成代码里也只在初始化时静态发一次。若各处自行按字符串属性名分派，就会重演
 /// <see cref="BindingSemantics"/> 诞生前的跨端漂移（设计器显示 12.34、设备显示 12.3）。
 /// 因此：**属性名 → 值域 → 应用方式** 只在这里定义一次，
-/// 设计时（<see cref="PreviewValueResolver"/>）与生成期（`CodeGenerator`）都读这张表，
+/// 设计时（<see cref="PreviewValueResolver"/>）读这张表。（removed：生成期的那一端随 C 导出
+/// 路径删除，这里只服务画布预览。）
 /// 任何一侧都**不得**再写第二份 `PropertyName` 映射。
 ///
 /// <para><b>为什么颜色是数值而不是 hex 字符串</b>：生成的 C 是静态类型语言，

@@ -994,6 +994,50 @@
                                   Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
                                   VerticalAlignment="Center" Margin="0,2" IsVisible="False"
                                   IsCheckedChanged="OnPropertyChanged"/>
+                        <!-- chenge-runtime 数据控件参数（value / alarm_list / history_curve） -->
+                        <TextBlock x:Name="LblUnit" Text="{res:Loc prop.param.unit}" Grid.Row="37" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="UnitBox" Grid.Row="37" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCgAlarmGroup" Text="{res:Loc prop.param.alarm.group}" Grid.Row="38" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CgAlarmGroupBox" Grid.Row="38" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCgAlarmMode" Text="{res:Loc prop.param.alarm.mode}" Grid.Row="39" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="CgAlarmModeCombo" Grid.Row="39" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.param.alarm.mode.active}" Tag="active"/>
+                            <ComboBoxItem Content="{res:Loc prop.param.alarm.mode.history}" Tag="history"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblCgAlarmRows" Text="{res:Loc prop.param.alarm.rows}" Grid.Row="40" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CgAlarmRowsBox" Grid.Row="40" Grid.Column="1"
+                                        Value="10" Minimum="1" Maximum="500"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCgTrendGroup" Text="{res:Loc prop.param.trend.group}" Grid.Row="41" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CgTrendGroupBox" Grid.Row="41" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCgSpanMin" Text="{res:Loc prop.param.trend.span}" Grid.Row="42" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CgSpanMinBox" Grid.Row="42" Grid.Column="1"
+                                        Value="30" Minimum="1" Maximum="1440"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCgCurveVars" Text="{res:Loc prop.param.trend.channels}" Grid.Row="43" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CgCurveVarsBox" Grid.Row="43" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
                     </Grid>
                 </Expander>
 

@@ -104,7 +104,7 @@ public class RuntimeConfig
     /// 开机默认加载的屏幕 Id。空则加载 Screens[0]。
     ///
     /// <para><b>已闭环</b>：两处消费 —— 生成代码里决定 <c>lv_screen_load</c> 的目标
-    /// （<c>CodeGenerator</c>），以及导出工程时把该屏重排到 <c>screenFunctions[0]</c>
+    /// （removed：代码生成那一端已删除；导出 chenge 工程时写进 manifest 的 start_page）
     /// （<c>SimulatorProjectExporter</c>）。回退顺序：指定屏 → 首个非图层屏 → 首个屏。</para>
     /// </summary>
     public string? BootScreenId { get; set; }

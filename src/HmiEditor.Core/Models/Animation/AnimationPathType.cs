@@ -43,7 +43,8 @@ public static class AnimationPathHelper
     /// 缓动函数 → LVGL <c>lv_anim_path_cb_t</c> 函数名。
     ///
     /// <para>**唯一实现**：`lv_anim_path_*` 字面量只允许出现在本文件内。
-    /// 曾有三份逐字相同的 switch（<see cref="AnimationConfig.GetPathCCode"/>、CodeGenerator 私有静态、
+    /// （removed：曾有三份逐字相同的 switch，其中两份随 C 导出路径删除）原来还有
+    /// <see cref="AnimationConfig.GetPathCCode"/> 与 CodeGenerator 私有静态、
     /// 动画编辑器预览私有静态），任一处补值另两处不会跟着动 —— 由
     /// `AnimationPathSingleSourceTests` 的结构守卫钉住归属。</para>
     /// </summary>

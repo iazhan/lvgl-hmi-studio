@@ -11,7 +11,6 @@ public static class Lang
     public const string WinVariableManager  = "win.variable.manager";
     public const string WinTagMonitor       = "win.tag.monitor";
     public const string WinSimulator        = "win.simulator";
-    public const string WinValidationResult = "win.validation.result";
     public const string WinFaceplateLib     = "win.faceplate.lib";
     public const string WinAiIcon           = "win.ai.icon";
     public const string WinAiImage          = "win.ai.image";
@@ -275,14 +274,11 @@ public static class Lang
     public const string GenUnlocked       = "gen.unlocked";
     public const string GenConfirmDelete  = "gen.confirm.delete";
     public const string GenSuccess        = "gen.success";
-    public const string GenWarning        = "gen.warning";
-    public const string GenError          = "gen.error";
     public const string GenCancel         = "gen.cancel";
     public const string GenClose          = "gen.close";
     public const string GenSave           = "gen.save";
     public const string GenApply          = "gen.apply";
     public const string GenPreview        = "gen.preview";
-    public const string GenCopyAll        = "gen.copy.all";
     public const string GenNotConfigured  = "gen.not.configured";
 
     // ── 变量浏览器 ─────────────────────────────────
@@ -742,10 +738,8 @@ public static class Lang
     public const string ProjectRefresh        = "project.refresh";
     public const string ProjectSave           = "project.save";
     public const string ProjectLoad           = "project.load";
-    public const string ProjectExport         = "project.export";
     public const string ProjectNew            = "project.new";
     public const string ProjectOpen           = "project.open";
-    public const string ProjectExportC        = "project.export.c";
     public const string ProjectExit           = "project.exit";
     public const string ProjectUndo           = "project.undo";
     public const string ProjectRedo           = "project.redo";
@@ -758,7 +752,6 @@ public static class Lang
     public const string ProjectUntitled       = "project.untitled";
     public const string ProjectStatusReady    = "project.status.ready";
     public const string ProjectStatusSaved    = "project.status.saved";
-    public const string ProjectStatusExported = "project.status.exported";
     public const string ProjectToolbox        = "project.toolbox";
     public const string ProjectProps          = "project.props";
 
@@ -1071,15 +1064,6 @@ public static class Lang
     public const string TrendPenUnnamed           = "trend.pen.unnamed";
     public const string TrendPenDefaultName       = "trend.pen.default.name";
     public const string TrendStopRecord           = "trend.stop.record";
-    public const string FindingPassed             = "finding.passed";
-    public const string FindingLevelInfo          = "finding.level.info";
-    public const string FindingCategoryStructure  = "finding.category.structure";
-    public const string FindingCategoryBinding    = "finding.category.binding";
-    public const string FindingCategoryExpression = "finding.category.expression";
-    public const string FindingCategoryDangling   = "finding.category.dangling";
-    public const string FindingCategoryGeneration = "finding.category.generation";
-    public const string FindingCategoryRuntimeUser = "finding.category.runtime.user";
-    public const string FindingCopied             = "finding.copied";
     /// <summary>「复制全部」里一行的形状（阶段 92 / #61j）：`[{0}] {1}: {2} ({3})`。</summary>
     public const string FindingCopyLine           = "finding.copy.line";
     public const string AiIconGeneratorUnavailable = "ai.icon.generator.unavailable";
@@ -1306,6 +1290,10 @@ public static class Lang
     public const string TbPolyline     = "tb.polyline";
     public const string TbArc          = "tb.arc";
     public const string TbCatDraw      = "tb.cat.draw";
+    // chenge-runtime 目标新增
+    public const string TbValue        = "tb.value";
+    public const string TbAlarmList    = "tb.alarmlist";
+    public const string TbHistoryCurve = "tb.historycurve";
 
     // ── I10: 绘图工具栏 ──
     public const string DrawGroupShapes = "draw.group.shapes";
@@ -1341,7 +1329,6 @@ public static class Lang
     public const string ScreenMinCount                = "screen.minCount";
     public const string StatusControls                = "status.controls";
     public const string StatusCurrent                 = "status.current";
-    public const string StatusExported                = "status.exported";
     public const string StatusReady                   = "status.ready";
     public const string StatusSaved                   = "status.saved";
     public const string StatusSelected                = "status.selected";
@@ -1355,8 +1342,6 @@ public static class Lang
     public const string ToolbarTheme                  = "toolbar.theme";
 
     // ── MainWindow 补全（自动生成）──
-    public const string MenuValidateCode              = "menu.validate.code";
-    public const string MenuExportSimulator           = "menu.export.simulator";
     public const string MenuCreateTemplate            = "menu.create.template";
     public const string MenuPanel                     = "menu.panel";
     public const string MenuReloadPanels              = "menu.reload.panels";
@@ -1408,12 +1393,6 @@ public static class Lang
     public const string StatusProjectLoaded           = "status.project.loaded";
     public const string DialogSaveHmiProject          = "dialog.save.hmi.project";
     public const string StatusProjectSaved            = "status.project.saved";
-    public const string DialogSelectExportDir         = "dialog.select.export.dir";
-    public const string AuditExportCCode              = "audit.export.c.code";
-    public const string StatusVerifyCompleted         = "status.verify.completed";
-    public const string StatusVerifyGenerated         = "status.verify.generated";
-    public const string StatusVerifyFailed             = "status.verify.failed";
-    public const string AuditVerifyCodeFailed         = "audit.verify.code.failed";
     public const string GitBranch                     = "git.branch";
     public const string GitUncommitted                = "git.uncommitted";
     public const string StatusSaveFirstForGit         = "status.save.first.for.git";
@@ -1422,11 +1401,6 @@ public static class Lang
     public const string StatusGitInitFailed           = "status.git.init.failed";
 
     // ── 模拟器导出 ──
-    public const string DialogSelectSimulatorDir    = "dialog.select.simulator.dir";
-    public const string StatusSimulatorBlockedErrors = "status.simulator.blocked.errors";
-    public const string StatusSimulatorBlockedCount  = "status.simulator.blocked.count";
-    public const string StatusSimulatorExported      = "status.simulator.exported";
-    public const string AuditSimulatorExport          = "audit.simulator.export";
 
     // ── 预览模式 ──
     public const string StatusPreviewScreenMissing   = "status.preview.screen.missing";
@@ -1765,128 +1739,20 @@ public static class Lang
     public const string EnumOpModeReadonly         = "enum.opmode.readonly";
 
     // ── 编译转换 / 下载到 HMI ──
-    public const string ToolbarCompile        = "toolbar.compile";
-    public const string ToolbarCompileTt      = "toolbar.compile.tt";
-    public const string ToolbarDownload       = "toolbar.download";
-    public const string ToolbarDownloadTt     = "toolbar.download.tt";
-    public const string MenuCompile           = "menu.compile";
-    public const string MenuDownload          = "menu.download";
-    public const string CompileProgressStart  = "compile.progress.start";
-    public const string CompileProgressGen    = "compile.progress.generating";
-    public const string CompileProgressSave   = "compile.progress.saving";
-    public const string CompileOutput         = "compile.output";
-    public const string CompileSoBuilding     = "compile.so.building";
-    public const string CompileSoSuccess      = "compile.so.success";
-    public const string CompileSoFailed       = "compile.so.failed";
-    public const string CompileSoToolchainMissing = "compile.so.toolchain.missing";
     /// <summary>kinseal（F1C100S）工程的工具链/运行时缺失提示 —— 与 Tina SDK 不是一回事，分开指路。</summary>
-    public const string CompileSoToolchainMissingKinSeal = "compile.so.toolchain.missing.kinseal";
 
     /// <summary>kinseal SDK 首次安装失败（安装包未附带 / 校验不过 / 解压失败）。</summary>
-    public const string SdkKinSealUnavailable = "sdk.kinseal.unavailable";
-    public const string DownloadNeedCompile   = "download.need.compile";
-    public const string DownloadAutoSharedLib = "download.auto.sharedlibrary";
 
     // ── 编译并运行（PC 模拟器集成）──
-    public const string MenuBuildRun             = "menu.build.run";
-    public const string ToolbarBuildRun          = "toolbar.build.run";
-    public const string ToolbarBuildRunTt        = "toolbar.build.run.tt";
-    public const string WinBuildRun              = "win.build.run";
-    public const string BuildRunPhaseReady       = "buildrun.phase.ready";
-    public const string BuildRunPhaseRun         = "buildrun.phase.run";
-    public const string BuildRunStatusRunning    = "buildrun.status.running";
-    public const string BuildRunStatusExited     = "buildrun.status.exited";
-    public const string BuildRunStatusExitedAbn  = "buildrun.status.exited.abnormal";
-    public const string BuildRunStatusCompleted  = "buildrun.status.completed";
-    public const string BuildRunStatusFailed     = "buildrun.status.failed";
-    public const string BuildRunStatusCancelled  = "buildrun.status.cancelled";
-    public const string BuildRunErrorsTitle      = "buildrun.errors.title";
-    public const string BuildRunBtnStop          = "buildrun.btn.stop";
-    public const string BuildRunBtnClose         = "buildrun.btn.close";
-    public const string BuildRunNoLvgl           = "buildrun.no.lvgl";
-    public const string DownloadTargetHint    = "download.target.hint";
-    public const string DownloadSoLabel       = "download.so.label";
-    public const string DownloadSoBrowse      = "download.so.browse";
-    public const string DownloadSoWatermark   = "download.so.watermark";
-    public const string DownloadSoBrowseTitle = "download.so.browse.title";
-    public const string DownloadSoAutoFound   = "download.so.auto.found";
-    public const string DownloadSoMissingHint = "download.so.missing.hint";
-    public const string DownloadSoRenamedHint = "download.so.renamed.hint";
-    public const string DeviceNoOutput        = "device.no.output";
-    public const string DeviceDownloadFailed  = "device.download.failed";
-    public const string DeviceDeployDone      = "device.deploy.done";
-    public const string DeviceDeployRestartFailed = "device.deploy.restart.failed";
-    public const string DeviceSoInvalid       = "device.so.invalid";
-    public const string DeviceSourceOnlyDone  = "device.source.only.done";
-    public const string DeviceSoBuildHint     = "device.so.build.hint";
 
     // ── 设备管理（真实硬件联通）──
     public const string DeviceTitle           = "device.title";
-    public const string DeviceChannel         = "device.channel";
-    public const string DeviceSerial          = "device.channel.serial";
-    public const string DeviceEthernet        = "device.channel.ethernet";
     public const string DevicePort            = "device.port";
-    public const string DeviceBaudRate        = "device.baudrate";
-    public const string DeviceHost            = "device.host";
-    public const string DeviceTcpPort         = "device.tcp.port";
-    public const string DeviceOpen            = "device.open";
-    public const string DeviceClose           = "device.close";
-    public const string DeviceDetect          = "device.detect";
-    public const string DeviceDetecting       = "device.detecting";
-    public const string DeviceRefreshPorts    = "device.refresh.ports";
-    public const string DeviceInfo            = "device.info";
-    public const string DeviceModel           = "device.model";
-    public const string DeviceArch            = "device.arch";
-    public const string DeviceKernel          = "device.kernel";
-    public const string DeviceFw              = "device.fw";
-    public const string DeviceHmiVersion      = "device.hmi.version";
-    public const string DeviceConnectFirst    = "device.connect.first";
-    public const string DeviceCheckUpdate     = "device.check.update";
-    public const string DeviceChecking        = "device.checking";
-    public const string DeviceHmiUpdate       = "device.hmi.update";
-    public const string DeviceSwuPath         = "device.swu.path";
-    public const string DeviceBrowse          = "device.browse";
-    public const string DeviceLocalVersion    = "device.local.version";
-    public const string DeviceDeviceVersion   = "device.device.version";
-    public const string DeviceUpdateNow       = "device.update.now";
-    public const string DeviceUpToDate        = "device.up.to.date";
-    public const string DeviceUpdateAvailable = "device.update.available";
-    public const string DeviceDeviceNewer     = "device.device.newer";
-    public const string DeviceUnknownVer      = "device.unknown.version";
-    public const string DeviceUpdating        = "device.updating";
-    public const string DeviceFirmwareFlash   = "device.firmware.flash";
-    public const string DeviceFwSwuPath       = "device.fw.swu.path";
-    public const string DeviceFlashNow        = "device.flash.now";
-    public const string DeviceFwUpdating      = "device.fw.updating";
-    public const string DeviceUsbPackage      = "device.usb.package";
-    public const string DeviceHmiLibPath      = "device.hmi.lib.path";
-    public const string DeviceOutputDir       = "device.output.dir";
-    public const string DeviceGenerate        = "device.generate";
-    public const string DeviceGenerating      = "device.generating";
-    public const string DeviceGenerated       = "device.generated";
-    public const string DeviceFelFlash        = "device.fel.flash";
-    public const string DeviceFelTool         = "device.fel.tool";
-    public const string DeviceFelImage        = "device.fel.image";
-    public const string DeviceFelArgs         = "device.fel.args";
-    public const string DeviceFelHint         = "device.fel.hint";
-    public const string DeviceFelRunning      = "device.fel.running";
-    public const string DeviceFelDone         = "device.fel.done";
     public const string DeviceLog             = "device.log";
-    public const string DeviceProgress        = "device.progress";
-    public const string DeviceErr             = "device.err";
-    public const string DeviceOperBusy        = "device.oper.busy";
-    public const string DeviceSelectDir       = "device.select.dir";
 
     // ── 日志面板段落标签（设备管理 / 下载到 HMI 的可见日志）──
     // 这些标签以前是写死在 $"[连接] {本地化正文}" 里的：正文入了字典，标签没有，
     // 于是英文界面里同一条日志中英混排。段落标签同为用户可见文案，一并入字典。
-    public const string DeviceLogTagConnect  = "device.log.tag.connect";
-    public const string DeviceLogTagHint     = "device.log.tag.hint";
-    public const string DeviceLogTagDetect   = "device.log.tag.detect";
-    public const string DeviceLogTagUpdate   = "device.log.tag.update";
-    public const string DeviceLogTagFirmware = "device.log.tag.firmware";
-    public const string DeviceLogTagUsb      = "device.log.tag.usb";
-    public const string DeviceLogTagDownload = "device.log.tag.download";
 
     // ── 编辑器命令文案（撤销/重做菜单项 + "未选中控件"提示）──
     public const string CmdDescGroup         = "cmd.desc.group";
@@ -1911,9 +1777,7 @@ public static class Lang
     public const string UiOpDeleteTemplate   = "ui.op.delete.template";
     public const string UiOpAiScript         = "ui.op.ai.script";
     public const string UiOpPickFile         = "ui.op.pick.file";
-    public const string UiOpPickFolder       = "ui.op.pick.folder";
     public const string UiOpGenIcon          = "ui.op.gen.icon";
-    public const string UiOpPickHmi          = "ui.op.pick.hmi";
     public const string UiOpEditGridCell     = "ui.op.edit.grid.cell";
     public const string UiOpRetryAgent       = "ui.op.retry.agent";
     public const string UiOpFailed           = "ui.op.failed";
@@ -1922,34 +1786,7 @@ public static class Lang
     public const string UiOpReportFailed     = "ui.op.report.failed";
 
     // ── 设备日志正文（日志面板 + 状态行）──
-    public const string DeviceLogTagDeploy         = "device.log.tag.deploy";
     public const string DeviceLogTagFel            = "device.log.tag.fel";
-    public const string DeviceLogReady             = "device.log.ready";
-    public const string DeviceLogPortsRefreshed    = "device.log.ports.refreshed";
-    public const string DeviceLogClosed            = "device.log.closed";
-    public const string DeviceLogSelectPort        = "device.log.select.port";
-    public const string DeviceLogEnterHost         = "device.log.enter.host";
-    public const string DeviceLogConnected         = "device.log.connected";
-    public const string DeviceLogDetectDone        = "device.log.detect.done";
-    public const string DeviceLogUpdateEnterLocal  = "device.log.update.enter.local";
-    public const string DeviceLogUpdateChecking    = "device.log.update.checking";
-    public const string DeviceLogUpdateSelectSwu   = "device.log.update.select.swu";
-    public const string DeviceLogUpdateTriggered   = "device.log.update.triggered";
-    public const string DeviceLogUpdateFailed      = "device.log.update.failed";
-    public const string DeviceLogFwSelectSwu       = "device.log.fw.select.swu";
-    public const string DeviceLogFwTriggered       = "device.log.fw.triggered";
-    public const string DeviceLogUsbSelectSo       = "device.log.usb.select.so";
-    public const string DeviceLogUsbSelectOutDir   = "device.log.usb.select.out.dir";
-    public const string DeviceLogFelSelectImage    = "device.log.fel.select.image";
-    public const string DeviceLogFelFlashFailed    = "device.log.fel.flash.failed";
-    public const string DeviceLogDeploySelectSo    = "device.log.deploy.select.so";
-    public const string DeviceLogDeployNoSo        = "device.log.deploy.no.so";
-    public const string DeviceLogDownloadSummary   = "device.log.download.summary";
-    public const string DevicePendingSummary       = "device.pending.summary";
-    public const string DevicePendingAssets        = "device.pending.assets";
-    public const string DevicePendingNoSo          = "device.pending.no.so";
-    public const string DeviceSoDeployed           = "device.so.deployed";
-    public const string DeviceSoNotDeployed        = "device.so.not.deployed";
 
     // ── 变量管理器：报警类型/级别与从站显示名（下拉项与列表标签，纯显示）──
     public const string VarAlarmTypeHigh             = "var.alarm.type.high";
@@ -1982,9 +1819,6 @@ public static class Lang
     public const string UiOpNewProject           = "ui.op.new.project";
     public const string UiOpSaveProject          = "ui.op.save.project";
     public const string UiOpExportCode           = "ui.op.export.code";
-    public const string UiOpCompileProject       = "ui.op.compile.project";
-    public const string UiOpDownloadHmi          = "ui.op.download.hmi";
-    public const string UiOpExportSimulator      = "ui.op.export.simulator";
     public const string UiOpExportRecipe         = "ui.op.export.recipe";
     public const string UiOpExportSlaveVars      = "ui.op.export.slave.vars";
     public const string UiOpImportSvg            = "ui.op.import.svg";
@@ -1995,7 +1829,6 @@ public static class Lang
     public const string UiOpImportSlaveVars = "ui.op.import.slave.vars";
     public const string UiOpExportCharset   = "ui.op.export.charset";
     public const string UiOpApplySvg             = "ui.op.apply.svg";
-    public const string UiOpPrepareSharedLib     = "ui.op.prepare.shared.lib";
     public const string StatusFileNotFound       = "status.file.not.found";
     public const string StatusThemeSwitched      = "status.theme.switched";
     public const string UndoDeleteControl        = "undo.delete.control";
@@ -2020,20 +1853,6 @@ public static class Lang
     public const string AiIconFilterPng            = "ai.icon.filter.png";
 
     // ── 第九批：模拟器构建日志 / 构建运行对话框 / 画布多选操作 / AI 面板状态 ──
-    public const string SimBuildStep1              = "sim.build.step1";
-    public const string SimBuildFiles              = "sim.build.files";
-    public const string SimBuildStep2              = "sim.build.step2";
-    public const string SimBuildStep3              = "sim.build.step3";
-    public const string SimBuildOk                 = "sim.build.ok";
-    public const string SimBuildFailed             = "sim.build.failed";
-    public const string SimBuildFailedDetail       = "sim.build.failed.detail";
-    public const string BuildrunLogTagSim          = "buildrun.log.tag.sim";
-    public const string BuildrunLogNoAutostart     = "buildrun.log.no.autostart";
-    public const string BuildrunLogStaleWindow     = "buildrun.log.stale.window";
-    public const string BuildrunLogCancelled       = "buildrun.log.cancelled";
-    public const string BuildrunLogError           = "buildrun.log.error";
-    public const string BuildrunLogStarted         = "buildrun.log.started";
-    public const string BuildrunLogExited          = "buildrun.log.exited";
     public const string UndoAlignControls          = "undo.align.controls";
     public const string UndoPasteControl           = "undo.paste.control";
     public const string UndoPasteControls          = "undo.paste.controls";

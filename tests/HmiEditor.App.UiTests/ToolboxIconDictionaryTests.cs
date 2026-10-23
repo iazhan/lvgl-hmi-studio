@@ -104,6 +104,9 @@ public class ToolboxIconDictionaryTests
         [HmiControlType.Tank] = "过程图形控件，只在工具箱出现",
         [HmiControlType.Pipe] = "同上",
         [HmiControlType.Valve] = "同上",
+        [HmiControlType.Value] = "chenge-runtime 数据控件，只在工具箱出现（主窗口无快捷图标）",
+        [HmiControlType.AlarmList] = "同上",
+        [HmiControlType.HistoryCurve] = "同上",
     };
 
     /// <summary>

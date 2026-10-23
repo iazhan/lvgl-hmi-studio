@@ -90,10 +90,10 @@ dotnet run --project src/HmiEditor.App/HmiEditor.App.csproj
 
 | 菜单 | 主要项（含界面标注的快捷键） |
 | --- | --- |
-| 文件 | 新建项目 `Ctrl+N`、打开项目 `Ctrl+O`、保存项目 `Ctrl+S`、导出 C 代码... `Ctrl+E`、编译转换 `Ctrl+B`、编译并运行 `Ctrl+Shift+B`、下载到HMI... `Ctrl+Shift+D`、验证生成代码(_V)... `Ctrl+Shift+V`、导出模拟器工程(_M)...、退出 `Alt+F4` |
+| 文件 | 新建项目 `Ctrl+N`、打开项目 `Ctrl+O`、保存项目 `Ctrl+S`、导出并预览（chenge-runtime）、退出 `Alt+F4` |
 | 编辑 | 撤销 `Ctrl+Z`、重做 `Ctrl+Shift+Z`、删除、全选、从选中控件创建模板(_T) `Ctrl+Shift+T`、Faceplate 模板编辑器 |
 | 视图 | 屏幕管理器 `Ctrl+M`、主题编辑器 `Ctrl+T`、动画编辑器 `Ctrl+Shift+A`、放大/缩小/重置缩放、主题（深色/海洋蓝/浅色）、面板(_P)（各停靠面板入口）、重新加载面板(_L) `F5` |
-| 工具(_T) | 项目设置 `Ctrl+Alt+P`、通讯配置 `Ctrl+Alt+C`、用户管理 `Ctrl+U`、报警配置 `Ctrl+Alt+A`、报警列表 `Ctrl+L`、趋势配置 `Ctrl+R`、脚本编辑器 (Lua) `Ctrl+Shift+S`、配方编辑器 `Ctrl+Shift+R`、变量批量导入 `Ctrl+Alt+V`、变量管理 `Ctrl+Shift+M`、离线仿真 `Ctrl+Shift+I`、标签监视器、交叉引用、审计日志、设备管理 `Ctrl+Alt+D`、登录 `Ctrl+Shift+L`、Git 初始化/提交/历史/刷新 |
+| 工具(_T) | 项目设置 `Ctrl+Alt+P`、通讯配置 `Ctrl+Alt+C`、用户管理 `Ctrl+U`、报警配置 `Ctrl+Alt+A`、报警列表 `Ctrl+L`、趋势配置 `Ctrl+R`、脚本编辑器 (Lua) `Ctrl+Shift+S`、配方编辑器 `Ctrl+Shift+R`、变量批量导入 `Ctrl+Alt+V`、变量管理 `Ctrl+Shift+M`、标签监视器、交叉引用、审计日志、登录 `Ctrl+Shift+L`、Git 初始化/提交/历史/刷新 |
 | 语言 | 中文 / English |
 | 帮助 | 关于、Dock 事件路由诊断 `F12` |
 
@@ -223,88 +223,61 @@ Endpoint、Model、API Key、保存配置）；**智能体模式**开关（默�
 选中的 SVG 控件，`AssetManagerView.axaml`）；Faceplate 模板库 →「AI 生成模板」
 （`FaceplateLibraryView.axaml`）；脚本编辑器 →「AI 生成」（见上）。
 
-## 9. 模拟器预览
+## 9. 导出并预览（宿主 chenge-runtime）
 
-两条独立路径，产出的工程都用 **CMake** + **SDL2** 构建，并需要一份含 `lvgl.h` 与
-`CMakeLists.txt` 的 **LVGL 源码**（`src/HmiEditor.App/Services/SimulatorBuildService.cs`、
-`src/HmiEditor.Core/Services/SimulatorProjectExporter.cs`）。
+导出产物只有一种：**chenge-runtime JSON 工程**（格式 0.6，见 `docs/chenge-export-format.md`）。
+C 源码 / `.so` 那两条旧路径**已移除**（removed）：仓库里没有 C 代码生成器、没有 `.so`
+模拟器、没有「下载到 HMI」与设备管理窗口；它们留在 `f1c100s-lvgl8` 分支，不在本分支维护。
 
-**一键编译并运行**：文件 → 编译并运行（`Ctrl+Shift+B`）。LVGL 目录探测顺序：设置 →
-环境变量 `LVGL_DIR` → 工作目录上级 → 常用路径（`SimulatorBuildService.FindLvglDirectory`）；
-找不到会提示「未找到 LVGL 源码目录，请在设置中配置 LVGL 路径」。流程为 `[1/4] 生成模拟器工程
-→ [2/4] cmake configure → [3/4] cmake build → [4/4] 编译成功`，产物 `hmi_sim` 自动运行；
-编译失败时**不会**启动模拟器。LVGL 与工作目录可在 设置 → 模拟器 中配置。
+**导出并预览**（文件 → 导出并预览）：把当前工程导出到临时目录，再用**宿主 chenge-runtime**
+跑一遍并截图。运行时目录取 设置 → chenge-runtime 运行时目录 → 环境变量
+`CHENGE_RUNTIME_DIR` → 安装目录内置 `runtime/`（`Services/ChengeExportService.cs`）。
+预览日志里出现 `page: <id> 打开` 即建页成功；出现「建页失败」说明导出物不合规范。
 
-**导出模拟器工程（自行编译）**：文件 → 导出模拟器工程(_M)...，选目录后生成
-`<目录>/hmi_simulator/`，含 `main.c`、`CMakeLists.txt`、`lv_conf.h`、`generated_hmi.c`、
-`generated_security.h`、`generated_runtime.h`、`README.md` 等（`SimulatorProjectExporter.Export`）。
-导出前若生成代码存在 Error 级问题会被阻断，需先「验证生成代码」。导出目录的 `README.md`
-含平台依赖安装与构建命令：`cmake -B build -DLVGL_DIR=../lvgl .` → `cmake --build build`
-→ `./build/hmi_sim --help`。
-
-`hmi_sim` 支持 `--window <WxH>`、`--scale <n>`、`--fps <n>`、`--login <用户名>`、
-`--selftest`、`--help`（参数解析见生成的 `main.c`）。无显示环境可自检：
-`SDL_VIDEODRIVER=dummy ./build/hmi_sim --selftest`（`scripts/verify.sh` 第 7 步即此用法）。
+宿主运行时的构建（一次性）：在 `chenge-runtime` 目录 `make HOST=1`，产物即可执行文件。
+无显示环境可加 `SDL_VIDEODRIVER=dummy`，并设 `HMI_SHOT=<文件>` 出截图。
 
 **离线仿真（数据源）**：工具 → 离线仿真，给变量配信号类型（常量/正弦/方波/斜坡/
 递增/随机/手动）、幅值/频率/偏移/噪声、周期与倍速，并有寄存器读写、响应模式与仿真日志。
+它只影响设计期显示值，不改导出物。
 
-## 10. 导出 C 代码与编译转换
+## 10. 导出 chenge-runtime 工程
 
-**导出 C 代码**（`Ctrl+E`）：输出目录取 `ExportConfig.OutputDirectory`（默认 `./export`，
-相对工程目录解析）；未配置或工程未保存时弹目录选择框
-（`BuildPipelineService.ExportAsync`、`src/HmiEditor.Core/Models/ExportConfig.cs`）。
-产物为 `generated_hmi.c`（或按语言设置输出 `.cpp`）+ 构建文件。
+导出目录取「工程设置 → 导出设置」的 OutputDirectory（默认工程目录下 `export/`）。
+产物结构（事实源：`src/HmiEditor.Export.Chenge/`）：
 
-**编译转换**（`Ctrl+B`，进度在状态栏），步骤见 `BuildPipelineService.CompileAsync`：
-解析输出目录 → 生成源码并写盘 → 额外生成 SharedLibrary 变体 `generated_hmi_so.c`
-→ 生成 `tags.h` 并用 T113 工具链交叉编译为 `libhmi_ui.so` → 成功后启用「下载到HMI」。
-
-交叉编译按以下顺序探测 **Tina SDK 或独立工具包**
-（`src/HmiEditor.Device/Build/T113SoBuilder.cs`）：设置 → 真机部署 → 「Tina SDK / 工具包目录」
-或「交叉编译器路径」→ 环境变量 `ZHSHU_HMI_SDK` → 仓库内 `firmware/Tina-SDK` /
-`firmware/Tina-Linux`（需含 `out/`）→ 独立工具包 `t113-cross-kit`（含 `kit.json`）。
-未找到工具链时**不中断**，只是不产出 `.so` 并提示：「未找到 T113 交叉工具链，未生成 .so
-（可在 设置→真机部署 配置 Tina SDK 目录）」。
-
-**生成代码验证**（`Ctrl+Shift+V`）：跑静态质量门，弹出「生成代码验证」窗口列出
-Error/Warning 并在状态栏汇总（`MainWindow.axaml.cs` 的 `ValidateGeneratedCode`、
-`src/HmiEditor.Core/Services/GeneratedCodeValidator.cs`）。
-
-## 11. 下载到 HMI 与设备侧生效
-
-文件 → 下载到HMI...（需先编译转换成功）。对话框 `DownloadToHmiView.axaml` 提供：
-连接通道（串口：端口+波特率，默认 115200；以太网：默认 `192.168.100.100:23`）、
-设备目标目录（默认 `/mnt/UDISK/hmi/src`）、HMI 程序 (.so)（自动检测编译产物，也可
-「浏览…」手动选择）、操作日志。
-
-部署内容与设备端路径（事实源：`src/HmiEditor.Device/Updates/HmiDeployService.cs`）：
-
-| 内容 | 设备端路径 |
+| 文件 | 内容 |
 | --- | --- |
-| 源码工程 | `/mnt/UDISK/hmi/src/` |
-| 工程资源（图片/字体） | `/mnt/UDISK/hmi/assets/` |
-| 预编译 `libhmi_ui.so` | `/mnt/UDISK/hmi/libhmi_ui.so` |
-| 运行时连接配置 `comm_config.ini` | `/mnt/UDISK/hmi/comm_config.ini` |
+| `manifest.json` | 格式版本、硬件目标、起始页、屏幕尺寸、features、主题号、字体入口 |
+| `pages/*.json` | 每屏一个文件：`widgets[]`（id/type/rect/z/props/bind/events） |
+| `tags.json` | 变量表（id/name/type/source/权限/死区/初值/单位） |
+| `devices.json` | 设备与协议参数、通道映射 |
+| `ports.json` | 逻辑串口（port → 设备节点/波特率） |
+| `alarms.json` | 报警组与报警条目（含 `text_id` / `text_clear_id`） |
+| `savecfg.json` | 存盘组（`max_records` / `full_policy` / CSV 列格式 / 存储路径） |
+| `users.json` | 用户与组（`groups[].perms[]` 为 10 个命名权限位） |
+| `strings.json` | 界面文案与文本占位符取值（`{tag:id}` / `{tag:id|fmt}` / `{tag:id|fmt|@空值键}`） |
 
-生效方式：`libhmi_ui.so` **只在 hmi_runtime 进程启动时加载一次**，因此部署 `.so` 后会执行
-`killall hmi_runtime`，由 procd（`S97hmiruntime` respawn）自动拉起新进程；未自动拉起时回退
-`/etc/init.d/S97hmiruntime restart`（或 `S99hmiruntime`）。只上传源码/资源、不部署 `.so` 时
-**界面不会更新**（对话框会明确提示）。部署 `comm_config.ini` 让连接参数改完即生效、无需重编
-固件；工程无启用连接时会删除设备旧配置文件（`firmware/t113/README.md`）。
+主题在导出时**烘进控件颜色/字号**，不生成 `theme.json`（运行时不解析主题）。
+导出前后的校验结果是硬门槛：schema 外属性、动作缺口、报警/趋势组找不到都会阻断导出并
+给出条目（`ChengeIssues`）。导出成功后可直接用第 9 节的「导出并预览」验证。
+
+## 11. 把工程放到板子上
+
+导出目录整目录拷到板端，`chenge-runtime` 启动时按 `HMI_PROJECT_DIR` 或 `active` 指针定位工程：
+
+```
+scp -r export/myproject root@<板子IP>:/data/chenge/projects/myproject
+ssh root@<板子IP> 'echo myproject > /data/chenge/active'
+ssh root@<板子IP> 'killall chenge-runtime'   # procd 会按新 active 拉起
+```
+
+改工程只影响这一个目录，不动固件、不重编、不需要 `.so`。
 
 ## 12. 设备管理与固件
 
-工具 → 设备管理 `Ctrl+Alt+D`（`DeviceManagerView.axaml`）提供：连接/检测设备（型号/架构/
-内核/固件版本/HMI 版本）、检查更新、**HMI 程序更新**（`.swu`）、**固件刷写**（`.swu`）、
-**USB 更新包生成**（`libhmi_ui.so` + U 盘/TF 卡输出目录）、**FEL 镜像烧录**（工具路径/镜像/参数）。
-
-> **固件烧录/升级/回滚的具体步骤不在本文复述**，一律以固件文档为准：
-> `firmware/t113/docs/flashing-guide.md`（NAND 线刷 PhoenixSuit/openixcli、TF 卡启动
-> PhoenixCard、openixcli「Boot1 not found in firmware」的成因与 Boot0/Boot1 查找键（镜像本身无需打补丁）、首次启动验证、快捷部署）、
-> `firmware/t113/docs/wavepi-s6-flash-guide.md`（WavePI-S6 刷写与刷回官方镜像）、
-> `firmware/t113/docs/version-info.md`（当前固件版本、ABI 与已知限制）。
-> 独立交叉编译工具包的生成见 `tools/T113KitBuilder/Program.cs`（`--sdk/--out/--zip`）。
+本分支**没有**设备管理器 / 下载到 HMI / FEL 烧录入口（removed）。刷写与镜像仍按板级文档做：
+见仓库根的 `docs/` 与 `f1c100s-project` 的板卡文档。
 
 ## 13. 设置
 
@@ -312,13 +285,13 @@ Error/Warning 并在状态栏汇总（`MainWindow.axaml.cs` 的 `ValidateGenerat
 海洋蓝、强调色）、布局（左/右/底面板尺寸、自动隐藏）、交互（动画、网格吸附、网格点间距、
 撤销栈、显示网格/标尺、实时预览、自动保存与间隔、吸附步长）、显示（默认字体、字号步进、
 画布背景色、默认预览分辨率、工具提示、预览遮罩）、项目浏览器（右键增强菜单）、
-模拟器（LVGL 源码目录、工作目录）、真机部署（Tina SDK/工具包目录、交叉编译器路径）。
+chenge-runtime 运行时目录（导出预览用；留空则读环境变量 `CHENGE_RUNTIME_DIR`）。
 灰显项**尚不生效**，悬停显示原因（`settings.not.effective.tip`）。
 
 **工程设置**（工具 → 项目设置 `Ctrl+Alt+P`，`ProjectSettingsView.axaml`）6 个分类：基本信息、
 显示设置、通信设置、运行时设置、导出设置、安全设置。安全设置可维护**运行时用户表**
-（用户名/显示名/角色/启用/密码），它会导出到 `generated_security.h` 随工程下发
-（面板内提示文案原文如此）。
+（用户名/显示名/角色/启用/密码），导出到 `users.json`；角色限于三个内置组，组内权限位
+在导出时按 `spec/perms.json` 的词表展开。
 
 ## 14. 常见任务速查
 
@@ -332,11 +305,9 @@ Error/Warning 并在状态栏汇总（`MainWindow.axaml.cs` 的 `ValidateGenerat
 | 加趋势 | 工具 → 趋势配置，添趋势与笔 |
 | 写事件脚本 | 工具 → 脚本编辑器 (Lua) `Ctrl+Shift+S`，`F6` 调试运行 |
 | 让 AI 改工程 | 视图 → 面板 → AI 配置，填配置后开智能体模式，可一键回滚 |
-| PC 上看效果 | 文件 → 编译并运行 `Ctrl+Shift+B`（需 LVGL 源码 + CMake + SDL2） |
-| 只导出模拟器工程 | 文件 → 导出模拟器工程(_M)... |
-| 出 C 代码 / 出可下发的 .so | 文件 → 导出 C 代码... `Ctrl+E` / 文件 → 编译转换 `Ctrl+B` |
-| 下发到设备 | 文件 → 下载到HMI...，选串口或以太网 |
-| 检查生成代码质量 | 文件 → 验证生成代码(_V)... |
+| PC 上看效果 | 文件 → 导出并预览（导出到临时目录 + 宿主 chenge-runtime 截图） |
+| 导出工程交给板子 | 文件 → 导出并预览 的同一份产物，整目录拷到板端后切 `active` |
+| 检查导出是否合法 | 导出时即校验；也可 `chenge-runtime/tools/golden.sh` 跑 54 例回归 |
 | 改界面语言 / 换主题 | 菜单 语言 → 中文/English；视图 → 主题，或全局 `Ctrl+J` 循环切换 |
 | 面板空白了 | 视图 → 重新加载面板(_L) 或 `F5` |
 | 设备端界面没变 | 确认部署了 `libhmi_ui.so`（见第 11 节） |

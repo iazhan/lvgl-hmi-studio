@@ -14,17 +14,8 @@ public enum TargetLanguage
     Cpp,
 }
 
-/// <summary>
-/// 代码输出模式 —— 决定生成可执行文件还是动态库。
-/// </summary>
-public enum OutputMode
-{
-    /// <summary>可执行文件模式：生成含 main() 的完整程序（PC 模拟 / 独立固件）。</summary>
-    Executable,
-
-    /// <summary>动态库模式：生成 libhmi_ui.so 代码（无 main，导出 hmi_ui_get_api，供宿主 dlopen 热加载）。</summary>
-    SharedLibrary,
-}
+// OutputMode（可执行 / 动态库）**已删除**（removed）：本分支没有 C 代码生成，也就没有
+// "生成 .so 供宿主 dlopen" 这一档；运行时装的是 JSON 工程，不是动态库。
 
 /// <summary>
 /// C 代码风格 —— 影响缩进、花括号位置、命名风格。
@@ -172,9 +163,5 @@ public class ExportConfig
     /// </summary>
     public bool IncludeLgplDisclaimer { get; set; } = true;
 
-    /// <summary>
-    /// 代码输出模式：可执行文件（含 main）或动态库（.so，供宿主 dlopen 热加载）。
-    /// 动态库模式用于 T113 等嵌入式固件的 HMI UI OTA 热更新场景。
-    /// </summary>
-    public OutputMode OutputMode { get; set; } = OutputMode.Executable;
+    // OutputMode 属性已删除（removed，见上）。
 }

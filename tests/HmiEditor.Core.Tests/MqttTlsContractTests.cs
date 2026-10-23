@@ -208,69 +208,6 @@ public class MqttTlsContractTests
     }
 
     [Fact]
-    public void IniCodegen_EmitsTlsKeysOnlyWhenConfigured()
-    {
-        static DeviceConnection Mqtt(Dictionary<string, string> cfg) => new()
-        {
-            Id = "c1", Name = "MQTT", DriverId = "mqtt", IsEnabled = true,
-            Config = cfg,
-        };
-
-        // ① 老工程（不带任何 TLS 键）⇒ ini **逐字节不变**：一个 tls 键都不出现
-        var legacy = CommConfigCodeGen.GenerateRuntimeConfigText(new[]
-        {
-            Mqtt(new Dictionary<string, string> { ["broker"] = "10.0.0.5" }),
-        });
-        Assert.DoesNotContain(MqttTlsContract.ModeKey, legacy, StringComparison.Ordinal);
-        Assert.DoesNotContain("mqtt.tls.", legacy, StringComparison.Ordinal);
-        Assert.Contains("mqtt.host=10.0.0.5", legacy, StringComparison.Ordinal);   // 正控：明文直连 broker
-
-        // ③ 显式 off 同理（**显式**才允许直连 —— 红线只禁"自动降级"）
-        var explicitOff = CommConfigCodeGen.GenerateRuntimeConfigText(new[]
-        {
-            Mqtt(new Dictionary<string, string> { ["broker"] = "10.0.0.5", ["tls"] = "off" }),
-        });
-        Assert.Contains("mqtt.host=10.0.0.5", explicitOff, StringComparison.Ordinal);
-        Assert.Contains("mqtt.tls=off", explicitOff, StringComparison.Ordinal);
-        Assert.DoesNotContain("upstream_host", explicitOff, StringComparison.Ordinal);
-
-        // ② 配了 psk ⇒ 模式 + 身份 + 密钥文件三行都在
-        //    ⚠ **键名分两层**：连接参数是短名（tls/…），落到 ini 才是 mqtt.tls.*（阶段 282 曾把两层混为一谈）
-        var psk = CommConfigCodeGen.GenerateRuntimeConfigText(new[]
-        {
-            Mqtt(new Dictionary<string, string>
-            {
-                ["broker"] = "10.0.0.5",
-                ["tls"] = "psk",
-                ["tlsPskId"] = "hmi-01",
-                ["tlsPskFile"] = "/mnt/UDISK/hmi/psk.key",
-            }),
-        });
-        Assert.Contains("mqtt.tls=psk", psk, StringComparison.Ordinal);
-        // ⚠ **不许绕过代理**在生成期的落点：TLS 开着时客户端必须连 loopback，
-        //   broker 地址只以 upstream_* 出现（给代理读）
-        Assert.Contains("mqtt.host=127.0.0.1", psk, StringComparison.Ordinal);
-        Assert.DoesNotContain("mqtt.host=10.0.0.5", psk, StringComparison.Ordinal);
-        Assert.Contains("mqtt.tls.upstream_host=10.0.0.5", psk, StringComparison.Ordinal);
-        Assert.Contains("mqtt.tls.upstream_port=1883", psk, StringComparison.Ordinal);
-        Assert.Contains("mqtt.tls.psk_id=hmi-01", psk, StringComparison.Ordinal);
-        Assert.Contains("mqtt.tls.psk_file=/mnt/UDISK/hmi/psk.key", psk, StringComparison.Ordinal);
-        Assert.DoesNotContain("mqtt.tls.ca_path", psk, StringComparison.Ordinal);   // 没配的不发
-
-        // ③ 解析回来的参数与 ini 一致（生成 → 解析闭环）
-        var resolved = CommConfigCodeGen.ResolveMqtt(Mqtt(new Dictionary<string, string>
-        {
-            ["tls"] = "psk",
-            ["tlsPskId"] = "hmi-01",
-            ["tlsPskFile"] = "/mnt/UDISK/hmi/psk.key",
-        }));
-        Assert.NotNull(resolved);
-        Assert.Equal("psk", resolved!.Tls);
-        Assert.Equal("hmi-01", resolved.TlsPskId);
-        Assert.Equal("/mnt/UDISK/hmi/psk.key", resolved.TlsPskFile);
-    }
-
-    [Fact]
     public void ModeToken_RejectsUnknownEnumValues()
     {
         Assert.Equal("off", MqttTlsContract.ModeToken(MqttTlsMode.Off));

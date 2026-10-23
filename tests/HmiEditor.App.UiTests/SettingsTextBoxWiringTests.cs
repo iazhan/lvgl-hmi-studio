@@ -88,6 +88,10 @@ public class SettingsTextBoxWiringTests
         new("TxtKinSealSdkManifestUrl", "device", "KinSeal.SdkManifestUrl",
             d => d.Settings.KinSeal.SdkManifestUrl, "  https://example.com/sdk.json  ",
             "https://example.com/sdk.json"),
+
+        // ── 导出预览用的宿主运行时目录 ──
+        new("TxtChengeRuntimeDir", "device", "Chenge.RuntimeDir",
+            d => d.Settings.Chenge.RuntimeDir, "  /opt/chenge-runtime  ", "/opt/chenge-runtime"),
     };
 
     private static T Find<T>(Window window, string name) where T : Control =>

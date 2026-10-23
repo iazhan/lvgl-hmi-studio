@@ -83,6 +83,11 @@ public class AiSchemaEnumContractTests
             var ext = Path.GetExtension(file);
             if (ext is not (".cs" or ".json") || IsBuildOutput(file)) continue;
 
+            // vendored 契约（spec/widget-schema.json 的副本）：那是**运行时契约**的取值域，
+            // 不是 AI 工具 schema，也没有产品枚举可派生 ⇒ 不在本守卫的扫描面内。
+            var rel = Path.GetRelativePath(root, file).Replace('\\', '/');
+            if (rel.Contains("HmiEditor.Export.Chenge/Schema/", StringComparison.Ordinal)) continue;
+
             var text = File.ReadAllText(file);
             foreach (Match m in EnumLiteralStart.Matches(text))
             {

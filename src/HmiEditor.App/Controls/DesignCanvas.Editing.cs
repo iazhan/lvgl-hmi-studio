@@ -85,6 +85,10 @@ public partial class DesignCanvas : Control
         HmiControlType.Ellipse => (140.0, 100.0),
         HmiControlType.Polyline => (160.0, 80.0),
         HmiControlType.Arc => (120.0, 120.0),
+        // chenge-runtime 目标新增
+        HmiControlType.Value => (180.0, 40.0),
+        HmiControlType.AlarmList => (400.0, 180.0),
+        HmiControlType.HistoryCurve => (400.0, 180.0),
         _ => (100.0, 40.0)
     };
 

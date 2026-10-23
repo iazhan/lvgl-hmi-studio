@@ -15,7 +15,8 @@ public enum StretchModeKind
 
 /// <summary>
 /// 图片缩放模式解析器 —— 设计器渲染（DesignCanvas.TryDrawImage）与代码生成
-/// （CodeGenerator.LvglImageAlign）共用，消除两处各自维护的字符串 switch 漂移。
+/// 与 `removed` 的 CodeGenerator.LvglImageAlign 曾经共用（那端已随 C 导出路径删除），
+/// 本表现在只服务设计期渲染。
 /// 语义：null/空/Fill/Stretch/未知 → Stretch；None/Center → Center；其余大小写不敏感。
 /// </summary>
 public static class StretchModeMap

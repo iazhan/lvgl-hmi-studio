@@ -13,7 +13,6 @@ using Dock.Model.Core;
 using HmiEditor.App.Controls;
 using HmiEditor.App.Services;
 using HmiEditor.App.Views;
-using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.Alarm;
 using HmiEditor.Core.Models.Scripting;
@@ -21,7 +20,6 @@ using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Diagnostics;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
-using HmiEditor.Device.Build;
 
 namespace HmiEditor.App;
 
@@ -46,12 +44,6 @@ public partial class MainWindow
         {
             var dialog = new Views.CommunicationConfigView(
                 _currentProject.VariableManager, _currentProject);
-            dialog.ShowDialog(this);
-        };
-
-        MenuDeviceManager.Click += (_, _) =>
-        {
-            var dialog = new Views.DeviceManagerView();
             dialog.ShowDialog(this);
         };
 
@@ -247,7 +239,7 @@ public partial class MainWindow
             SetUnsavedChanges(true);
         };
 
-        BtnExportCode.Click += (_, _) => ExportCode();
+        BtnExportChenge.Click += (_, _) => ExportChengeProject();
         BtnZoomIn.Click += (_, _) => SetZoom(_zoomLevel + 0.25);
         BtnZoomOut.Click += (_, _) => SetZoom(_zoomLevel - 0.25);
         BtnDeleteControl.Click += (_, _) => DeleteCurrentControl();

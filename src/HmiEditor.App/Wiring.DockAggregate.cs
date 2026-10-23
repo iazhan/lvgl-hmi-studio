@@ -13,7 +13,6 @@ using Dock.Model.Core;
 using HmiEditor.App.Controls;
 using HmiEditor.App.Services;
 using HmiEditor.App.Views;
-using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.Alarm;
 using HmiEditor.Core.Models.Scripting;
@@ -21,7 +20,6 @@ using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Diagnostics;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
-using HmiEditor.Device.Build;
 using HmiEditor.App.Resources;
 
 namespace HmiEditor.App;

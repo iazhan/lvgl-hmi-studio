@@ -29,6 +29,18 @@ public class AlarmConfig
     /// <summary>触发条件</summary>
     public AlarmCondition Condition { get; set; } = new();
 
+    /// <summary>
+    /// 报警文本的多语言 id（导出 alarms.json 的 text_id；指向 strings.json）。
+    /// 空 = 用 <see cref="Name"/> 作为 text 直接写文案。
+    /// </summary>
+    public string? TextId { get; set; }
+
+    /// <summary>恢复文案（导出 text_clear）；空 = 沿用触发文案。</summary>
+    public string? TextClear { get; set; }
+
+    /// <summary>恢复文案的多语言 id（导出 text_clear_id）。</summary>
+    public string? TextClearId { get; set; }
+
     /// <summary>关联的脚本 ID（可选，触发时执行）</summary>
     public string? ScriptId { get; set; }
 

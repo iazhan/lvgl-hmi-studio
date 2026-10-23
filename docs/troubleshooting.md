@@ -68,99 +68,61 @@
 - **处置**：安装 `gcc`；单独验证：`bash firmware/t113/tests/run_host_tests.sh`。
 - **依据**：`README.md`、`scripts/ci-gate.sh` 第 **[7]** 步、`firmware/t113/tests/run_host_tests.sh`。
 
-## 2. 导出与编译
+## 2. 导出与预览
 
-### 2.1 「未找到 LVGL 源码目录，请在设置中配置 LVGL 路径」
+### 2.1 「导出完成，但预览报没有 chenge-runtime 可执行文件」
 
-- **原因**：没找到可用的 LVGL 源码目录；探测顺序为 设置 → 环境变量 `LVGL_DIR` → 工作目录上级
-  → 常用路径。
-- **处置**：在 设置 → 模拟器 →「LVGL 源码目录」填目录，或设置 `LVGL_DIR`；该目录必须同时含
-  `lvgl.h` 与 `CMakeLists.txt`（否则报「LVGL 源码无效: …」）。
-- **依据**：`src/HmiEditor.App/MainWindow.axaml.cs` 的 `BuildAndRunSimulator`、
-  `src/HmiEditor.App/Services/SimulatorBuildService.cs` 的 `FindLvglDirectory`。
+- **原因**：导出预览要一份**宿主**运行时（`make HOST=1` 的产物），不是板端交叉编译产物。
+- **处置**：在设置 → chenge-runtime 运行时目录填那个目录；或设环境变量 `CHENGE_RUNTIME_DIR`；
+  或在 `chenge-runtime` 目录先 `make HOST=1`。
+- **依据**：`src/HmiEditor.App/Services/ChengeExportService.cs` 的 `LocateRuntime`
+  （顺序：设置 → 环境变量 → 安装目录内置 `runtime/`）。
 
-### 2.2 「未找到 cmake，请安装 CMake 后重试」
+### 2.2 预览窗口/截图是黑的，但没报错
 
-- **处置**：安装 CMake（Linux: `sudo apt install cmake`），或设置 `CMAKE_EXECUTABLE` 指定路径。
-- **依据**：`SimulatorBuildService.cs` 的 `FindCmake`。
+- **原因**：无显示环境时 SDL 起不来；预览默认 `SDL_VIDEODRIVER=dummy` + `HMI_SHOT`，只出图。
+- **处置**：看日志里有没有 `page: <id> 打开`；没有就是建页失败，按 2.3 查。
+- **依据**：`ChengeExportService.PreviewAsync`。
 
-### 2.3 编译转换提示「未找到 T113 交叉工具链，未生成 .so」
+### 2.3 「建页失败」/ 运行时拒绝载入
 
-- **症状**：源码生成成功、`下载到HMI` 也解锁了，但没有 `.so` 产物。
-- **原因**：这是**软失败**（不中断流程）：未找到 Tina SDK 或独立交叉编译工具包。
-- **处置**：在 设置 → 真机部署 配置「Tina SDK / 工具包目录」或「交叉编译器路径」；也可设置
-  环境变量 `ZHSHU_HMI_SDK`，或把 SDK 放在仓库内 `firmware/Tina-SDK` / `firmware/Tina-Linux`
-  （需含 `out/`）。客户机可用独立工具包（含 `kit.json`）。
-- **依据**：`src/HmiEditor.App/Services/BuildPipelineService.cs` 的 `compile.so.toolchain.missing`；
-  `src/HmiEditor.Device/Build/T113SoBuilder.cs` 的 `FindSdkRoot`。
+- **原因**：导出物不满足格式 0.6 的硬性约束（schema 外属性、动作缺 tag、
+  报警/趋势组引用了不存在的名字、文本占位符写法不对）。
+- **处置**：导出时会先给一份问题清单（`ChengeIssues`），按条目改；改完再来一次导出。
+  回归可用运行时自带的 `chenge-runtime/tools/golden.sh`（54 例）。
+- **依据**：`src/HmiEditor.Export.Chenge/ChengeExporter.cs`、`docs/chenge-export-format.md`。
 
-### 2.4 交叉编译日志逐条列出「✗ 未找到 …」
+### 2.4 导出的动作点了没反应
 
-前置缺失时一次性列出原因（不抛异常）。常见几条：
+- **原因**：布尔变量的写动作必须发 `true` / `false`。发 `1` / `0` 会被运行时按
+  「数值写布尔」拒绝（日志 `tagdb: tagN 是布尔，数值写被拒绝`）。
+- **处置**：动作值填 `true` / `false`（或 1 / 0，导出器会按目标 tag 类型自动转 bool）。
+- **依据**：`ChengeWidgetMapper.WriteValue`、运行时的 `chenge-runtime/src/core/tagdb.c`。
 
-| 日志文案（节选） | 含义与处置 |
-| --- | --- |
-| `未找到 Tina SDK/交叉编译工具包（设置 T113 SDK 目录或环境变量 ZHSHU_HMI_SDK）` | 见 2.3 |
-| `未找到固件头契约（.so 编译需要 screen_manager.h/hmi_ui_api.h；工具包为 <kit>/firmware/app）` | SDK 不在仓库 `firmware/` 下时推断不出仓库根；改用仓库内 SDK 或工具包 |
-| `未找到交叉编译器 arm-openwrt-linux-*-gcc（SDK out/staging 或工具包 toolchain/bin）` | 在设置里显式指定该 `*-gcc` 完整路径 |
-| `未找到 LVGL 源码根（SDK package/gui/lvgl 或工具包 lvgl）` | SDK 需有 `package/gui/lvgl`（含 `lvgl.h`） |
-| `未找到固件 LVGL 配置 lv_conf.h` / `未找到 freetype2 头文件` / `未找到固件运行头文件 screen_manager.h` | SDK 布局需为 `<repo>/firmware/t113/{config,app/runtime}`，且 `out/` 下有 staging |
-| `未找到标签契约头 tags.h（请先编译转换生成工程 tags.h）` | 回到编辑器执行「编译转换」，它会在输出目录先生成 `tags.h` |
-
-- **依据**：`T113SoBuilder.ResolveContext`（以上 missing 文案都在此）。
-
-### 2.5 「交叉编译失败 (exit N)」/「链接失败 (exit N)」
-
-- **原因**：工具链找到了，但编译或链接报错（状态栏已逐行回显 `[.so]` 输出）。
-- **处置**：按 `[.so]` 前缀的编译器输出定位；确认 SDK staging 与所用工具链匹配。
-- **依据**：`T113SoBuilder.BuildAsync`。
-
-### 2.6 「模拟器工程导出被阻断: 生成代码存在 Error 级问题」
-
-- **原因**：导出模拟器工程前会自动跑静态验证，有 Error 级问题即阻断。
-- **处置**：先执行 文件 → 验证生成代码(_V)...，按结果窗口清单修正后重试。
-- **依据**：`MainWindow.axaml.cs` 的 `ExportSimulatorProjectCore`（`status.simulator.blocked.errors`）、
-  `src/HmiEditor.Core/Services/GeneratedCodeValidator.cs`。
-
-### 2.7 打开 `.hmi` 报「缺少 manifest.json」/「不支持的工程包格式版本」
+### 2.5 打开 `.hmi` 报「缺少 manifest.json」/「不支持的工程包格式版本」
 
 - **原因**：文件不是有效工程包，或由更新版本编辑器创建（格式版本更高）。
 - **处置**：确认文件来自本编辑器的「保存项目」；跨版本工程用创建它的编辑器打开。
 - **依据**：`src/HmiEditor.Core/Serialization/HmiPackageService.cs` 的 `Unpack`。
 
-## 3. 设备与下载
+## 3. 设备侧生效
 
-### 3.1 下载完成但设备界面没变
+### 3.1 拷了工程但板子还是老界面
 
-- **原因**：`libhmi_ui.so` 只在 hmi_runtime 进程启动时加载一次；只上传源码/资源不更新界面。
-- **处置**：确认下载对话框里「HMI 程序 (.so)」已选中；没有 `.so` 时先做「编译转换」，或用
-  「浏览…」手动选择交叉编译产物。部署 `.so` 后编辑器会 `killall hmi_runtime`，
-  让 procd 自动拉起新进程。
-- **依据**：`src/HmiEditor.Device/Updates/HmiDeployService.cs`；文案 `download.so.missing.hint`
-  （`src/HmiEditor.Core/Resources/Strings.zh-CN.json`）。
+- **原因**：`chenge-runtime` 启动时按 `HMI_PROJECT_DIR` 或 `/data/chenge/active` 里的名字定位工程，
+  目录名写错就会继续用上一次的工程。
+- **处置**：核对 `/data/chenge/projects/<名字>/manifest.json` 存在，`active` 文件里就是这个名字，
+  然后 `killall chenge-runtime` 由 procd 拉起。
+- **依据**：运行时的 `chenge-runtime/src/project/loader.c`（`HMI_PROJECT_DIR` / active 解析）。
 
-### 3.2 提示「所选 .so 不是 ARM ELF…无法在 T113 加载，已跳过部署」
+### 3.2 「建页失败」出现在板端日志
 
-- **原因**：本地 ELF 头校验失败（非 32 位小端 EM_ARM），dlopen 必然失败。
-- **处置**：换用 T113 交叉编译产物（见 2.3/2.4），不要用 PC 上编出的 `.so`。
-- **依据**：`HmiDeployService.IsArmElf`。
+- **原因**：板端字体/内存吃紧，或工程里某页控件数超过镜像上限（`core/limits.h` 的
+  每页控件上限，编译期参数）。
+- **处置**：先看失败原因那一行（哪个控件、哪个属性）；控件数超限要拆页。
+- **依据**：运行时的 `chenge-runtime/src/ui/ui_page.c`、`chenge-runtime/src/core/caps.c`。
 
-### 3.3 「部署完成，但 hmi_runtime 未自动重启」
-
-- **原因**：procd 未托管（旧固件或手动启动），`killall` 后无人拉起；编辑器已回退执行
-  `/etc/init.d/S97hmiruntime restart`（或 `S99hmiruntime`）仍失败。
-- **处置**：串口/SSH 登录设备查进程与日志，确认 `/etc/init.d/S97hmiruntime` 存在且可执行。
-- **依据**：`HmiDeployService.DeployAsync` 的重启与兜底分支；
-  `firmware/t113/docs/flashing-guide.md`「开机自启动配置」。
-
-### 3.4 日志显示 `ui_loaded=0`（新程序加载失败）
-
-- **原因**：`.so` 已部署并重启，但新 HMI 程序加载失败——通常是与设备固件的 ABI/标签表不匹配。
-- **处置**：核对设备固件与工程运行时版本（`firmware/t113/docs/version-info.md` 的 ABI 说明），
-  必要时先升级宿主固件再下发 `.so`。
-- **依据**：`HmiDeployService.DeployAsync` 的 `ui_loaded=0` 分支。
-
-### 3.5 触摸、通讯与固件烧录类
+### 3.3 触摸、通讯与固件烧录类
 
 这三类一律按固件文档排查，不在本文发明步骤：
 
@@ -197,5 +159,5 @@
 | --- | --- | --- |
 | Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/ci-gate.sh` 第 [6] 步注释、`docs/2026-09-17-sandbox-newpath-serialization.md`；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
 | `RuntimeConfig` 部分字段不走设备：`HistoryStoragePath`/`HeartbeatIntervalMs`/`MaxRuntimeTasks`/`EnableCrashDump`/`CrashDumpSector` 未下发，`EnableTamperDetection` 零消费，`WatchdogTimeoutMs`/`EnableHmiReboot` 是死字段（保留为老工程 JSON 兼容） | 在工程设置改这些项不会改变设备行为，闭环需先立机制 | `docs/2026-09-17-open-items-register.md` §3 第 9–11 项、`docs/2026-09-16-runtime-config-sinking.md` |
-| 编辑器侧一键出发布包：`bash scripts/package-release.sh`（发布编辑器 + 生成版本清单/校验和/升级回滚说明，可选 `--with-kit` 带 T113 交叉工具包）；出包后 `bash scripts/package-release.sh --verify <包目录>` 复核；固件侧 OTA 热更新 + UDISK 优先 + 出厂回退见 `firmware/t113/docs/version-info.md` | 出包与升级回滚步骤见包内 `UPGRADE.md` | `scripts/package-release.sh`、`tools/ReleasePackager/Program.cs`、`docs/2026-09-18-release-packaging.md` |
+| 编辑器侧一键出发布包：`bash scripts/package-release.sh`（发布编辑器 + 生成版本清单与校验和）；出包后 `bash scripts/package-release.sh --verify <包目录>` 复核 | 出包步骤见包内 `UPGRADE.md` | `scripts/package-release.sh`、`docs/2026-09-18-release-packaging.md` |
 | 极端迟到的设备回包仍可能串帧（晚于首字节宽限窗口） | 避免通道繁忙时下发超长命令；失败重试 | `docs/2026-09-17-open-items-register.md` §3 第 14 项、`docs/2026-09-16-channel-frame-completion-contract.md` |

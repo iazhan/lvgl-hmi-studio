@@ -68,6 +68,10 @@ public class PropertyPanelWiringTests
         ["SvgAssetCombo"] = "选项依赖 SVG 资产库（宿主未注入资产提供者）",
         ["CboVsImage"] = "选项依赖视觉状态图片资产（宿主未注入资产提供者）",
         ["CboActionTarget"] = "选项依赖目标屏/控件列表（宿主未注入工程上下文）",
+        // chenge 数据控件的数字框：只有选中 AlarmList / HistoryCurve 时才显示，
+        // 而本面按控件类型枚举的夹具清单里还没有这两类（已登记为待补夹具）。
+        ["CgAlarmRowsBox"] = "报警列表控件专属行：夹具里还没有 AlarmList 类型（选择该控件才可见）",
+        ["CgSpanMinBox"] = "历史曲线控件专属行：夹具里还没有 HistoryCurve 类型（选择该控件才可见）",
         ["ScreenBgImageCombo"] = "选项依赖背景图资产库",
         ["ScreenPresetCombo"] = "预设分辨率在打开下拉时才填充",
         ["PropFontFamily"] = "选项依赖字体服务异步回填",

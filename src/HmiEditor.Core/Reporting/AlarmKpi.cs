@@ -42,7 +42,8 @@ public sealed record AlarmKpiSummary(
 /// **报警系统 KPI**（ISA-18.2 切片㊂ 的"可算的那半"；登记 `§2-#11`）。
 ///
 /// <para><b>为什么先做 KPI、后做搁置</b>：搁置（shelving）会改动报警**状态模型**，而设备侧生成的
-/// C 代码目前只有 state 0/1/2/3（`CodeGenerator.Alarm.cs:176-185`）⇒ 那需要先立**设备契约**
+/// 设备侧目前只有 state 0/1/2/3（removed：原来引用的 `CodeGenerator.Alarm.cs` 已删除，
+/// 状态取值以 chenge-runtime 的 alarms 契约为准）⇒ 那需要先立**设备契约**
 /// （与 `§2-#12` 的 M1 同款做法）。KPI 只读记录、不动状态机，能立刻交付且**逐条可判**。</para>
 ///
 /// <para><b>口径（写死并判据化）</b>：

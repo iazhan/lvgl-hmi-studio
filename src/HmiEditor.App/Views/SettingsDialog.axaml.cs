@@ -432,6 +432,7 @@ public partial class SettingsDialog : ChromeWindow
         TxtT113Toolchain.TextChanged += (_, _) => _settings.Device.SetT113ToolchainGcc(TxtT113Toolchain.Text?.Trim() ?? "");
         TxtKinSealToolchain.TextChanged += (_, _) => _settings.KinSeal.SetToolchainGcc(TxtKinSealToolchain.Text?.Trim() ?? "");
         TxtKinSealRuntimeDir.TextChanged += (_, _) => _settings.KinSeal.SetRuntimeDir(TxtKinSealRuntimeDir.Text?.Trim() ?? "");
+        TxtChengeRuntimeDir.TextChanged += (_, _) => _settings.Chenge.SetRuntimeDir(TxtChengeRuntimeDir.Text?.Trim() ?? "");
         TxtKinSealSdkManifestUrl.TextChanged += (_, _) => _settings.KinSeal.SetSdkManifestUrl(TxtKinSealSdkManifestUrl.Text?.Trim() ?? "");
     }
 

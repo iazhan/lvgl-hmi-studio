@@ -11,7 +11,6 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Layout;
 using Avalonia.Threading;
-using HmiEditor.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.Animation;
 using HmiEditor.App.Resources;
@@ -1147,35 +1146,11 @@ public partial class AnimationEditorView : ChromeWindow
     }
 
     // ═══════════════════════════════════════════════
-    //  LVGL C 代码预览
+    //  动画导出说明（C 代码导出已随旧路径移除）
     // ═══════════════════════════════════════════════
 
-    private void UpdateCCodePreview()
-    {
-        if (_currentAnimation == null)
-        {
-            TxtCCodePreview.Text = "";
-            return;
-        }
-
-        var anim = _currentAnimation;
-        var code = GenerateCCode(anim);
-        TxtCCodePreview.Text = code;
-    }
-
-    /// <summary>
-    /// 预览用的 C 代码 —— <b>直接调真实发射器</b>，预览与产物同源。
-    ///
-    /// <para>历史缺陷：这里曾自己手拼一套形似产物、实则对不上的伪代码 ——
-    /// 控件变量写成 <c>ui_{id}</c>（产物是 <c>obj_{净化id}</c>，用户照抄会抄到不存在的符号）、
-    /// 没有 <c>start_anim_*</c> 包装函数与 <c>apply_animations()</c> 入口、缓动映射还各留了一份
-    /// 私有 switch。现在预览即 <see cref="CodeGenerator.GenerateAnimationCode"/> 的输出。</para>
-    ///
-    /// <para>有意保留的副作用：动画未启用时预览显示 <c>// No animations configured.</c> ——
-    /// 那正是这个动画对产物的真实贡献。</para>
-    /// </summary>
-    private static string GenerateCCode(AnimationConfig anim) =>
-        new CodeGenerator().GenerateAnimationCode(new[] { anim });
+    private void UpdateCCodePreview() =>
+        TxtCCodePreview.Text = AppLocalization.Service["anim.c.preview.removed"];
 
     // ═══════════════════════════════════════════════
     //  内部辅助类型

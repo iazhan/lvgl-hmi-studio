@@ -23,8 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HmiEditor.AI\HmiEditor.AI.csproj" />
     <ProjectReference Include="..\HmiEditor.Core\HmiEditor.Core.csproj" />
-    <ProjectReference Include="..\HmiEditor.Device\HmiEditor.Device.csproj" />
-    <ProjectReference Include="..\HmiEditor.CodeGen\HmiEditor.CodeGen.csproj" />
+    <ProjectReference Include="..\HmiEditor.Export.Chenge\HmiEditor.Export.Chenge.csproj" />
     <!-- HmiEditor.Scripting 于 2026-09-20 下架：App 从不使用它（全仓 0 条 using），
          其中唯一有价值的 Lua 语法解析已迁入 HmiEditor.Core 的 LuaSyntaxValidator。
          见 docs/2026-09-20-lua-syntax-validation.md。 -->
@@ -81,16 +80,5 @@
     <!-- 固件型号定义：每套固件（firmware/*/firmware.json）生成一个固定型号 -->
     <None Include="..\..\firmware\*\firmware.json" Link="firmware\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 
-    <!-- kinseal SDK：由 tools/package-kinseal-sdk.sh 生成到仓库根的 sdk/，随安装包分发。
-         首次用到交叉编译时由编辑器校验清单并解压到用户数据目录（解压用 tar，能保留可执行位；
-         直接铺文件进安装包在 Windows 上会丢权限）。目录不存在时无匹配文件，构建不受影响。 -->
-    <None Include="..\..\sdk\kinseal-sdk-*.tar.gz"
-          Link="sdk\%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
-    <None Include="..\..\sdk\kinseal-sdk-*.manifest.json"
-          Link="sdk\%(Filename)%(Extension)"
-          CopyToOutputDirectory="PreserveNewest"
-          CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

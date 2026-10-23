@@ -156,10 +156,8 @@ public class MainWindowToolbarInvocationUiTests
                                + "这里的窗口从没绑定过工程文件路径（`_currentHmiPath` 为空）⇒ 点了会走选择器分支，"
                                + "而 headless 下选择器静默返回空（不抛、不弹窗 ⇒ 连「没弹窗」都不可判）。"
                                + "保存/打开路径的真判据在 `ProjectFileOpenSaveRoundTripUiTests`（隔离目录里真写盘、真回读）"),
-        Skip("BtnExportCode", "导出生成代码：写整套代码到磁盘"),
-        Skip("BtnCompile", "编译：起外部编译进程"),
-        Skip("BtnBuildRun", "构建并运行仿真器：起外部构建进程"),
-        Skip("BtnDownloadHmi", "下载到 HMI：向设备推送文件，不可逆的外部动作"),
+        Skip("BtnExportChenge", "导出 chenge 工程：打开目录选择器后写整套 JSON 到磁盘"),
+        Skip("BtnExportPreview", "导出并预览：启动宿主 chenge-runtime 进程并截图"),
 
         // ── ⑨ 会真正改状态：放在最后，之后不再有点击 ──
         Quiet("BtnQuickButton", "在画布中心加一个按钮控件（改状态、不弹窗）"),

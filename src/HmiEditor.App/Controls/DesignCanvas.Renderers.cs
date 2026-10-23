@@ -816,6 +816,40 @@ public partial class DesignCanvas : Control
             new Rect(rect.X, rect.Y + headerH, rect.Width, rect.Height - headerH));
     }
 
+    /// <summary>
+    /// 数据型控件（value / alarm_list / history_curve）的设计期占位：
+    /// 画标题 + 一行配置摘要。**刻意不假装画成运行时的样子** —— 真渲染由宿主
+    /// chenge-runtime 出图（"导出并预览"），设计期画得像反而会让人以为所见即所得。
+    /// </summary>
+    private void RenderDataWidgetPlaceholder(DrawingContext context, HmiControl control, Rect rect, double z, string subtitle)
+    {
+        var bgColor = ParseColorHex(EffectiveVisualColor(control, nameof(HmiControl.BgColor), control.BgColor), DesignPalette.Slate800);
+        context.FillRectangle(RenderResourceCache.Brush(bgColor), rect, (float)(4 * z));
+
+        var borderColor = ParseColorHex(EffectiveVisualColor(control, nameof(HmiControl.BorderColor), control.BorderColor), DesignPalette.Border);
+        var pen = new Pen(RenderResourceCache.Brush(borderColor), Math.Max(1, control.BorderWidth * z));
+        context.DrawRectangle(null, pen,
+            new Rect(rect.X + 0.5, rect.Y + 0.5, Math.Max(1, rect.Width - 1), Math.Max(1, rect.Height - 1)),
+            (float)(4 * z));
+
+        var textColor = ParseColorHex(EffectiveVisualColor(control, nameof(HmiControl.TextColor), control.TextColor), DesignPalette.Text);
+        var title = Services.ControlTypeTextKeys.Describe(control.Type);
+        var titleText = RenderResourceCache.Text(title, Math.Max(10, 12 * z), RenderResourceCache.Brush(textColor));
+        context.DrawText(titleText, new Point(rect.X + 8 * z, rect.Y + 6 * z));
+
+        if (!string.IsNullOrWhiteSpace(subtitle))
+        {
+            var hint = RenderResourceCache.Text(subtitle, Math.Max(9, 10 * z), RenderResourceCache.Brush(DesignPalette.Border));
+            context.DrawText(hint, new Point(rect.X + 8 * z, rect.Y + 8 * z + titleText.Height));
+        }
+    }
+
+    private static string ValueSubtitle(HmiControl control)
+    {
+        var unit = string.IsNullOrWhiteSpace(control.Unit) ? "" : " " + control.Unit;
+        return $"{control.ValueDecimalPlaces}{unit}";
+    }
+
     private void RenderTablePlaceholder(DrawingContext context, HmiControl control, Rect rect, double z)
     {
         // 背景：消费 control.BgColor（模拟器表格主体背景 = 用户 BgColor，LVGL 无主题时

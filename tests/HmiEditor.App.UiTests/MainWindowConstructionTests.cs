@@ -86,8 +86,9 @@ public class MainWindowConstructionTests
         Assert.True(partials.Count >= 6,
             $"MainWindow 的 partial 只找到 {partials.Count} 个（应为 7：MainWindow.axaml.cs + 6 个 Wiring.*.cs），"
             + $"清单可能失效：[{string.Join(", ", partials.Select(p => p.Relative))}]");
-        Assert.True(names.Count >= 140,
-            $"MainWindow.axaml 只推导出 {names.Count} 个具名控件（应约 143），清单可能失效");
+        // 单轨后 C/.so 那批菜单与工具栏按钮被移除 ⇒ 143 → 约 133。
+        Assert.True(names.Count >= 130,
+            $"MainWindow.axaml 只推导出 {names.Count} 个具名控件（应约 133），清单可能失效");
 
         // 剥注释后再找：注释里提一句名字不算接线（保长度、保行数，见 SourceScanner）。
         var code = string.Join("\n", partials.Select(p => SourceScanner.StripComments(p.Text)));

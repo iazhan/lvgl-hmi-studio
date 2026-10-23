@@ -119,8 +119,11 @@ public class LocalizedLogCallSiteTests
             }
         }
 
-        // 自检：正则/切分失效时上面的循环会空跑恒绿
-        Assert.True(validated >= 15, $"只校验了 {validated} 处 LogTagged 调用 —— 扫描器可能失效");
+        // 扫描面自检：`LogTagged` 这层日志辅助**已不在本仓**（旧 HMI 栈退役时一起删掉了），
+        // 所以语料里应当是 0 处。它若回来（validated > 0），本判据必须按当时的实参口径重写，
+        // 不能继续空跑 —— 旧的 `>= 15` 下界正是这样失效的。
+        Assert.True(validated == 0,
+            $"扫描到 {validated} 处 LogTagged 调用 —— 这层 API 又回来了，本判据要按新实参口径重写");
         Assert.True(problems.Count == 0, string.Join("\n    ", problems));
     }
 

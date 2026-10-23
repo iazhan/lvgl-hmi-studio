@@ -2,7 +2,7 @@ namespace HmiEditor.Core.Design;
 
 /// <summary>
 /// Gauge/Knob/Arc 的角度量程常量与「角度 → 坐标」映射 —— 设计器渲染（<c>DesignCanvas</c>）
-/// 与代码生成（<c>CodeGenerator</c> 的 lv_arc rotation/bg_angles）共享，防止两处漂移。
+/// 只服务设计期渲染（removed：与代码生成共享的那一端随 C 导出路径删除）。
 ///
 /// <para><b>角度约定 = LVGL 的约定：3 点钟方向为 0°，顺时针为正。</b>
 /// 屏幕坐标 y 向下时表现为 <c>x = cx + r·cosθ</c>、<c>y = cy + r·sinθ</c>，

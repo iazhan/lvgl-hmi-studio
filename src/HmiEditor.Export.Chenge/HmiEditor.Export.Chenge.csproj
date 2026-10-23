@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>HmiEditor.Export.Chenge</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HmiEditor.Core\HmiEditor.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 契约文件随编译器嵌入：导出器的属性白名单就是这份 schema，
+         手改生成物或用了旧名时先在编辑器里报出来，而不是等板上建页失败。 -->
+    <EmbeddedResource Include="Schema\widget-schema.json" LogicalName="chenge.widget-schema.json" />
+    <EmbeddedResource Include="Schema\features.json" LogicalName="chenge.features.json" />
+    <EmbeddedResource Include="Schema\perms.json" LogicalName="chenge.perms.json" />
+    <EmbeddedResource Include="Schema\sysvars.json" LogicalName="chenge.sysvars.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PNG/GIF 解码与 RGB565 转换（.bin 资产）。SkiaSharp 已在 Avalonia 渲染栈里，
+         这里显式声明：依赖"传递引用恰好可用"是隐式前提。 -->
+    <PackageReference Include="SkiaSharp" />
+  </ItemGroup>
+
+</Project>

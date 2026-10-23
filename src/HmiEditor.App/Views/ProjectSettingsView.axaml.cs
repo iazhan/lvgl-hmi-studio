@@ -6,7 +6,6 @@ using Avalonia.Media;
 using HmiEditor.App.Resources;
 using HmiEditor.App.Services;
 using HmiEditor.App.Controls;
-using HmiEditor.Core.CodeGen;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Security;
@@ -19,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using HmiEditor.CodeGen;
 
 namespace HmiEditor.App.Views;
 
@@ -368,14 +366,10 @@ public partial class ProjectSettingsView : ChromeWindow
     /// </summary>
     private string[] BuildLvglVersionItems()
     {
-        // 清单的唯一实现在 LvglApiCompatChecker（懂版本兼容的那一层）；这里只负责"表外版本也进候选"。
-        var known = LvglApiCompatChecker.SupportedLvglVersions.ToArray();
-
+        // chenge-runtime 只跟一个 LVGL 版本走（没有 8.x/9.x 的 API 兼容改写），
+        // 所以候选只剩工程里存的值；导出器不读这个字段。
         var stored = _project.LvglVersion;
-        if (string.IsNullOrWhiteSpace(stored) || known.Contains(stored, StringComparer.Ordinal))
-            return known;
-
-        return known.Append(stored).ToArray();
+        return string.IsNullOrWhiteSpace(stored) ? new[] { "9.5" } : new[] { stored };
     }
 
     private ComboBoxItem? FindHardwareTargetItem(string? targetId)
@@ -850,13 +844,12 @@ public partial class ProjectSettingsView : ChromeWindow
     /// <summary>
     /// 初始化用户表区：角色下拉 + 初始态（无选中）。
     ///
-    /// <para>角色下拉的选项**只来自 <see cref="SecurityConfigCodeGen.BuiltInRoles"/>** ——
-    /// 设备端角色表就那三个，让用户自由填 Id 只会得到「口令对了也登不上」
-    /// （固件 <c>hmi_role_lookup</c> 返回 -1，<c>hmi_login_as_role</c> 直接拒绝）。</para>
+    /// <para>角色下拉的选项**只来自 <see cref="UserRole.BuiltInAll"/>**（预置三角色唯一清单）——
+    /// chenge-runtime 的用户组就那三个，让用户自由填 Id 只会得到「口令对了也登不上」。</para>
     /// </summary>
     private void InitializeRuntimeUserSection()
     {
-        CmbRuntimeUserRole.ItemsSource = SecurityConfigCodeGen.BuiltInRoles
+        CmbRuntimeUserRole.ItemsSource = UserRole.BuiltInAll
             .Select(r => new ComboBoxItem { Content = RoleTextKeys.DisplayNameWithLevel(r), Tag = r.Id })
             .ToList();
 
@@ -942,7 +935,7 @@ public partial class ProjectSettingsView : ChromeWindow
 
     private ListBoxItem CreateRuntimeUserListItem(RuntimeUser user)
     {
-        var role = SecurityConfigCodeGen.BuiltInRoles
+        var role = UserRole.BuiltInAll
             .FirstOrDefault(r => string.Equals(r.Id, user.RoleId, StringComparison.Ordinal));
 
         var nameText = new TextBlock

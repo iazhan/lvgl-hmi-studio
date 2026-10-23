@@ -46,20 +46,17 @@ public class SingleFileSizeGuardTests
         // → 2961（kinseal SDK 前置这两段逻辑析出到 `MainWindow.KinSealSdk.cs`：
         //   「编译转换」与「编译并运行」现在都要先备 SDK，属新职责，不该长在主文件里）。
         // 本表纪律：变大要先想办法拆小，变小必须同步改小基线。
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2961 },
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2865 },
     };
 
     /// <summary>
     /// 已拆 partial 的类：glob 模式 → 单个分部文件行数上限。
     /// PropertyPanelView 于 P0-2（2026-09-18）拆成 11 个分部，最大分部 Binding.cs = 373 行，
     /// 上限取 500（留正常编辑余量，防合并回巨型单类）。
-    /// SimulatorProjectExporter 于 P0-3（2026-09-18）拆成 5 个分部，最大分部 MainC.cs = 676 行
-    /// —— 那是单个巨型方法 BuildMainC 的整段（方法级分解属 P1/A4 统一发射器范畴），上限取 700。
     /// </summary>
     public static TheoryData<string, int> PartialCeilings => new()
     {
         { Path.Combine("src", "HmiEditor.App", "Views", "PropertyPanelView.*.cs"), 500 },
-        { Path.Combine("src", "HmiEditor.Core", "Services", "SimulatorProjectExporter.*.cs"), 700 },
     };
 
     [Theory]
@@ -103,7 +100,7 @@ public class SingleFileSizeGuardTests
         // 自检：基线表不得萎缩到没东西可守（防守卫因编辑事故变成空表后永远绿，
         // 与 LocalizationGuardTests / LangKeyCoverageTests 的"扫描面自检"同一思路）。
         Assert.True(
-            ExactBaselines.Count() >= 1 && PartialCeilings.Count() >= 2,
+            ExactBaselines.Count() >= 1 && PartialCeilings.Count() >= 1,
             "基线表条目过少（防止守卫退化）。");
     }
 }

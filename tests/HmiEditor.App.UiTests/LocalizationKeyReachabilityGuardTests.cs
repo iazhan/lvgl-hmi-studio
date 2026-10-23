@@ -111,24 +111,6 @@ namespace HmiEditor.App.UiTests;
 ///     **源码里根本不出现整键字面量** ⇒ M6 原理上看不见，不能靠它兜底。
 ///     ⚠ 它也是**返回值档**（产出方是纯函数、失败是 <c>ImportResult.Errors</c>）——
 ///     与 M11 同一个教训：站点 catch 到的是 IO，「带码异常」在它的站点上无处安放；</item>
-///   <item><b>M13</b> 生成代码验证消息/定位诊断码（阶段 89，登记 <b>#61g</b>）——
-///     HmiEditor.Core.Services.GeneratedCodeIssueCodes 与 FindingLocationCodes
-///     的 public const string（反射；**复用**
-///     GenFindingLocalizationGuardTests.DeclaredCodes() / DeclaredLocationCodes()，
-///     不另抄取数方式），键统一走 gen.issue.码小写 与 gen.loc.码小写。
-///     与 M8~M12 同一条理由：这些键的值由 ExternalText.Describe(GeneratedCodeFinding) /
-///     DescribeLocation 查、**源码里根本不出现整键字面量** ⇒ M6 原理上看不见。
-///     ⚠ 这一族有**两个键族**（消息 18 码 + 定位 5 码），且 GENERATOR_WARNING_COMMENT
-///     **刻意没有键**（消息体是产物 generated_ui.c 里 // WARNING: 注释的原文，
-///     翻译它等于改写产物，登记 #61k）⇒ 取数时按 MessageNoKey 摘掉它；</item>
-///   <item><b>M14</b> 表达式语法失败诊断码（阶段 91，登记 <b>#61i</b>）——
-///     <c>HmiEditor.Core.Services.ExpressionSyntaxIssueCodes</c> 的 <c>public const string</c>
-///     （反射；**复用** <c>ExpressionSyntaxIssueLocalizationGuardTests.DeclaredCodes()</c>，
-///     不另抄取数方式），统一走 <c>expr.syntax.&lt;码小写&gt;</c>。
-///     与 M8~M13 同一条理由：这些键的值由 <c>ExternalText.Describe(ExpressionSyntaxError)</c> 查、
-///     **源码里根本不出现整键字面量** ⇒ M6 原理上看不见。
-///     ⚠ 这一族还有个**第二层**的搬运形状：它同时是 <c>gen.issue.expression_syntax</c> 的
-///     实参 <c>{1}</c>（嵌套渲染）—— 机制面仍按「码 → 键」算，键只有一套；</item>
 ///   <item><b>M15</b> 用户管理 / 模拟器失败诊断码（阶段 97，登记 <b>#61d</b>）——
 ///     <c>HmiEditor.Core.Services.UserAdminIssueCodes</c> 与
 ///     <c>HmiEditor.Simulator.SimulatorIssueCodes</c> 的 <c>public const string</c>
@@ -179,12 +161,6 @@ namespace HmiEditor.App.UiTests;
 ///     ⚠ 这一族的 <c>RECIPE_NOT_APPLIED</c> 是**概率档**（<c>Guid[..8]</c> 撞车），
 ///     在守卫里进 <c>NotProducible</c> —— 但**它的键照样算进本机制**（同 M16 的 <c>REJECTED</c>）：
 ///     本机制量的是「**码 → 键**」的推导链通不通，不是"今天用户撞不撞得到"。</item>
-///   <item><b>M19</b> 模拟器编译 / 启动失败诊断码（阶段 103，登记 <b>#61c</b>）——
-///     <c>HmiEditor.App.Services.SimulatorBuildIssueCodes</c> 的 <c>const string</c>
-///     （反射；**复用** <c>SimulatorBuildIssueLocalizationGuardTests.DeclaredCodes()</c>），
-///     统一走 <c>sim.build.issue.&lt;码小写&gt;</c>。这是**唯一**一条「码表与产出方同在
-///     <c>HmiEditor.App</c>」的族（其余各族的码都在 Core / 插件 / <c>HmiEditor.AI</c>）。
-///     ⚠ 与 M15 的 <c>sim.issue.</c>（模拟器**未连接**）**不是**一族：一条前缀一张码表。</item>
 ///   <item><b>M20</b> 通讯族校验码（阶段 104，登记 <b>#61x</b>）—— 码住在**插件程序集**
 ///     <c>Hmi.Communication.Builtin</c> 的四个设计期驱动里，App 侧没有码表可反射
 ///     ⇒ 取数方式是 <c>PluginTextLocalizationGuardTests.TriggeredCommIssueCodes()</c>，
@@ -370,13 +346,11 @@ public class LocalizationKeyReachabilityGuardTests
         //   SCREEN_CONTROL_PROPERTY。）与 M8~M12 同口径取下界满值：少一个键，
         // GenFindingLocalizationGuardTests 的双向闭包会先点名；这里再掉下去说明整条机制
         // 没接上（最可能：取数出口改名/挪走，或忘了摘掉那个刻意无键的码）。
-        ("M13-生成代码验证码", 22),
         // 阶段 91 新增：ExpressionSyntaxIssueCodes 的 **7** 个码
         // （6 个真实产出 + 1 个结构上到不了的兜底 GENERIC，进 NotProducible 表并写明理由）。
         // 与 M8~M13 同口径取下界满值：少一个码，ExpressionSyntaxIssueLocalizationGuardTests
         // 的三态闭包会先点名；这里再掉下去说明整条机制没接上
         // （最可能：取数出口改名/挪走，或忘了那 7 个码不再是 `public const string`）。
-        ("M14-表达式语法码", 7),
         // 阶段 97 新增：UserAdminIssueCodes 的 **2** 个码 + SimulatorIssueCodes 的 **1** 个码
         // = **3**。与 M8~M14 同口径取下界满值：少一个码，
         // UserAdminIssueLocalizationGuardTests 的三态闭包（双向闭包 + 两语言渲染对照 +
@@ -417,7 +391,6 @@ public class LocalizationKeyReachabilityGuardTests
         // ⚠ 本族是唯一一条「码表与产出方同在 HmiEditor.App」的族 ⇒ 取数出口
         //    （ExternalText.SimulatorBuildIssueKey）与码表同程序集，但**仍然必须**
         //    经 ExternalText 推导，不许在判据里自己拼前缀。
-        ("M19-模拟器编译码", 3),
         // 阶段 104 新增：**通讯族**校验码 **9** 个（四个设计期驱动：8 个 Error + 1 个 Warning）。
         // ⚠ 本族的码**不住在 App 里**（在插件程序集 Hmi.Communication.Builtin）⇒ 取数出口是
         //    PluginTextLocalizationGuardTests 的**触发面**（真跑一遍驱动校验把码收上来）。
@@ -486,8 +459,8 @@ public class LocalizationKeyReachabilityGuardTests
             .Distinct().OrderBy(k => k, StringComparer.Ordinal).ToList();
 
         // 空集守卫：任一处取到空，下面的差集会变成恒真（假门禁的经典形状）。
-        Assert.True(docIds.Count >= 20 && bounded.Count >= 20 && produced.Count >= 20,
-            $"三条来源至少应各含 20 条机制，实测 清单 {docIds.Count} / 下界表 {bounded.Count} / 取数 {produced.Count}"
+        Assert.True(docIds.Count >= 17 && bounded.Count >= 17 && produced.Count >= 17,
+            $"三条来源至少应各含 17 条机制，实测 清单 {docIds.Count} / 下界表 {bounded.Count} / 取数 {produced.Count}"
             + " —— 有一处取空了，下面的差集检查会变成恒真。最可能是类注释清单的写法变了"
             + "（本判据按 `///   <item><b>M19</b>` 这个形状读），或取数出口改名后没跟上下界表。");
 
@@ -779,28 +752,10 @@ public class LocalizationKeyReachabilityGuardTests
         foreach (var code in CsvImportIssueLocalizationGuardTests.DeclaredCodes())
             list.Add(("M12-CSV 导入码", ExternalText.CsvIssueKey(code)));
 
-        // ── M13：生成代码验证消息/定位诊断码（阶段 89，登记 #61g）──
-        // 码在 Core 的 GeneratedCodeIssueCodes / FindingLocationCodes 里声明、
-        // 键由 gen.issue. / gen.loc. **两个**前缀统一推导；取数方式**复用**
-        // GenFindingLocalizationGuardTests.DeclaredCodes() / DeclaredLocationCodes()
-        // （同 M8~M12 的理由：抄两份必然漂移，而漂移的表现是"一个守卫绿、另一个红"）。
-        // ⚠ 必须按 MessageNoKey 摘掉那个**刻意无键**的码（GENERATOR_WARNING_COMMENT ——
-        //    消息体是产物里 // WARNING: 注释的原文，翻译等于改写产物，登记 #61k）：
-        //    否则这里会声明一个字典里不存在的键，"面"会虚高 1 —— 面是下界断言的输入。
-        var noKeyMessages = GenFindingLocalizationGuardTests.MessageNoKey
-            .Select(n => n.Code).ToHashSet(StringComparer.Ordinal);
-        foreach (var code in GenFindingLocalizationGuardTests.DeclaredCodes()
-                     .Where(c => !noKeyMessages.Contains(c)))
-            list.Add(("M13-生成代码验证码", ExternalText.GenIssueKey(code)));
-        foreach (var code in GenFindingLocalizationGuardTests.DeclaredLocationCodes())
-            list.Add(("M13-生成代码验证码", ExternalText.GenLocationKey(code)));
-
-        // ── M14：表达式语法失败诊断码（阶段 91，登记 #61i）──
-        // 码在 Core 的 ExpressionSyntaxIssueCodes 里声明、键由 expr.syntax. 前缀统一推导；
-        // 取数方式**复用** ExpressionSyntaxIssueLocalizationGuardTests.DeclaredCodes()
-        // （同 M8~M13 的理由：抄两份必然漂移，而漂移的表现是"一个守卫绿、另一个红"）。
-        foreach (var code in ExpressionSyntaxIssueLocalizationGuardTests.DeclaredCodes())
-            list.Add(("M14-表达式语法码", ExternalText.ExprSyntaxKey(code)));
+        // ── M13 / M14：C 源码生成路径的诊断码族**已随导出路径移除**（本分支单轨：
+        // 只导 chenge-runtime 工程，没有 generated_ui.c、也没有 gen.issue./gen.loc. 的产物）。
+        // 它们的码表（GeneratedCodeIssueCodes / FindingLocationCodes 的产物注释族）与
+        // 表达式语法码的用户可见出口一起删掉了；这里不再登记那些键。
 
         // ── M15：用户管理 / 模拟器失败诊断码（阶段 97，登记 #61d）──
         // 码在 Core 的 UserAdminIssueCodes 与 Simulator 的 SimulatorIssueCodes 里各自声明、
@@ -844,16 +799,9 @@ public class LocalizationKeyReachabilityGuardTests
         foreach (var code in RecipeImportIssueLocalizationGuardTests.DeclaredCodes())
             list.Add(("M18-配方导入码", ExternalText.RecipeImportIssueKey(code)));
 
-        // ── M19：模拟器编译 / 启动失败诊断码（阶段 103，登记 #61c）──
-        // 码在 App 的 SimulatorBuildIssueCodes 里声明、键由 sim.build.issue. 前缀统一推导；
-        // 取数方式**复用** SimulatorBuildIssueLocalizationGuardTests.DeclaredCodes()
-        // （同 M8~M18 的理由：抄两份必然漂移，而漂移的表现是"一个守卫绿、另一个红"）。
-        // ⚠ 这一族是**异常档**（产出方真抛 SimulatorBuildException）⇒ 键由
-        //    ExternalText.FailureReason 的 ②‴ 支查，而不是 Describe/工厂。
-        // ⚠ 与 M15 的 sim.issue.（模拟器**未连接**，HmiEditor.Simulator）**不是**一族：
-        //    前缀 sim.build.issue. 正是为了让两者不串味（一条前缀一张码表）。
-        foreach (var code in SimulatorBuildIssueLocalizationGuardTests.DeclaredCodes())
-            list.Add(("M19-模拟器编译码", ExternalText.SimulatorBuildIssueKey(code)));
+        // ── M19：模拟器编译 / 启动失败诊断码 —— 随 C 源码构建链（.so 模拟器）一起移除（removed）。
+        // 本分支没有 sim.build.issue.* 的产出方，代码里也不再有 SimulatorBuildService /
+        // BuildRunDialog；键与码表都删掉了，这里不再登记。
 
         // ── M20：通讯族校验码（阶段 104，登记 #61x）──
         // 码在**插件程序集**（Hmi.Communication.Builtin 的四个设计期驱动）里、键由 comm.issue.
