@@ -251,6 +251,30 @@ public class ChengeExportTests : IDisposable
         Assert.False(props.TryGetProperty("refresh_ms", out _));
     }
 
+    /// <summary>
+    /// 批次 2d：报警条的 12 个 props 必须落进 JSON；order 只有两个合法值（运行时硬校验）。
+    /// </summary>
+    [Fact]
+    public void Export_AlarmBarDetailProps_ReachThePageJson()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var props = page.GetProperty("widgets").EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "alarm_bar")
+            .GetProperty("props");
+
+        Assert.Equal("温度", props.GetProperty("source").GetProperty("alarm_group").GetString());
+        Assert.Equal("newest_last", props.GetProperty("order").GetString());
+        Assert.Equal("系统正常", props.GetProperty("normal_text").GetString());
+        Assert.False(props.GetProperty("only_unacked").GetBoolean());
+        Assert.Equal(2000, props.GetProperty("scroll_ms").GetInt32());
+        Assert.Equal(8, props.GetProperty("scroll_chars").GetInt32());
+        Assert.True(props.GetProperty("show_time").GetBoolean());
+        Assert.Equal("HH:mm:ss", props.GetProperty("time_format").GetString());
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

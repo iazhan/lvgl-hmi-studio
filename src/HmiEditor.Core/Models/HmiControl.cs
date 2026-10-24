@@ -427,6 +427,24 @@ public class HmiControl
 
     // ── 批次 2c：报警列表的显示细节（契约 alarm_list 的其余 props）──
 
+    /// <summary>报警条：没有报警时显示的文字（契约 normal_text）。</summary>
+    public string? AlarmNormalText { get; set; }
+
+    /// <summary>报警条：只显示未确认的报警。</summary>
+    public bool AlarmOnlyUnacked { get; set; } = true;
+
+    /// <summary>报警条：滚动一条的间隔毫秒（契约 scroll_ms，默认 3000）。</summary>
+    public int AlarmScrollMs { get; set; } = 3000;
+
+    /// <summary>报警条：滚动步长字符数（0 = 不滚动，直接截断）。</summary>
+    public int AlarmScrollChars { get; set; }
+
+    /// <summary>报警条：显示日期。</summary>
+    public bool AlarmShowDate { get; set; }
+
+    /// <summary>报警条：显示时间。</summary>
+    public bool AlarmShowTime { get; set; }
+
     /// <summary>实时曲线：采样周期毫秒（契约 sample_ms，默认 1000）。</summary>
     public int SampleMs { get; set; } = 1000;
 

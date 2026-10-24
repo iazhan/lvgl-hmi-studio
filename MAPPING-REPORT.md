@@ -75,6 +75,17 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
   - `tabview`：`tab_h` / `tab_pos`。
 
   默认值（normal / 0 / ok / 40 / 10 / 200 / 4）一律不写，产物保持最小。
+- **批次 2（v2.4.0 ~ v2.7.0）补齐的曲线与报警**：
+  - `history_curve` 补 24 项（轴线/绘图区底色/边框/辅助线/刻度线/文字色、拖动方向、网格与图例、
+    显示轴线/标签、X/Y 主次分隔、X 标签间隔、X 时间格式、左右轴小数位与整数位、右轴上下限、
+    区间分钟数）；
+  - **新增 `realtime_curve`**（采样曲线）：与历史曲线共用外观面板，写 `sample_ms`/`history_s`/`span_s`，
+    不写 `group`/`range`/`refresh_ms`；外观与刻度由 `MapCurveCommon` 两条曲线共用一份；
+  - `alarm_list` 补 10 项（排序/确认方式/网格/行高/滚动条/刷新周期/闪烁与周期/日期与时间格式）；
+  - **新增 `alarm_bar`**（单行滚动报警条）：12 项 props，`order` 只有 newest_first/newest_last。
+
+  三个枚举（`alarm_list.order/ack_on/grid`、`alarm_bar.order`）**先过白名单再写**——运行时对它们是
+  硬校验，非法值直接拒绝整页。
 
 ## 3 暂不支持（连原因一起记）
 
@@ -90,13 +101,10 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 
 这些都在导出结果里以 **Warning** 出现（不是静默丢弃）；Error 才会阻断导出。
 
-> 批次 1b 之后仍缺的属性（按控件统计）：`history_curve` 25、`alarm_list` 10、
-> `gauge.label_pos` 1、`svg.kind` 1 —— 前两类在批次 2 补，后两项见 §6。
->
-> `pipe` 另有 5 项（`channel_color` / `direction` / `flow_ms` / `wall_color` / `wall`）无法对齐：
-> 契约把 `pipe` **同时**列在 `widgets`（6 个 props）与 `figures`（`pipe_h`/`pipe_v` 只有 `wall`），
-> 而运行时按 **figure** 建它（`widgets.c` 的 `W_SHAPE` → `figure_build`）。编辑器继续走 figure
-> （现状），这 5 项不导出。
+> 批次 2 之后**编辑器侧属性缺口已清零**。剩下的都是运行时侧或契约本身的问题：
+> `gauge.label_pos`（白名单里有、实现没读）、`svg.kind`（运行时没有 SVG）、
+> `label.font_style`（要第二套字体）、`input.commit`（失焦写回属行为改动）、
+> `pipe` 的 5 项（契约把 pipe 同时列在 widgets 与 figures，运行时按 figure 建）。
 
 ## 4 删掉的旧路径
 

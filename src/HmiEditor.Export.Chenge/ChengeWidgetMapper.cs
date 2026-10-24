@@ -308,6 +308,10 @@ internal sealed class ChengeWidgetMapper
                 MapRealtimeCurve(props, control, where);
                 break;
 
+            case HmiControlType.AlarmBar:
+                MapAlarmBar(props, control, where);
+                break;
+
             case HmiControlType.Screen:
                 _issues.Warn("screen.not_exported", where, "嵌套屏幕控件不导出（页面切换用 goto_page 动作）");
                 return null;
@@ -390,6 +394,29 @@ internal sealed class ChengeWidgetMapper
         props["row_height"] = control.AlarmRowHeight > 0
             ? Clamp(control.AlarmRowHeight, 16, 60)
             : Clamp((int)Math.Round(control.Height / Math.Max(1, control.AlarmMaxRows)), 16, 60);
+        SetFont(props, control, DefaultFont(14));
+        _features.Add("alarm");
+    }
+
+    /// <summary>
+    /// 报警条：单行滚动显示最新一条报警。14 个 props 里运行时全部读；
+    /// order 只有 newest_first / newest_last 两个值，其它会**拒绝建页**。
+    /// </summary>
+    private void MapAlarmBar(JsonObject props, HmiControl control, string where)
+    {
+        props["source"] = new JsonObject { ["alarm_group"] = control.AlarmGroupFilter ?? "" };
+        props["order"] = OneOf(control.AlarmOrder, "newest_first", "newest_last", "newest_first", where, "alarm_bar.order");
+        props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
+        props["blink"] = control.AlarmBlink;
+        props["blink_ms"] = Clamp(control.AlarmBlinkMs, 100, 5000);
+        props["only_unacked"] = control.AlarmOnlyUnacked;
+        props["scroll_ms"] = Clamp(control.AlarmScrollMs, 500, 60000);
+        props["scroll_chars"] = Clamp(control.AlarmScrollChars, 0, 64);
+        props["show_date"] = control.AlarmShowDate;
+        props["show_time"] = control.AlarmShowTime;
+        if (!string.IsNullOrWhiteSpace(control.AlarmNormalText)) props["normal_text"] = control.AlarmNormalText!.Trim();
+        if (!string.IsNullOrWhiteSpace(control.AlarmDateFormat)) props["date_format"] = control.AlarmDateFormat!.Trim();
+        if (!string.IsNullOrWhiteSpace(control.AlarmTimeFormat)) props["time_format"] = control.AlarmTimeFormat!.Trim();
         SetFont(props, control, DefaultFont(14));
         _features.Add("alarm");
     }
@@ -1039,6 +1066,7 @@ internal sealed class ChengeWidgetMapper
             HmiControlType.AlarmList => "alarm_list",
             HmiControlType.HistoryCurve => "history_curve",
             HmiControlType.RealtimeCurve => "realtime_curve",
+            HmiControlType.AlarmBar => "alarm_bar",
             HmiControlType.Screen => null,
             _ => null,
         };

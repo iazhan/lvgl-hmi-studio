@@ -100,20 +100,11 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblTabPos, TabPosCombo, false);
         DetailParamExpander.IsVisible = false;
         ShowCurveRows(false);
-        // 批次 2c：报警列表显示细节
-        SetParamRow(LblAlarmOrder, AlarmOrderCombo, false);
-        SetParamRow(LblAlarmAckOn, AlarmAckOnCombo, false);
-        SetParamRow(LblAlarmGrid, AlarmGridCombo, false);
-        SetParamRow(LblAlarmRowHeight, AlarmRowHeightBox, false);
-        SetParamRow(LblAlarmScrollbar, AlarmScrollbarCheck, false);
-        SetParamRow(LblAlarmRefresh, AlarmRefreshBox, false);
-        SetParamRow(LblAlarmBlink, AlarmBlinkCheck, false);
-        SetParamRow(LblAlarmBlinkMs, AlarmBlinkMsBox, false);
-        SetParamRow(LblAlarmDateFormat, AlarmDateFormatBox, false);
-        SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, false);
+        ShowAlarmListRows(false);
         // 批次 2b：实时曲线采样参数
         SetParamRow(LblSampleMs, SampleMsBox, false);
         SetParamRow(LblHistoryS, HistorySBox, false);
+        ShowAlarmBarRows(false);
 
         bool anyVisible = true;
         switch (control.Type)
@@ -260,21 +251,16 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 break;
+            case HmiControlType.AlarmBar:
+                SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, true);
+                ShowAlarmBarRows(true);
+                DetailParamExpander.IsVisible = true;
+                break;
             case HmiControlType.AlarmList:
                 SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, true);
                 SetParamRow(LblCgAlarmMode, CgAlarmModeCombo, true);
                 SetParamRow(LblCgAlarmRows, CgAlarmRowsBox, true);
-                // 批次 2c
-                SetParamRow(LblAlarmOrder, AlarmOrderCombo, true);
-                SetParamRow(LblAlarmAckOn, AlarmAckOnCombo, true);
-                SetParamRow(LblAlarmGrid, AlarmGridCombo, true);
-                SetParamRow(LblAlarmRowHeight, AlarmRowHeightBox, true);
-                SetParamRow(LblAlarmScrollbar, AlarmScrollbarCheck, true);
-                SetParamRow(LblAlarmRefresh, AlarmRefreshBox, true);
-                SetParamRow(LblAlarmBlink, AlarmBlinkCheck, true);
-                SetParamRow(LblAlarmBlinkMs, AlarmBlinkMsBox, true);
-                SetParamRow(LblAlarmDateFormat, AlarmDateFormatBox, true);
-                SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, true);
+                ShowAlarmListRows(true);
                 DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.RealtimeCurve:
@@ -384,18 +370,7 @@ public partial class PropertyPanelView : UserControl
         TabHeightBox.Value = control.TabHeight;
         SelectComboByTag(TabPosCombo, control.TabPos, 0);
         FillCurveFields(control);
-        SelectComboByTag(AlarmOrderCombo, control.AlarmOrder, 0);
-        SelectComboByTag(AlarmAckOnCombo, control.AlarmAckOn, 1);
-        SelectComboByTag(AlarmGridCombo, control.AlarmGrid, 0);
-        AlarmRowHeightBox.Value = control.AlarmRowHeight;
-        AlarmScrollbarCheck.IsChecked = control.AlarmScrollbar;
-        AlarmRefreshBox.Value = control.AlarmRefreshMs;
-        AlarmBlinkCheck.IsChecked = control.AlarmBlink;
-        AlarmBlinkMsBox.Value = control.AlarmBlinkMs;
-        AlarmDateFormatBox.Text = control.AlarmDateFormat ?? "";
-        AlarmTimeFormatBox.Text = control.AlarmTimeFormat ?? "";
-        SampleMsBox.Value = control.SampleMs;
-        HistorySBox.Value = control.HistoryS;
+        FillAlarmFields(control);
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

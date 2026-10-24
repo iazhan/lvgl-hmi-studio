@@ -108,6 +108,7 @@ public class ToolboxIconDictionaryTests
         [HmiControlType.AlarmList] = "同上",
         [HmiControlType.HistoryCurve] = "同上",
         [HmiControlType.RealtimeCurve] = "与 HistoryCurve 同批新增：工具箱用内联几何，字典里没有独立镜像键",
+        [HmiControlType.AlarmBar] = "与 AlarmList 同批：工具箱用内联几何，字典里没有独立镜像键",
     };
 
     /// <summary>

@@ -151,6 +151,13 @@ internal static class ExportFixture
         });
         screen.Controls.Add(new HmiControl
         {
+            Id = "c14", Type = HmiControlType.AlarmBar, Name = "AlarmBar1", X = 20, Y = 420, Width = 400, Height = 32,
+            AlarmGroupFilter = "温度", AlarmOrder = "newest_last", AlarmNormalText = "系统正常",
+            AlarmOnlyUnacked = false, AlarmScrollMs = 2000, AlarmScrollChars = 8,
+            AlarmShowTime = true, AlarmTimeFormat = "HH:mm:ss",
+        });
+        screen.Controls.Add(new HmiControl
+        {
             Id = "c13", Type = HmiControlType.RealtimeCurve, Name = "RealtimeCurve1", X = 380, Y = 300, Width = 400, Height = 160,
             MinValue = 0, MaxValue = 100, SpanMin = 5, SampleMs = 500, HistoryS = 60,
             CurveVariableIds = "v_temp",

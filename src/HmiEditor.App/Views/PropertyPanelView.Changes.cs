@@ -291,6 +291,19 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.SampleMs), (int)SampleMsBox.Value, v => _currentControl.SampleMs = v);
             if (HistorySBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.HistoryS), (int)HistorySBox.Value, v => _currentControl.HistoryS = v);
+            // 批次 2d：报警条
+            if (AlarmNormalTextBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmNormalText), string.IsNullOrWhiteSpace(AlarmNormalTextBox.Text) ? null : AlarmNormalTextBox.Text.Trim(), v => _currentControl.AlarmNormalText = v);
+            if (AlarmOnlyUnackedCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmOnlyUnacked), AlarmOnlyUnackedCheck.IsChecked == true, v => _currentControl.AlarmOnlyUnacked = v);
+            if (AlarmScrollMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmScrollMs), (int)AlarmScrollMsBox.Value, v => _currentControl.AlarmScrollMs = v);
+            if (AlarmScrollCharsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmScrollChars), (int)AlarmScrollCharsBox.Value, v => _currentControl.AlarmScrollChars = v);
+            if (AlarmShowDateCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmShowDate), AlarmShowDateCheck.IsChecked == true, v => _currentControl.AlarmShowDate = v);
+            if (AlarmShowTimeCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmShowTime), AlarmShowTimeCheck.IsChecked == true, v => _currentControl.AlarmShowTime = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);
