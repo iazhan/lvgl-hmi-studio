@@ -173,7 +173,12 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
   `label.font_style`（FreeType 合成粗/斜体，**不需要第二套字体文件**）、
   `input.commit`（keypad 加 `on_close_*`：`blur` 时"这次输入结束"就写回，取消也写）、
   `gauge.label_pos`。
-- 仍「契约有、实现没读」的只剩 `figure container.layout`。
+- 「契约有、实现没读」的属性：**已清零**。最后一条 `figure container.layout` 是误记 ——
+  契约里它的枚举只有 `free` 一个值（v1 就只定义了这一种布局），运行时不需要读它；
+  容器本身是**实现了**的（`ui_page.c` 的 `flatten_widgets` 递归展开 `props.children`，
+  建对象时按 `s_wparents` 挂到父对象下，子控件坐标相对父）。
+  ⇒ **真正的缺口在编辑器**：导出器从不写 `props.children`（`grep '"children"'` 在 mapper 里
+  零命中），所以在编辑器里画的容器只是个空框，放不进子控件。
 
 - `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
   `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
