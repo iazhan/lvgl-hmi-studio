@@ -185,6 +185,37 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.ButtonLongPressMs), (int)LongPressMsBox.Value, v => _currentControl.ButtonLongPressMs = v);
             if (OffStyleCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ButtonOffStyle), GetComboTag(OffStyleCombo), v => _currentControl.ButtonOffStyle = v);
+            // 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签
+            if (SwitchColorOnBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SwitchColorOn), string.IsNullOrWhiteSpace(SwitchColorOnBox.Text) ? null : SwitchColorOnBox.Text.Trim(), v => _currentControl.SwitchColorOn = v);
+            if (SwitchColorOffBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SwitchColorOff), string.IsNullOrWhiteSpace(SwitchColorOffBox.Text) ? null : SwitchColorOffBox.Text.Trim(), v => _currentControl.SwitchColorOff = v);
+            if (SwitchKnobColorBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SwitchKnobColor), string.IsNullOrWhiteSpace(SwitchKnobColorBox.Text) ? null : SwitchKnobColorBox.Text.Trim(), v => _currentControl.SwitchKnobColor = v);
+            if (BarDirectionCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.BarDirection), GetComboTag(BarDirectionCombo), v => _currentControl.BarDirection = v);
+            if (BarRangesBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.BarRanges), string.IsNullOrWhiteSpace(BarRangesBox.Text) ? null : BarRangesBox.Text.Trim(), v => _currentControl.BarRanges = v);
+            if (BarShowPercentCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.BarShowPercent), BarShowPercentCheck.IsChecked == true, v => _currentControl.BarShowPercent = v);
+            if (SpinnerArcLenBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SpinnerArcLen), (int)SpinnerArcLenBox.Value, v => _currentControl.SpinnerArcLen = v);
+            if (SpinnerArcWidthBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SpinnerArcWidth), (int)SpinnerArcWidthBox.Value, v => _currentControl.SpinnerArcWidth = v);
+            if (LabelFontStyleCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.LabelFontStyle), GetComboTag(LabelFontStyleCombo), v => _currentControl.LabelFontStyle = v);
+            if (LetterSpacingBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.LabelLetterSpacing), (int)LetterSpacingBox.Value, v => _currentControl.LabelLetterSpacing = v);
+            if (LineSpacingBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.LabelLineSpacing), (int)LineSpacingBox.Value, v => _currentControl.LabelLineSpacing = v);
+            if (InputCommitCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.InputCommit), GetComboTag(InputCommitCombo), v => _currentControl.InputCommit = v);
+            if (KnobArcWidthBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.KnobArcWidth), (int)KnobArcWidthBox.Value, v => _currentControl.KnobArcWidth = v);
+            if (TabHeightBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.TabHeight), (int)TabHeightBox.Value, v => _currentControl.TabHeight = v);
+            if (TabPosCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.TabPos), GetComboTag(TabPosCombo), v => _currentControl.TabPos = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

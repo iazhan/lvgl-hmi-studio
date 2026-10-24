@@ -230,7 +230,7 @@ public class SelectionFaceClassificationGuardTests
         // ⚠ `FaceplateLibraryView` 阶段 133 起**不在本表里** —— 已升格为第 16 个宿主。
         // ⚠ `LayerPanelView` 阶段 128 起**不在本表里** —— 已升格为第 12 个宿主。
         // ⚠ `ProjectExplorerView` 阶段 129 起**不在本表里** —— 已升格为第 13 个宿主。
-        ("PropertyPanelView", 33),     // 🩸 面外最大的一处：整体由**选中项**驱动（chenge 数据控件 + 批次 1a 的按钮禁用表现下拉）。
+        ("PropertyPanelView", 37),     // 🩸 面外最大的一处：整体由**选中项**驱动（chenge 数据控件 + 批次 1a 的按钮禁用表现下拉）。
                                        //    ⚠ 但它**不是**「最该扩」的那一处 —— 见上方注释里
                                        //    阶段 118 的三条实测（已被 PropertyPanelWiringTests
                                        //    按 26 个类型场景覆盖；写入是批量的、与本层断言冲突）

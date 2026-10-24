@@ -88,6 +88,11 @@ public class PropertyPanelTextBoxWiringTests
         ["ConfirmTextBox"] = "按钮的二次确认提示：同上（**XAML 属性式接线**，不在本面）",
         ["ConfirmYesBox"] = "按钮的确认按钮文案：同上（**XAML 属性式接线**，不在本面）",
         ["ConfirmNoBox"] = "按钮的取消按钮文案：同上（**XAML 属性式接线**，不在本面）",
+        // 批次 1b
+        ["SwitchColorOnBox"] = "开关打开底色：同上（**XAML 属性式接线**，不在本面）",
+        ["SwitchColorOffBox"] = "开关关闭底色：同上（**XAML 属性式接线**，不在本面）",
+        ["SwitchKnobColorBox"] = "开关滑块色：同上（**XAML 属性式接线**，不在本面）",
+        ["BarRangesBox"] = "进度条的按值色段：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

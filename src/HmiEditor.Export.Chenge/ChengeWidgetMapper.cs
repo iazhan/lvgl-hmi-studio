@@ -52,6 +52,12 @@ internal sealed class ChengeWidgetMapper
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
                 props["align"] = Align(control.TextAlign);
                 props["valign"] = VAlign(control.TextVAlign);
+                // 字形/字距/行距：normal 与 0 都是默认值，不写（保持产物最小）
+                if (!string.IsNullOrWhiteSpace(control.LabelFontStyle) &&
+                    !string.Equals(control.LabelFontStyle, "normal", StringComparison.OrdinalIgnoreCase))
+                    props["font_style"] = control.LabelFontStyle!.Trim().ToLowerInvariant();
+                if (control.LabelLetterSpacing > 0) props["letter_spacing"] = Clamp(control.LabelLetterSpacing, 1, 32);
+                if (control.LabelLineSpacing > 0) props["line_spacing"] = Clamp(control.LabelLineSpacing, 1, 64);
                 break;
 
             case HmiControlType.Value:
@@ -73,10 +79,17 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Switch:
-                props["color_on"] = _colors.ResolveOr(control.IndicatorColor, _colors.Success, where);
-                props["color_off"] = _colors.ResolveOr(control.BgColor, _colors.Border, where);
+                props["color_on"] = _colors.ResolveOr(
+                    string.IsNullOrWhiteSpace(control.SwitchColorOn) ? control.IndicatorColor : control.SwitchColorOn,
+                    _colors.Success, where);
+                props["color_off"] = _colors.ResolveOr(
+                    string.IsNullOrWhiteSpace(control.SwitchColorOff) ? control.BgColor : control.SwitchColorOff,
+                    _colors.Border, where);
                 props["text_on"] = control.Text ?? "";
                 props["text_off"] = "";
+                if (!string.IsNullOrWhiteSpace(control.SwitchKnobColor) &&
+                    _colors.Resolve(control.SwitchKnobColor, where) is { } knob)
+                    props["knob_color"] = knob;
                 break;
 
             case HmiControlType.CheckBox:
@@ -98,9 +111,11 @@ internal sealed class ChengeWidgetMapper
             case HmiControlType.Bar:
                 props["min"] = (int)Math.Round(control.MinValue);
                 props["max"] = (int)Math.Round(control.MaxValue);
-                props["direction"] = "h";
+                props["direction"] = string.Equals(control.BarDirection, "Vertical", StringComparison.OrdinalIgnoreCase)
+                    ? "v" : "h";
                 props["color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
-                props["show_percent"] = false;
+                props["show_percent"] = control.BarShowPercent;
+                if (ParseRanges(control.BarRanges, where) is { } barRanges) props["ranges"] = barRanges;
                 break;
 
             case HmiControlType.Slider:
@@ -135,6 +150,7 @@ internal sealed class ChengeWidgetMapper
                 props["color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
                 props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
                 props["show_value"] = true;
+                if (control.KnobArcWidth is > 0 and not 10) props["arc_width"] = Clamp(control.KnobArcWidth, 1, 32);
                 break;
 
             case HmiControlType.Dropdown:
@@ -180,6 +196,10 @@ internal sealed class ChengeWidgetMapper
                 props["max_len"] = control.MaxLength > 0 ? Clamp(control.MaxLength, 1, 64) : 64;
                 SetFont(props, control, DefaultFont(16));
                 props["align"] = Align(control.TextAlign);
+                // 写回时机：ok 是默认值不写；blur = 失焦即写
+                if (!string.IsNullOrWhiteSpace(control.InputCommit) &&
+                    !string.Equals(control.InputCommit, "ok", StringComparison.OrdinalIgnoreCase))
+                    props["commit"] = control.InputCommit!.Trim().ToLowerInvariant();
                 break;
 
             case HmiControlType.Image:
@@ -208,12 +228,15 @@ internal sealed class ChengeWidgetMapper
                 var tabArr = new JsonArray();
                 foreach (var t in tabs) tabArr.Add(new JsonObject { ["text"] = t });
                 props["tabs"] = tabArr;
-                props["tab_pos"] = "top";
+                props["tab_pos"] = TabPosOf(control.TabPos);
+                if (control.TabHeight is > 0 and not 40) props["tab_h"] = Clamp(control.TabHeight, 16, 200);
                 break;
 
             case HmiControlType.Spinner:
                 props["color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
                 props["speed_ms"] = Clamp(control.SpinSpeed, 100, 5000);
+                if (control.SpinnerArcLen is > 0 and not 200) props["arc_len"] = Clamp(control.SpinnerArcLen, 10, 360);
+                if (control.SpinnerArcWidth is > 0 and not 4) props["arc_width"] = Clamp(control.SpinnerArcWidth, 1, 32);
                 break;
 
             case HmiControlType.Keyboard:
@@ -559,6 +582,15 @@ internal sealed class ChengeWidgetMapper
     /// （<c>[{lt:50,color},{lt:80,color},{color}]</c>；最后一段省略 lt 作兜底）。
     /// 写坏的段只告警跳过 —— 一个错颜色不该让整页导不出去。
     /// </summary>
+    /// <summary>页签位置：编辑器存 Top/Bottom/Left/Right，契约要小写 top/bottom/left/right。</summary>
+    private static string TabPosOf(string? pos) => (pos ?? "").Trim().ToLowerInvariant() switch
+    {
+        "bottom" => "bottom",
+        "left" => "left",
+        "right" => "right",
+        _ => "top",
+    };
+
     private JsonArray? ParseRanges(string? text, string where)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;

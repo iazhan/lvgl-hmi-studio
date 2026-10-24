@@ -65,6 +65,16 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
   越界值**钳制并告警**：运行时对 `hold_ms`（0..5000）与 `long_press_ms`（300..5000）是硬校验，
   越界会**拒绝整页**，所以不能让一个数字把整页带死。
   按钮的按下态（`pressed`）不另开字段，仍由 `VisualStates[Pressed]` 表达（避免两套互相覆盖）。
+- **批次 1b（v2.3.0）补齐的细节属性**：
+  - `switch`：`color_on` / `color_off` / `knob_color`；
+  - `bar`：`direction`（横/纵）、`ranges`、`show_percent`；
+  - `spinner`：`arc_len` / `arc_width`（`speed_ms` 本来就有）；
+  - `label`：`font_style`（运行时暂不支持粗/斜体）、`letter_spacing` / `line_spacing`；
+  - `input`：`commit`（运行时暂不支持失焦写回）；
+  - `knob`：`arc_width`；
+  - `tabview`：`tab_h` / `tab_pos`。
+
+  默认值（normal / 0 / ok / 40 / 10 / 200 / 4）一律不写，产物保持最小。
 
 ## 3 暂不支持（连原因一起记）
 
@@ -80,9 +90,13 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 
 这些都在导出结果里以 **Warning** 出现（不是静默丢弃）；Error 才会阻断导出。
 
-> 批次 1a 之后仍缺的属性（按控件统计，共 58 项）：`history_curve` 25、`alarm_list` 10、
-> `gauge` 1（`label_pos`，见 §6）、`spinner` 3、`bar` 3、`switch` 3、`label` 3、`pipe` 5、
-> `tabview` 2、`input` 1、`knob` 1、`svg` 1 —— 计划在批次 2/3 补齐。
+> 批次 1b 之后仍缺的属性（按控件统计）：`history_curve` 25、`alarm_list` 10、
+> `gauge.label_pos` 1、`svg.kind` 1 —— 前两类在批次 2 补，后两项见 §6。
+>
+> `pipe` 另有 5 项（`channel_color` / `direction` / `flow_ms` / `wall_color` / `wall`）无法对齐：
+> 契约把 `pipe` **同时**列在 `widgets`（6 个 props）与 `figures`（`pipe_h`/`pipe_v` 只有 `wall`），
+> 而运行时按 **figure** 建它（`widgets.c` 的 `W_SHAPE` → `figure_build`）。编辑器继续走 figure
+> （现状），这 5 项不导出。
 
 ## 4 删掉的旧路径
 

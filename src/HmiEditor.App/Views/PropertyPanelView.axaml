@@ -1047,7 +1047,8 @@
                 <Expander x:Name="DetailParamExpander" Header="{res:Loc prop.detail}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <!-- 行数 ≥ 下面最大 Grid.Row+1（当前 0..30） -->
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblGaugeArcWidth" Text="{res:Loc prop.detail.gauge.arcwidth}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1140,6 +1141,106 @@
                                   SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
                             <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.dim}" Tag="dim"/>
                             <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.hide}" Tag="hide"/>
+                        </ComboBox>
+                        <!-- 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签 -->
+                        <TextBlock x:Name="LblSwitchOn" Text="{res:Loc prop.detail.switch.on}" Grid.Row="16" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="SwitchColorOnBox" Grid.Row="16" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblSwitchOff" Text="{res:Loc prop.detail.switch.off}" Grid.Row="17" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="SwitchColorOffBox" Grid.Row="17" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblSwitchKnob" Text="{res:Loc prop.detail.switch.knob}" Grid.Row="18" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="SwitchKnobColorBox" Grid.Row="18" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBarDirection" Text="{res:Loc prop.detail.bar.dir}" Grid.Row="19" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="BarDirectionCombo" Grid.Row="19" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.bar.dir.h}" Tag="Horizontal"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.bar.dir.v}" Tag="Vertical"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblBarRanges" Text="{res:Loc prop.detail.bar.ranges}" Grid.Row="20" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="BarRangesBox" Grid.Row="20" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.ranges.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBarPercent" Text="{res:Loc prop.detail.bar.percent}" Grid.Row="21" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="BarShowPercentCheck" Grid.Row="21" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblSpinnerArcLen" Text="{res:Loc prop.detail.spinner.arclen}" Grid.Row="22" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="SpinnerArcLenBox" Grid.Row="22" Grid.Column="1"
+                                        Value="200" Minimum="10" Maximum="360"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblSpinnerArcWidth" Text="{res:Loc prop.detail.spinner.arcwidth}" Grid.Row="23" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="SpinnerArcWidthBox" Grid.Row="23" Grid.Column="1"
+                                        Value="4" Minimum="1" Maximum="32"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblLabelFontStyle" Text="{res:Loc prop.detail.label.font}" Grid.Row="24" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="LabelFontStyleCombo" Grid.Row="24" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.normal}" Tag="normal"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.bold}" Tag="bold"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.italic}" Tag="italic"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblLetterSpacing" Text="{res:Loc prop.detail.label.letter}" Grid.Row="25" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="LetterSpacingBox" Grid.Row="25" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="32"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblLineSpacing" Text="{res:Loc prop.detail.label.line}" Grid.Row="26" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="LineSpacingBox" Grid.Row="26" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="64"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblInputCommit" Text="{res:Loc prop.detail.input.commit}" Grid.Row="27" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="InputCommitCombo" Grid.Row="27" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.input.commit.ok}" Tag="ok"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.input.commit.blur}" Tag="blur"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblKnobArcWidth" Text="{res:Loc prop.detail.knob.arcwidth}" Grid.Row="28" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="KnobArcWidthBox" Grid.Row="28" Grid.Column="1"
+                                        Value="10" Minimum="1" Maximum="32"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblTabHeight" Text="{res:Loc prop.detail.tab.height}" Grid.Row="29" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="TabHeightBox" Grid.Row="29" Grid.Column="1"
+                                        Value="40" Minimum="16" Maximum="200"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblTabPos" Text="{res:Loc prop.detail.tab.pos}" Grid.Row="30" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="TabPosCombo" Grid.Row="30" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.top}" Tag="Top"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.bottom}" Tag="Bottom"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.left}" Tag="Left"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.right}" Tag="Right"/>
                         </ComboBox>
                     </Grid>
                 </Expander>

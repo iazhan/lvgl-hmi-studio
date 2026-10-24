@@ -304,6 +304,53 @@ public class HmiControl
     /// <summary>Button：enabled 为假时的表现（dim 变灰 / hide 整块消失）。</summary>
     public string? ButtonOffStyle { get; set; }
 
+    // ── 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签 ──
+
+    /// <summary>Switch：打开时的底色（空 = 用指示器色）。</summary>
+    public string? SwitchColorOn { get; set; }
+
+    /// <summary>Switch：关闭时的底色（空 = 用背景色）。</summary>
+    public string? SwitchColorOff { get; set; }
+
+    /// <summary>Switch：滑块颜色（空 = 跟随主题）。</summary>
+    public string? SwitchKnobColor { get; set; }
+
+    /// <summary>Bar：方向（Horizontal / Vertical，导出成 h / v）。</summary>
+    public string? BarDirection { get; set; }
+
+    /// <summary>Bar：按值分段换色的色段（写法同 <see cref="GaugeRanges"/>）。</summary>
+    public string? BarRanges { get; set; }
+
+    /// <summary>Bar：显示百分比。</summary>
+    public bool BarShowPercent { get; set; }
+
+    /// <summary>Spinner：弧长（度，契约默认 200）。</summary>
+    public int SpinnerArcLen { get; set; } = 200;
+
+    /// <summary>Spinner：弧线宽度（契约默认 4）。</summary>
+    public int SpinnerArcWidth { get; set; } = 4;
+
+    /// <summary>Label：字形（normal / bold / italic）。运行时目前只有一套字体，bold/italic 不生效。</summary>
+    public string? LabelFontStyle { get; set; }
+
+    /// <summary>Label：字距（px，0 = 字体自然间距）。</summary>
+    public int LabelLetterSpacing { get; set; }
+
+    /// <summary>Label：行距（px，0 = 字体自然行高）。</summary>
+    public int LabelLineSpacing { get; set; }
+
+    /// <summary>Input：写回时机（ok = 按确认键；blur = 失焦即写）。</summary>
+    public string? InputCommit { get; set; }
+
+    /// <summary>Knob：弧线宽度（契约默认 10）。</summary>
+    public int KnobArcWidth { get; set; } = 10;
+
+    /// <summary>TabView：页签高度（左右位置时是宽度，契约默认 40）。</summary>
+    public int TabHeight { get; set; } = 40;
+
+    /// <summary>TabView：页签位置（top / bottom / left / right）。</summary>
+    public string? TabPos { get; set; }
+
     // 按钮的**按下态**（契约 pressed）不在这里另开字段：它已经由
     // `VisualStates[Pressed]`（背景/边框/文字色/文字）表达，导出器 AddPressed() 负责组装。
     // 两套表达会互相覆盖，所以只保留那一条。

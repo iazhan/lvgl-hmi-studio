@@ -82,6 +82,22 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblBtnHold, HoldMsBox, false);
         SetParamRow(LblBtnLongPress, LongPressMsBox, false);
         SetParamRow(LblBtnOffStyle, OffStyleCombo, false);
+        // 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签
+        SetParamRow(LblSwitchOn, SwitchColorOnBox, false);
+        SetParamRow(LblSwitchOff, SwitchColorOffBox, false);
+        SetParamRow(LblSwitchKnob, SwitchKnobColorBox, false);
+        SetParamRow(LblBarDirection, BarDirectionCombo, false);
+        SetParamRow(LblBarRanges, BarRangesBox, false);
+        SetParamRow(LblBarPercent, BarShowPercentCheck, false);
+        SetParamRow(LblSpinnerArcLen, SpinnerArcLenBox, false);
+        SetParamRow(LblSpinnerArcWidth, SpinnerArcWidthBox, false);
+        SetParamRow(LblLabelFontStyle, LabelFontStyleCombo, false);
+        SetParamRow(LblLetterSpacing, LetterSpacingBox, false);
+        SetParamRow(LblLineSpacing, LineSpacingBox, false);
+        SetParamRow(LblInputCommit, InputCommitCombo, false);
+        SetParamRow(LblKnobArcWidth, KnobArcWidthBox, false);
+        SetParamRow(LblTabHeight, TabHeightBox, false);
+        SetParamRow(LblTabPos, TabPosCombo, false);
         DetailParamExpander.IsVisible = false;
 
         bool anyVisible = true;
@@ -95,15 +111,31 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblShowTicks, ShowTicksCheck, true);
                 SetParamRow(LblShowPointer, ShowPointerCheck, true);
                 break;
+            case HmiControlType.Switch:
+                SetParamRow(LblSwitchOn, SwitchColorOnBox, true);
+                SetParamRow(LblSwitchOff, SwitchColorOffBox, true);
+                SetParamRow(LblSwitchKnob, SwitchKnobColorBox, true);
+                DetailParamExpander.IsVisible = true;
+                break;
             case HmiControlType.Bar:
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblValueMode, ValueModeCombo, true);
                 SetParamRow(LblShowTicks, ShowTicksCheck, true);
                 SetParamRow(LblShowPointer, ShowPointerCheck, true);
+                // 批次 1b
+                SetParamRow(LblBarDirection, BarDirectionCombo, true);
+                SetParamRow(LblBarRanges, BarRangesBox, true);
+                SetParamRow(LblBarPercent, BarShowPercentCheck, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Label:
                 SetParamRow(LblLongMode, LongModeCombo, true);
+                // 批次 1b：字形 / 字距 / 行距
+                SetParamRow(LblLabelFontStyle, LabelFontStyleCombo, true);
+                SetParamRow(LblLetterSpacing, LetterSpacingBox, true);
+                SetParamRow(LblLineSpacing, LineSpacingBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Gauge:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -122,6 +154,8 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.Knob:
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
+                SetParamRow(LblKnobArcWidth, KnobArcWidthBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Dropdown:
                 SetParamRow(LblOptions, OptionsBox, true);
@@ -131,6 +165,8 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblPlaceholder, PlaceholderBox, true);
                 SetParamRow(LblMaxLength, MaxLengthBox, true);
                 SetParamRow(LblPassword, PasswordCheck, true);
+                SetParamRow(LblInputCommit, InputCommitCombo, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Table:
                 SetParamRow(LblRowCount, RowCountBox, true);
@@ -143,6 +179,9 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.TabView:
                 SetParamRow(LblTabTitles, TabTitlesBox, true);
                 SetParamRow(LblSelectedIndex, SelectedIndexBox, true);
+                SetParamRow(LblTabHeight, TabHeightBox, true);
+                SetParamRow(LblTabPos, TabPosCombo, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Image:
                 SetParamRow(LblStretch, StretchCombo, true);
@@ -162,6 +201,9 @@ public partial class PropertyPanelView : UserControl
                 break;
             case HmiControlType.Spinner:
                 SetParamRow(LblSpinSpeed, SpinSpeedBox, true);
+                SetParamRow(LblSpinnerArcLen, SpinnerArcLenBox, true);
+                SetParamRow(LblSpinnerArcWidth, SpinnerArcWidthBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Line:
                 SetParamRow(LblLineCap, LineCapCombo, true);
@@ -289,6 +331,21 @@ public partial class PropertyPanelView : UserControl
         HoldMsBox.Value = control.ButtonHoldMs;
         LongPressMsBox.Value = control.ButtonLongPressMs;
         SelectComboByTag(OffStyleCombo, control.ButtonOffStyle, 0);
+        SwitchColorOnBox.Text = control.SwitchColorOn ?? "";
+        SwitchColorOffBox.Text = control.SwitchColorOff ?? "";
+        SwitchKnobColorBox.Text = control.SwitchKnobColor ?? "";
+        SelectComboByTag(BarDirectionCombo, control.BarDirection, 0);
+        BarRangesBox.Text = control.BarRanges ?? "";
+        BarShowPercentCheck.IsChecked = control.BarShowPercent;
+        SpinnerArcLenBox.Value = control.SpinnerArcLen;
+        SpinnerArcWidthBox.Value = control.SpinnerArcWidth;
+        SelectComboByTag(LabelFontStyleCombo, control.LabelFontStyle, 0);
+        LetterSpacingBox.Value = control.LabelLetterSpacing;
+        LineSpacingBox.Value = control.LabelLineSpacing;
+        SelectComboByTag(InputCommitCombo, control.InputCommit, 0);
+        KnobArcWidthBox.Value = control.KnobArcWidth;
+        TabHeightBox.Value = control.TabHeight;
+        SelectComboByTag(TabPosCombo, control.TabPos, 0);
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

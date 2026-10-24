@@ -54,6 +54,7 @@ internal static class ExportFixture
         {
             Id = "c1", Type = HmiControlType.Label, Name = "Label1", X = 20, Y = 16, Width = 200, Height = 32,
             Text = "炉温监控", FontSize = 24, TextColor = "#FFFFFF",
+            LabelLetterSpacing = 2, LabelLineSpacing = 6,
         });
         screen.Controls.Add(new HmiControl
         {
@@ -92,7 +93,7 @@ internal static class ExportFixture
         screen.Controls.Add(new HmiControl
         {
             Id = "c5", Type = HmiControlType.Switch, Name = "Switch1", X = 300, Y = 88, Width = 100, Height = 40,
-            Text = "运行",
+            Text = "运行", SwitchKnobColor = "#FFCC00", SwitchColorOn = "#22AA55",
             VariableBindings =
             {
                 new VariableBindingData { PropertyName = "IsChecked", VariableId = "v_start", Direction = BindingDirection.ReadWrite },
@@ -111,9 +112,33 @@ internal static class ExportFixture
         {
             Id = "c7", Type = HmiControlType.Bar, Name = "Bar1", X = 40, Y = 240, Width = 300, Height = 24,
             MinValue = 0, MaxValue = 500, IndicatorColor = "#4EA1FF",
+            BarDirection = "Vertical", BarShowPercent = true, BarRanges = "200:#38C172,:#E5484D",
             VariableBindings =
             {
                 new VariableBindingData { PropertyName = "Value", VariableId = "v_temp", Direction = BindingDirection.ReadOnly },
+            },
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c10", Type = HmiControlType.Spinner, Name = "Spinner1", X = 620, Y = 16, Width = 60, Height = 60,
+            IndicatorColor = "#2F70D0", SpinSpeed = 800, SpinnerArcLen = 240, SpinnerArcWidth = 6,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c11", Type = HmiControlType.Knob, Name = "Knob1", X = 620, Y = 96, Width = 120, Height = 120,
+            MinValue = 0, MaxValue = 100, StepValue = 1, KnobArcWidth = 14,
+            VariableBindings =
+            {
+                new VariableBindingData { PropertyName = "Value", VariableId = "v_set", Direction = BindingDirection.ReadWrite },
+            },
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c12", Type = HmiControlType.TextArea, Name = "Input1", X = 40, Y = 300, Width = 200, Height = 44,
+            Text = "", MaxLength = 8, InputCommit = "blur",
+            VariableBindings =
+            {
+                new VariableBindingData { PropertyName = "Text", VariableId = "v_set", Direction = BindingDirection.ReadWrite },
             },
         });
         screen.Controls.Add(new HmiControl

@@ -123,6 +123,47 @@ public class ChengeExportTests : IDisposable
         Assert.Equal(2, gauge.GetProperty("ranges").EnumerateArray().Count());
     }
 
+    /// <summary>
+    /// 批次 1b：开关/进度条/加载圈/文本/输入框/旋钮/页签的细节属性必须真的落进 JSON。
+    /// 属性名写错会先被 <see cref="Export_AllPropsAreDeclaredInSchema"/> 拦住，这里钉取值。
+    /// </summary>
+    [Fact]
+    public void Export_Batch1bDetailProps_ReachThePageJson()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var byType = page.GetProperty("widgets").EnumerateArray()
+            .GroupBy(w => w.GetProperty("type").GetString()!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var label = byType["label"][0].GetProperty("props");
+        Assert.Equal(2, label.GetProperty("letter_spacing").GetInt32());
+        Assert.Equal(6, label.GetProperty("line_spacing").GetInt32());
+        Assert.False(label.TryGetProperty("font_style", out _));   // normal 是默认值，不写
+
+        var sw = byType["switch"][0].GetProperty("props");
+        Assert.Equal("#FFCC00", sw.GetProperty("knob_color").GetString());
+        Assert.Equal("#22AA55", sw.GetProperty("color_on").GetString());
+
+        var bar = byType["bar"][0].GetProperty("props");
+        Assert.Equal("v", bar.GetProperty("direction").GetString());
+        Assert.True(bar.GetProperty("show_percent").GetBoolean());
+        Assert.Equal(2, bar.GetProperty("ranges").EnumerateArray().Count());
+
+        var spinner = byType["spinner"][0].GetProperty("props");
+        Assert.Equal(240, spinner.GetProperty("arc_len").GetInt32());
+        Assert.Equal(6, spinner.GetProperty("arc_width").GetInt32());
+        Assert.Equal(800, spinner.GetProperty("speed_ms").GetInt32());
+
+        var knob = byType["knob"][0].GetProperty("props");
+        Assert.Equal(14, knob.GetProperty("arc_width").GetInt32());
+
+        var input = byType["input"][0].GetProperty("props");
+        Assert.Equal("blur", input.GetProperty("commit").GetString());
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

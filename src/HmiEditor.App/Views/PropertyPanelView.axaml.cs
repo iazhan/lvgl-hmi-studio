@@ -109,6 +109,13 @@ public partial class PropertyPanelView : UserControl
         ConfirmWaitMsBox.ValueChanged += OnNumberChanged;
         HoldMsBox.ValueChanged += OnNumberChanged;
         LongPressMsBox.ValueChanged += OnNumberChanged;
+        // 批次 1b
+        SpinnerArcLenBox.ValueChanged += OnNumberChanged;
+        SpinnerArcWidthBox.ValueChanged += OnNumberChanged;
+        LetterSpacingBox.ValueChanged += OnNumberChanged;
+        LineSpacingBox.ValueChanged += OnNumberChanged;
+        KnobArcWidthBox.ValueChanged += OnNumberChanged;
+        TabHeightBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();
