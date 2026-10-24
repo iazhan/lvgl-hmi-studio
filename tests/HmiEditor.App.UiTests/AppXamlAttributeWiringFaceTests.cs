@@ -137,6 +137,8 @@ public class AppXamlAttributeWiringFaceTests
             "enumerated@PropertyPanelWiringTests.cs", "同上：报警时间格式"),
         new("PropertyPanelView.axaml", "AlarmNormalTextBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs", "同上：报警条无报警文字"),
+        new("PropertyPanelView.axaml", "PipeChannelColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：管道通道底色"),
         new("PropertyPanelView.axaml", "PlaceholderBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
@@ -281,9 +283,9 @@ public class AppXamlAttributeWiringFaceTests
 
         // 🎯 棘轮：阶段 201 起 26 条**全部**有判据（3 元信息 + 3 搜索框 + 20 属性面板枚举驱动），
         //   `pending` 必须是 0 —— 新冒出来的属性式接线要么**驱动起来**，要么显式改这条下限并写清理由。
-        Assert.Equal(48, driven);
+        Assert.Equal(49, driven);
         Assert.True(pending == 0,
-            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 45 条全部驱动（chenge 数据控件 +4、批次 1a +5、批次 1b +4、批次 2 +9）");
+            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 45 条全部驱动（chenge 数据控件 +4、批次 1a +5、批次 1b +4、批次 2 +10）");
     }
 
     /// <summary>

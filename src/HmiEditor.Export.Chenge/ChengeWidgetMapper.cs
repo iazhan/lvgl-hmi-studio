@@ -280,10 +280,18 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Pipe:
-                kind = string.Equals(control.PipeDirection, "Vertical", StringComparison.OrdinalIgnoreCase)
-                    ? "pipe_v" : "pipe_h";
-                props["fill_color"] = _colors.ResolveOr(control.BgColor, _colors.Border, where);
-                props["border_color"] = _colors.ResolveOr(control.BorderColor, _colors.Border, where);
+                props["direction"] = string.Equals(control.PipeDirection, "Vertical", StringComparison.OrdinalIgnoreCase)
+                    ? "v" : "h";
+                props["wall"] = Math.Round(Math.Clamp(control.PipeWall is >= 0.05 and <= 0.45 ? control.PipeWall : 0.2, 0.05, 0.45), 3);
+                props["color"] = _colors.ResolveOr(control.IndicatorColor ?? control.BgColor, "#4EA1FF", where);
+                if (!string.IsNullOrWhiteSpace(control.PipeChannelColor) &&
+                    _colors.Resolve(control.PipeChannelColor, where) is { } chan)
+                    props["channel_color"] = chan;
+                // flow_ms 是"一个块走完全程"的毫秒数；0 = 静态（契约下限 40，用 0 表示不流动）
+                props["flow_ms"] = control.PipeFlowSpeed > 0
+                    ? Clamp(control.PipeFlowSpeed, 40, 2000)
+                    : 0;
+                _features.Add("pipe");      // 运行时要求 manifest.features 里声明（37 §8）
                 break;
 
             case HmiControlType.Valve:
@@ -1059,8 +1067,11 @@ internal sealed class ChengeWidgetMapper
             HmiControlType.Spinner => "spinner",
             HmiControlType.Keyboard => "keyboard",
             HmiControlType.Rectangle or HmiControlType.Ellipse or HmiControlType.Line
-                or HmiControlType.Polyline or HmiControlType.Arc or HmiControlType.Tank
-                or HmiControlType.Pipe => "shape",
+                or HmiControlType.Polyline or HmiControlType.Arc or HmiControlType.Tank => "shape",
+            // pipe 在契约里是**控件**（widgets.pipe，带 direction/wall/color/channel_color/flow_ms），
+            // 运行时也有 W_PIPE 分派（build_pipe 带流动动画）；早先导成 shape 的 pipe_h/v
+            // 白丢了这 5 个属性（图元版只读 wall，且不支持流动）。
+            HmiControlType.Pipe => "pipe",
             HmiControlType.Valve => null,
             HmiControlType.Svg => null,
             HmiControlType.AlarmList => "alarm_list",

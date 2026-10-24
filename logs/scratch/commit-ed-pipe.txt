@@ -1,0 +1,18 @@
+管道改走控件契约：pipe 的 5 个属性真正生效（v2.8.0）
+
+契约里 pipe 是**控件**（widgets.pipe：direction/wall/color/channel_color/flow_ms），
+运行时也有 W_PIPE 分派（build_pipe 带流动动画 + 定时器）。但编辑器一直导成
+shape 的 pipe_h/pipe_v —— 图元版只读 wall，direction/color/channel_color/flow_ms
+全部丢掉，看起来像"契约有、实现没有"。
+
+- TargetType：Pipe → "pipe"（不再走 shape）。
+- 导出：写全 direction / wall / color / channel_color / flow_ms；features 里声明 pipe
+  （运行时对 pipe 控件要求 manifest.features，否则整页拒绝）。
+- 模型：PipeWall（0.05~0.45）、PipeChannelColor。
+- 面板：控件细节加「管壁厚度比例」「通道底色」两行，都接了写回与 ValueChanged。
+- 测试：新增 Export_Pipe_UsesWidgetPropsNotShape（断言 5 个属性 + 确认不再是 shape），
+  夹具加一个管道控件并随宿主建页验证。
+- 版本 2.7.0 → 2.8.0。
+
+改动中发现：删掉 widgets.pipe 会让 golden 6 个项目失败（g02/allinone 里有 pipe 控件），
+所以正确的对齐方向是"让编辑器按控件导出"，不是把契约条目删掉。

@@ -103,6 +103,7 @@ public class PropertyPanelTextBoxWiringTests
         ["AlarmDateFormatBox"] = "报警日期格式：同上（**XAML 属性式接线**，不在本面）",
         ["AlarmTimeFormatBox"] = "报警时间格式：同上（**XAML 属性式接线**，不在本面）",
         ["AlarmNormalTextBox"] = "报警条无报警文字：同上（**XAML 属性式接线**，不在本面）",
+        ["PipeChannelColorBox"] = "管道通道底色：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

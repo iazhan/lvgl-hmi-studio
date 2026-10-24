@@ -1756,6 +1756,8 @@
   "prop.detail.alarmbar.scrollchars": "Scroll step (chars, 0 = none)",
   "prop.detail.alarmbar.showdate": "Show date",
   "prop.detail.alarmbar.showtime": "Show time",
+  "prop.detail.pipe.wall": "Wall thickness ratio",
+  "prop.detail.pipe.channel": "Channel color (empty = auto)",
   "prop.detail.sample": "Sample period (ms)",
   "prop.detail.history": "Keep history (s)",
   "tb.textarea": "Text Area",

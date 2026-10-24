@@ -304,6 +304,10 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.AlarmShowDate), AlarmShowDateCheck.IsChecked == true, v => _currentControl.AlarmShowDate = v);
             if (AlarmShowTimeCheck.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.AlarmShowTime), AlarmShowTimeCheck.IsChecked == true, v => _currentControl.AlarmShowTime = v);
+            if (PipeWallBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.PipeWall), PipeWallBox.Value, v => _currentControl.PipeWall = v);
+            if (PipeChannelColorBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.PipeChannelColor), string.IsNullOrWhiteSpace(PipeChannelColorBox.Text) ? null : PipeChannelColorBox.Text.Trim(), v => _currentControl.PipeChannelColor = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

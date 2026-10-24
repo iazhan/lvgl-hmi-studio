@@ -56,6 +56,8 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblPipeDirection, PipeDirectionCombo, false);
         SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, false);
         SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, false);
+        SetParamRow(LblPipeWall, PipeWallBox, false);
+        SetParamRow(LblPipeChannel, PipeChannelColorBox, false);
         SetParamRow(LblValveType, ValveTypeCombo, false);
         // chenge-runtime 数据控件参数
         SetParamRow(LblUnit, UnitBox, false);
@@ -228,6 +230,9 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblPipeDirection, PipeDirectionCombo, true);
                 SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, true);
                 SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, true);
+                SetParamRow(LblPipeWall, PipeWallBox, true);
+                SetParamRow(LblPipeChannel, PipeChannelColorBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Valve:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -371,6 +376,8 @@ public partial class PropertyPanelView : UserControl
         SelectComboByTag(TabPosCombo, control.TabPos, 0);
         FillCurveFields(control);
         FillAlarmFields(control);
+        PipeWallBox.Value = control.PipeWall;
+        PipeChannelColorBox.Text = control.PipeChannelColor ?? "";
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

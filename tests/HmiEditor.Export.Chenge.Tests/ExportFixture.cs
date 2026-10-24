@@ -151,6 +151,12 @@ internal static class ExportFixture
         });
         screen.Controls.Add(new HmiControl
         {
+            Id = "c15", Type = HmiControlType.Pipe, Name = "Pipe1", X = 20, Y = 380, Width = 260, Height = 24,
+            PipeDirection = "Vertical", PipeWall = 0.3, PipeFlowSpeed = 500,
+            PipeChannelColor = "#223344", IndicatorColor = "#4EA1FF",
+        });
+        screen.Controls.Add(new HmiControl
+        {
             Id = "c14", Type = HmiControlType.AlarmBar, Name = "AlarmBar1", X = 20, Y = 420, Width = 400, Height = 32,
             AlarmGroupFilter = "温度", AlarmOrder = "newest_last", AlarmNormalText = "系统正常",
             AlarmOnlyUnacked = false, AlarmScrollMs = 2000, AlarmScrollChars = 8,

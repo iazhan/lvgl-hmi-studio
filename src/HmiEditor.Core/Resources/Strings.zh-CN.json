@@ -1756,6 +1756,8 @@
   "prop.detail.alarmbar.scrollchars": "滚动步长（字符，0=不滚）",
   "prop.detail.alarmbar.showdate": "显示日期",
   "prop.detail.alarmbar.showtime": "显示时间",
+  "prop.detail.pipe.wall": "管壁厚度比例",
+  "prop.detail.pipe.channel": "通道底色（空=自动）",
   "prop.detail.sample": "采样周期（ms）",
   "prop.detail.history": "保留历史（秒）",
   "tb.textarea": "输入框",

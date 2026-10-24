@@ -275,6 +275,29 @@ public class ChengeExportTests : IDisposable
         Assert.Equal("HH:mm:ss", props.GetProperty("time_format").GetString());
     }
 
+    /// <summary>
+    /// 管道在契约里是**控件**（widgets.pipe，6 个 props），运行时也有 W_PIPE 分派。
+    /// 早先导成 shape 的 pipe_h/v 只保留了 wall，direction/color/channel_color/flow_ms 全丢。
+    /// </summary>
+    [Fact]
+    public void Export_Pipe_UsesWidgetPropsNotShape()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var pipe = page.GetProperty("widgets").EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "pipe");
+        var props = pipe.GetProperty("props");
+
+        Assert.Equal("v", props.GetProperty("direction").GetString());
+        Assert.Equal(0.3, props.GetProperty("wall").GetDouble(), 3);
+        Assert.Equal(500, props.GetProperty("flow_ms").GetInt32());
+        Assert.Equal("#223344", props.GetProperty("channel_color").GetString());
+        Assert.Equal("#4EA1FF", props.GetProperty("color").GetString());
+        Assert.False(props.TryGetProperty("kind", out _));   // 不再是 shape
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

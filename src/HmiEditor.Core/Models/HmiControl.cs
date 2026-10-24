@@ -216,6 +216,12 @@ public class HmiControl
     /// <summary>流向动画周期 ms（Pipe，0=静态无动画）。默认 2000。</summary>
     public int PipeFlowSpeed { get; set; } = 2000;
 
+    /// <summary>Pipe：管壁厚度比例（契约 wall，0.05~0.45，默认 0.2）。</summary>
+    public double PipeWall { get; set; } = 0.2;
+
+    /// <summary>Pipe：通道底色（契约 channel_color，空 = 用流动色的浅色版）。</summary>
+    public string? PipeChannelColor { get; set; }
+
     /// <summary>阀门类型（Valve：Ball/Gate/Butterfly/Globe）。默认 Ball。</summary>
     public string? ValveType { get; set; }
 

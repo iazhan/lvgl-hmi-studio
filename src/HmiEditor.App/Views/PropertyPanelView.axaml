@@ -729,7 +729,7 @@
                           IsVisible="False">
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1358,6 +1358,18 @@
                                   Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
                                   VerticalAlignment="Center" Margin="0,2" IsVisible="False"
                                   IsCheckedChanged="OnPropertyChanged"/>
+                        <!-- 管道（控件 pipe）：管壁厚度与通道色 -->
+                        <TextBlock x:Name="LblPipeWall" Text="{res:Loc prop.detail.pipe.wall}" Grid.Row="49" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="PipeWallBox" Grid.Row="49" Grid.Column="1"
+                                        Value="0.2" Minimum="0.05" Maximum="0.45" SmallChange="0.05"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblPipeChannel" Text="{res:Loc prop.detail.pipe.channel}" Grid.Row="50" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="PipeChannelColorBox" Grid.Row="50" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
                     </Grid>
                 </Expander>
 

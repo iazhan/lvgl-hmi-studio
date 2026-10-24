@@ -7,7 +7,7 @@ namespace HmiEditor.Core;
 public static class VersionInfo
 {
     /// <summary>主版本号</summary>
-    public const string Version = "2.7.0";
+    public const string Version = "2.8.0";
 
     /// <summary>完整的版本显示字符串</summary>
     public const string DisplayVersion = $"HMI Editor v{Version}";
