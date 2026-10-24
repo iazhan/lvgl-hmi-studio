@@ -40,7 +40,8 @@ public class AppNumberBoxWiringCensusTests
     /// <summary>**面 A：具名数字框 ∩ 有 ValueChanged 接线**（阶段 195 实测，逐行可审）。</summary>
     private static readonly FileFace[] WiredNamedNumberBoxes =
     {
-        new("PropertyPanelView.axaml", 31, "enumerated", "PropertyPanelWiringTests.cs"),
+        // 批次 1a 加了 9 个数字框（仪表 5 / 指示灯 1 / 按钮 3），接线同步补齐
+        new("PropertyPanelView.axaml", 40, "enumerated", "PropertyPanelWiringTests.cs"),
         new("SettingsDialog.axaml", 9, "perBox", "SettingsDialogNumberBoxWiringTests.cs"),
         new("ScreenManagerView.axaml", 2, "perBox", "ScreenManagerNumberBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 1, "perBox", "ProjectSettingsNumberBoxWiringTests.cs"),
@@ -246,5 +247,37 @@ public class AppNumberBoxWiringCensusTests
         }
 
         Assert.True(bad.Count == 0, "这些文件的接线没有被两个面恰好分完：\n  " + string.Join("\n  ", bad));
+    }
+
+    /// <summary>
+    /// 批次 1a 的教训：**具名数字框漏挂 `ValueChanged` = 改了不落盘**。
+    /// 现象是"每次点开控件，属性又回到默认值"——因为 Value 变化不触发 TextChanged，
+    /// 而数字框唯一的写回入口是 `OnNumberChanged`。
+    ///
+    /// <para>面 A 的计数是台账，抓不到"新加的框没挂线"（它只核对已登记的数字）。这条按
+    /// **名字逐个核对**，专治这一类；新加控件细节数字框时把它加进 <c>names</c> 即可。</para>
+    /// </summary>
+    [Fact]
+    public void DetailParamNumberBoxes_AreWiredToValueChanged()
+    {
+        string[] names =
+        {
+            "GaugeArcWidthBox", "GaugeTickLenBox", "GaugeNeedleLenBox", "GaugeNeedleWidthBox",
+            "GaugeCenterRadiusBox", "LampSizeBox", "ConfirmWaitMsBox", "HoldMsBox", "LongPressMsBox",
+        };
+
+        var codePath = Path.Combine(SourceScanner.RepoRoot,
+            "src", "HmiEditor.App", "Views", "PropertyPanelView.axaml.cs");
+        Assert.True(File.Exists(codePath), "找不到 " + codePath);
+        var code = SourceScanner.StripComments(File.ReadAllText(codePath));
+
+        var missing = names
+            .Where(n => !System.Text.RegularExpressions.Regex.IsMatch(
+                code, $@"(?<![\w.]){System.Text.RegularExpressions.Regex.Escape(n)}\.ValueChanged\s*\+="))
+            .ToList();
+
+        Assert.True(missing.Count == 0,
+            "这些数字框没挂 ValueChanged —— 改了不会写回模型（切走再点开会退回默认值）："
+            + string.Join(", ", missing));
     }
 }

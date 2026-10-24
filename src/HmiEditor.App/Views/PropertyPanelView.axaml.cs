@@ -97,6 +97,19 @@ public partial class PropertyPanelView : UserControl
         RotationBox.ValueChanged += OnNumberChanged;
         PipeFlowSpeedBox.ValueChanged += OnNumberChanged;
 
+        // 批次 1a：控件细节数字框。**漏了这几条就是"改了不落盘"**：
+        // FANumberBox 的 Value 变化不会触发 TextChanged/IsCheckedChanged，
+        // 而 OnNumberChanged 才是数字框的写回入口（切走控件后值会退回默认）。
+        GaugeArcWidthBox.ValueChanged += OnNumberChanged;
+        GaugeTickLenBox.ValueChanged += OnNumberChanged;
+        GaugeNeedleLenBox.ValueChanged += OnNumberChanged;
+        GaugeNeedleWidthBox.ValueChanged += OnNumberChanged;
+        GaugeCenterRadiusBox.ValueChanged += OnNumberChanged;
+        LampSizeBox.ValueChanged += OnNumberChanged;
+        ConfirmWaitMsBox.ValueChanged += OnNumberChanged;
+        HoldMsBox.ValueChanged += OnNumberChanged;
+        LongPressMsBox.ValueChanged += OnNumberChanged;
+
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();
         ScreenHeight.ValueChanged += (_, _) => OnScreenNumberChanged();
