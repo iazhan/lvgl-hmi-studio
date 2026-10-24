@@ -729,7 +729,7 @@
                           IsVisible="False">
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1242,6 +1242,76 @@
                             <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.left}" Tag="Left"/>
                             <ComboBoxItem Content="{res:Loc prop.detail.tab.pos.right}" Tag="Right"/>
                         </ComboBox>
+                        <!-- 批次 2c：报警列表显示细节 -->
+                        <TextBlock x:Name="LblAlarmOrder" Text="{res:Loc prop.detail.alarm.order}" Grid.Row="31" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="AlarmOrderCombo" Grid.Row="31" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.order.newest}" Tag="newest_first"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.order.oldest}" Tag="newest_last"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblAlarmAckOn" Text="{res:Loc prop.detail.alarm.ack}" Grid.Row="32" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="AlarmAckOnCombo" Grid.Row="32" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.ack.none}" Tag="none"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.ack.click}" Tag="click"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.ack.dblclick}" Tag="dblclick"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblAlarmGrid" Text="{res:Loc prop.detail.alarm.grid}" Grid.Row="33" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="AlarmGridCombo" Grid.Row="33" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.grid.all}" Tag="all"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.grid.rows}" Tag="rows"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.grid.border}" Tag="border"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.alarm.grid.none}" Tag="none"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblAlarmRowHeight" Text="{res:Loc prop.detail.alarm.rowheight}" Grid.Row="34" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="AlarmRowHeightBox" Grid.Row="34" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="60"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblAlarmScrollbar" Text="{res:Loc prop.detail.alarm.scrollbar}" Grid.Row="35" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="AlarmScrollbarCheck" Grid.Row="35" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblAlarmRefresh" Text="{res:Loc prop.detail.alarm.refresh}" Grid.Row="36" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="AlarmRefreshBox" Grid.Row="36" Grid.Column="1"
+                                        Value="500" Minimum="0" Maximum="60000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblAlarmBlink" Text="{res:Loc prop.detail.alarm.blink}" Grid.Row="37" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="AlarmBlinkCheck" Grid.Row="37" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblAlarmBlinkMs" Text="{res:Loc prop.detail.alarm.blinkms}" Grid.Row="38" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="AlarmBlinkMsBox" Grid.Row="38" Grid.Column="1"
+                                        Value="600" Minimum="100" Maximum="5000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblAlarmDateFormat" Text="{res:Loc prop.detail.alarm.datefmt}" Grid.Row="39" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="AlarmDateFormatBox" Grid.Row="39" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblAlarmTimeFormat" Text="{res:Loc prop.detail.alarm.timefmt}" Grid.Row="40" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="AlarmTimeFormatBox" Grid.Row="40" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
                     </Grid>
                 </Expander>
 

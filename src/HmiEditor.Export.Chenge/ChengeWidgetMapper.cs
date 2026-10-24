@@ -372,10 +372,20 @@ internal sealed class ChengeWidgetMapper
             cols.Add(new JsonObject { ["key"] = "time" });
         }
         props["columns"] = cols;
-        props["ack_on"] = "click";
-        props["blink"] = true;
         props["max_rows"] = Clamp(control.AlarmMaxRows, 10, 500);
-        props["row_height"] = Clamp((int)Math.Round(control.Height / Math.Max(1, control.AlarmMaxRows)), 16, 60);
+        // 以下取值域都按运行时校验白名单收紧：写错会让**整页**建不出来
+        props["order"] = OneOf(control.AlarmOrder, "newest_first", "newest_last", "newest_first", where, "alarm_list.order");
+        props["ack_on"] = OneOf(control.AlarmAckOn, "none", "click", "dblclick", "click", where, "alarm_list.ack_on");
+        props["grid"] = OneOf(control.AlarmGrid, "all", "rows", "border", "none", "all", where, "alarm_list.grid");
+        props["blink"] = control.AlarmBlink;
+        props["blink_ms"] = Clamp(control.AlarmBlinkMs, 100, 5000);
+        props["scrollbar"] = control.AlarmScrollbar;
+        props["refresh_ms"] = Clamp(control.AlarmRefreshMs, 0, 60000);
+        if (!string.IsNullOrWhiteSpace(control.AlarmDateFormat)) props["date_format"] = control.AlarmDateFormat!.Trim();
+        if (!string.IsNullOrWhiteSpace(control.AlarmTimeFormat)) props["time_format"] = control.AlarmTimeFormat!.Trim();
+        props["row_height"] = control.AlarmRowHeight > 0
+            ? Clamp(control.AlarmRowHeight, 16, 60)
+            : Clamp((int)Math.Round(control.Height / Math.Max(1, control.AlarmMaxRows)), 16, 60);
         SetFont(props, control, DefaultFont(14));
         _features.Add("alarm");
     }
@@ -606,6 +616,30 @@ internal sealed class ChengeWidgetMapper
     /// （<c>[{lt:50,color},{lt:80,color},{color}]</c>；最后一段省略 lt 作兜底）。
     /// 写坏的段只告警跳过 —— 一个错颜色不该让整页导不出去。
     /// </summary>
+    /// <summary>
+    /// 取白名单里的一个值：空 = 默认值；不在白名单 = 告警并回落默认。
+    /// 运行时的这些枚举是**硬校验**（非法值直接拒绝建页），所以绝不能原样透传。
+    /// </summary>
+    private string OneOf(string? value, string a, string b, string fallback, string where, string code)
+        => OneOf(value, new[] { a, b }, fallback, where, code);
+
+    private string OneOf(string? value, string a, string b, string c, string fallback, string where, string code)
+        => OneOf(value, new[] { a, b, c }, fallback, where, code);
+
+    private string OneOf(string? value, string a, string b, string c, string d, string fallback,
+        string where, string code)
+        => OneOf(value, new[] { a, b, c, d }, fallback, where, code);
+
+    private string OneOf(string? value, string[] allowed, string fallback, string where, string code)
+    {
+        var v = (value ?? "").Trim().ToLowerInvariant();
+        if (v.Length == 0) return fallback;
+        if (allowed.Contains(v)) return v;
+
+        _issues.Warn(code, where, $"{code} 的取值 {value} 非法（{string.Join('/', allowed)}），已按 {fallback} 处理");
+        return fallback;
+    }
+
     /// <summary>页签位置：编辑器存 Top/Bottom/Left/Right，契约要小写 top/bottom/left/right。</summary>
     private static string TabPosOf(string? pos) => (pos ?? "").Trim().ToLowerInvariant() switch
     {

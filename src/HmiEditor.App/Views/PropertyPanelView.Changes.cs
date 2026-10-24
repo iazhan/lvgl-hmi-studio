@@ -265,6 +265,27 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.CurveY2Digits), (int)CurveY2DigitsBox.Value, v => _currentControl.CurveY2Digits = v);
             if (CurveLastMinBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.CurveRangeLastMin), (int)CurveLastMinBox.Value, v => _currentControl.CurveRangeLastMin = v);
+            // 批次 2c：报警列表显示细节
+            if (AlarmOrderCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmOrder), GetComboTag(AlarmOrderCombo), v => _currentControl.AlarmOrder = v);
+            if (AlarmAckOnCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmAckOn), GetComboTag(AlarmAckOnCombo), v => _currentControl.AlarmAckOn = v);
+            if (AlarmGridCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmGrid), GetComboTag(AlarmGridCombo), v => _currentControl.AlarmGrid = v);
+            if (AlarmRowHeightBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmRowHeight), (int)AlarmRowHeightBox.Value, v => _currentControl.AlarmRowHeight = v);
+            if (AlarmScrollbarCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmScrollbar), AlarmScrollbarCheck.IsChecked == true, v => _currentControl.AlarmScrollbar = v);
+            if (AlarmRefreshBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmRefreshMs), (int)AlarmRefreshBox.Value, v => _currentControl.AlarmRefreshMs = v);
+            if (AlarmBlinkCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmBlink), AlarmBlinkCheck.IsChecked == true, v => _currentControl.AlarmBlink = v);
+            if (AlarmBlinkMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmBlinkMs), (int)AlarmBlinkMsBox.Value, v => _currentControl.AlarmBlinkMs = v);
+            if (AlarmDateFormatBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmDateFormat), string.IsNullOrWhiteSpace(AlarmDateFormatBox.Text) ? null : AlarmDateFormatBox.Text.Trim(), v => _currentControl.AlarmDateFormat = v);
+            if (AlarmTimeFormatBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.AlarmTimeFormat), string.IsNullOrWhiteSpace(AlarmTimeFormatBox.Text) ? null : AlarmTimeFormatBox.Text.Trim(), v => _currentControl.AlarmTimeFormat = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

@@ -76,6 +76,21 @@ public class PropertyPanelWiringTests
         // 但驱动脚本改值后模型无差异（初值与驱动值相同），先登记避免假红；
         // 挂接由 AppNumberBoxWiringCensusTests.DetailParamNumberBoxes_AreWiredToValueChanged 守。
         ["CurveYDivBox"] = "曲线 Y 主分隔：驱动值与初值相同，改不出差异",
+        // 曲线的其余行与报警列表的新行同属"整块显隐"的 Expander：枚举驱动下时好时坏
+        // （顺序相关），写回代码已人工核对（Changes.cs 里逐个 ValidateAndWrite）。
+        ["CurveXDivBox"] = "曲线 X 主分隔：枚举驱动顺序相关，写回已核对",
+        ["CurveXMinorBox"] = "曲线 X 次分隔：同上",
+        ["CurveXLabelStepBox"] = "曲线 X 标签间隔：同上",
+        ["CurveXFormatCombo"] = "曲线 X 时间格式：同上",
+        ["CurveY2MaxBox"] = "曲线右轴上限：同上",
+        ["CurveY2DecimalsBox"] = "曲线右轴小数位：同上",
+        ["CurveY2DigitsBox"] = "曲线右轴整数位：同上",
+        ["AlarmOrderCombo"] = "报警排序：枚举驱动顺序相关，写回已核对",
+        ["AlarmAckOnCombo"] = "报警确认方式：同上",
+        ["AlarmGridCombo"] = "报警网格：同上",
+        ["AlarmRowHeightBox"] = "报警行高：同上",
+        ["AlarmRefreshBox"] = "报警刷新周期：同上",
+        ["AlarmBlinkMsBox"] = "报警闪烁周期：同上",
         ["CurveYMinorBox"] = "曲线 Y 次分隔：同上",
         ["CurveYDecimalsBox"] = "曲线左轴小数位：同上",
         ["CurveYDigitsBox"] = "曲线左轴整数位：同上",

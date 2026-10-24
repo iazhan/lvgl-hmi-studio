@@ -129,6 +129,10 @@ public partial class PropertyPanelView : UserControl
         CurveY2DecimalsBox.ValueChanged += OnNumberChanged;
         CurveY2DigitsBox.ValueChanged += OnNumberChanged;
         CurveLastMinBox.ValueChanged += OnNumberChanged;
+        // 批次 2c：报警列表
+        AlarmRowHeightBox.ValueChanged += OnNumberChanged;
+        AlarmRefreshBox.ValueChanged += OnNumberChanged;
+        AlarmBlinkMsBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();

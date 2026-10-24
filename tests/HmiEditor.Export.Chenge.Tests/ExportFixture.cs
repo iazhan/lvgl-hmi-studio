@@ -144,6 +144,9 @@ internal static class ExportFixture
         screen.Controls.Add(new HmiControl
         {
             Id = "c8", Type = HmiControlType.AlarmList, Name = "AlarmList1", X = 380, Y = 80, Width = 400, Height = 180,
+            AlarmOrder = "newest_last", AlarmAckOn = "dblclick", AlarmGrid = "rows",
+            AlarmRowHeight = 30, AlarmBlink = false, AlarmRefreshMs = 1000,
+            AlarmDateFormat = "yyyy-MM-dd", AlarmTimeFormat = "HH:mm",
             AlarmGroupFilter = "温度", AlarmMode = "active", AlarmLevelFilter = "1~4", AlarmMaxRows = 8,
         });
         screen.Controls.Add(new HmiControl

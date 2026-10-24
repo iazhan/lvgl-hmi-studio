@@ -100,6 +100,8 @@ public class PropertyPanelTextBoxWiringTests
         ["CurveGridColorBox"] = "曲线辅助线色：同上（**XAML 属性式接线**，不在本面）",
         ["CurveTickColorBox"] = "曲线刻度线色：同上（**XAML 属性式接线**，不在本面）",
         ["CurveLabelColorBox"] = "曲线刻度文字色：同上（**XAML 属性式接线**，不在本面）",
+        ["AlarmDateFormatBox"] = "报警日期格式：同上（**XAML 属性式接线**，不在本面）",
+        ["AlarmTimeFormatBox"] = "报警时间格式：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

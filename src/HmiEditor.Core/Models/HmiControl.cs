@@ -425,6 +425,38 @@ public class HmiControl
     /// <summary>右轴下限。</summary>
     public int CurveY2Min { get; set; }
 
+    // ── 批次 2c：报警列表的显示细节（契约 alarm_list 的其余 props）──
+
+    /// <summary>报警列表排序（newest_first / newest_last）。</summary>
+    public string? AlarmOrder { get; set; }
+
+    /// <summary>确认方式（none / click / dblclick）。</summary>
+    public string? AlarmAckOn { get; set; }
+
+    /// <summary>网格样式（all / rows / border / none）。</summary>
+    public string? AlarmGrid { get; set; }
+
+    /// <summary>行高（0 = 按控件高度自动算）。</summary>
+    public int AlarmRowHeight { get; set; }
+
+    /// <summary>显示滚动条。</summary>
+    public bool AlarmScrollbar { get; set; } = true;
+
+    /// <summary>刷新周期毫秒（0 = 不自动刷新）。</summary>
+    public int AlarmRefreshMs { get; set; } = 500;
+
+    /// <summary>未确认报警闪烁。</summary>
+    public bool AlarmBlink { get; set; } = true;
+
+    /// <summary>闪烁周期毫秒。</summary>
+    public int AlarmBlinkMs { get; set; } = 600;
+
+    /// <summary>日期格式（如 yyyy/MM/dd）。</summary>
+    public string? AlarmDateFormat { get; set; }
+
+    /// <summary>时间格式（如 hh:mm:ss）。</summary>
+    public string? AlarmTimeFormat { get; set; }
+
     // 按钮的**按下态**（契约 pressed）不在这里另开字段：它已经由
     // `VisualStates[Pressed]`（背景/边框/文字色/文字）表达，导出器 AddPressed() 负责组装。
     // 两套表达会互相覆盖，所以只保留那一条。
