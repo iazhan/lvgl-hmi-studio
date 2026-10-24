@@ -1,0 +1,244 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO.MemoryMappedFiles;
+using System.Threading;
+using HmiEditor.App.Resources;
+
+namespace HmiEditor.App.Services;
+
+/// <summary>
+/// 隔离预览：编辑器只与子进程 <c>chenge-preview-host</c> 打交道。
+///
+/// <para><b>为什么默认走这条</b>：预览里会跑用户写的 Lua，死循环/越界/原生接口 bug
+/// 都可能发生。进程内加载 .so 时这些会直接把编辑器带走（未保存的工程一起没）。
+/// 子进程里崩了只死预览。</para>
+///
+/// <para><b>通道</b>（与 <c>chenge-runtime/src/preview_host.c</c> 逐字段对应）：
+/// 帧 = 共享内存（40 字节头 + 整屏 ARGB8888，头里 <c>seq</c> 每帧 +1）；
+/// 输入 = 标准输入一行一条 <c>P x y down</c>；日志 = 标准错误按行转发。</para>
+///
+/// <para><b>父进程退出</b>：标准输入被关闭 ⇒ 宿主读到 EOF 自己退出，不留孤儿。</para>
+/// </summary>
+public sealed class ChengeProcessSession : IChengePreviewSession
+{
+    private const string ExeLinux = "chenge-preview-host";
+    private const string ExeWindows = "chenge-preview-host.exe";
+    private const uint FrameMagic = 0x46474843;   // 'CHGF'
+    private const int HeaderSize = 40;
+    private const int SeqOffset = 24;
+
+    private readonly string _exePath;
+    private readonly string _dataDir;
+    private readonly string _shmName;
+    private readonly string _shmPath;
+    private readonly List<string> _log = new();
+
+    private Process? _proc;
+    private MemoryMappedFile? _mmf;
+    private MemoryMappedViewAccessor? _view;
+    private Thread? _logThread;
+    private volatile bool _disposed;
+
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    public int Stride { get; private set; }
+    public double Fps { get; private set; }
+    public bool IsOpen => _proc is { HasExited: false } && _view != null;
+    public string LastError { get; private set; } = "";
+    public long FrameVersion => _view == null ? 0 : (long)_view.ReadUInt64(SeqOffset);
+
+    /// <summary>最近若干行宿主日志（输出面板/错误提示用）。</summary>
+    public IReadOnlyList<string> Log
+    {
+        get { lock (_log) return _log.ToArray(); }
+    }
+
+    public ChengeProcessSession(string exePath, string dataDir)
+    {
+        _exePath = exePath;
+        _dataDir = dataDir;
+        _shmName = "/chenge-preview-" + Guid.NewGuid().ToString("N")[..12];
+        _shmPath = Path.Combine("/dev/shm", _shmName.TrimStart('/'));
+    }
+
+    public static string ExecutableName => OperatingSystem.IsWindows() ? ExeWindows : ExeLinux;
+
+    public static bool TryLocate(string? runtimeDir, out string exePath)
+    {
+        exePath = "";
+        if (string.IsNullOrWhiteSpace(runtimeDir)) return false;
+        var p = Path.Combine(runtimeDir, ExecutableName);
+        if (!File.Exists(p)) return false;
+        exePath = p;
+        return true;
+    }
+
+    public bool Open(string projectDir)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            LastError = AppLocalization.Service["live.err.windows_unsupported"];
+            return false;
+        }
+
+        try
+        {
+            var psi = new ProcessStartInfo(_exePath)
+            {
+                RedirectStandardInput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            psi.ArgumentList.Add("--project");
+            psi.ArgumentList.Add(projectDir);
+            psi.ArgumentList.Add("--shm");
+            psi.ArgumentList.Add(_shmName);
+            psi.ArgumentList.Add("--data");
+            psi.ArgumentList.Add(_dataDir);
+
+            _proc = Process.Start(psi);
+            if (_proc == null)
+            {
+                LastError = AppLocalization.Service["live.err.host_start"];
+                return false;
+            }
+
+            _logThread = new Thread(ReadLog) { IsBackground = true, Name = "chenge-host-log" };
+            _logThread.Start();
+
+            // 等宿主把共享内存建好（含 800×480 的 ftruncate，通常 < 200ms）
+            var deadline = Environment.TickCount64 + 8000;
+            while (Environment.TickCount64 < deadline)
+            {
+                if (_proc.HasExited)
+                {
+                    LastError = AppLocalization.Service.Format("live.err.host_exit", _proc.ExitCode.ToString(), LastLog());
+                    return false;
+                }
+                if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > HeaderSize)
+                {
+                    _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
+                        MemoryMappedFileAccess.Read);
+                    _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                    if (_view.ReadUInt32(0) == FrameMagic)
+                    {
+                        Width = (int)_view.ReadUInt32(8);
+                        Height = (int)_view.ReadUInt32(12);
+                        Stride = (int)_view.ReadUInt32(16);
+                        if (Width > 0 && Height > 0 && Stride >= Width * 4) return true;
+                        LastError = AppLocalization.Service.Format("live.err.shm_header", $"{Width}x{Height}", Stride.ToString());
+                        return false;
+                    }
+                }
+                Thread.Sleep(50);
+            }
+
+            LastError = AppLocalization.Service["live.err.shm_timeout"];
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            return false;
+        }
+    }
+
+    private void ReadLog()
+    {
+        try
+        {
+            while (_proc != null && !_proc.StandardError.EndOfStream)
+            {
+                var line = _proc.StandardError.ReadLine();
+                if (line == null) break;
+                lock (_log)
+                {
+                    _log.Add(line);
+                    if (_log.Count > 400) _log.RemoveAt(0);
+                }
+            }
+        }
+        catch
+        {
+            // 进程退出时流会断，正常
+        }
+    }
+
+    private string LastLog()
+    {
+        lock (_log)
+        {
+            for (var i = _log.Count - 1; i >= 0; i--)
+                if (_log[i].Length > 0) return _log[i];
+        }
+        return "";
+    }
+
+    public void Pointer(int x, int y, bool down)
+    {
+        if (_proc is not { HasExited: false }) return;
+        try
+        {
+            _proc.StandardInput.WriteLine($"P {x} {y} {(down ? 1 : 0)}");
+            _proc.StandardInput.Flush();
+        }
+        catch (IOException)
+        {
+            // 宿主已死，下一次 Pump 会看到 IsOpen=false
+        }
+    }
+
+    public bool TryCopyFrame(byte[] dest)
+    {
+        if (_view == null || dest.Length < Stride * Height) return false;
+        _view.ReadArray(HeaderSize, dest, 0, Stride * Height);
+        return true;
+    }
+
+    public bool SaveScreenshot(string path)
+    {
+        if (_proc is not { HasExited: false }) return false;
+        try
+        {
+            _proc.StandardInput.WriteLine("S " + path);
+            _proc.StandardInput.Flush();
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        try
+        {
+            if (_proc is { HasExited: false })
+            {
+                try { _proc.StandardInput.WriteLine("Q"); _proc.StandardInput.Flush(); } catch { }
+                if (!_proc.WaitForExit(1500)) _proc.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // 关窗时进程已经没了也正常
+        }
+        finally
+        {
+            _view?.Dispose();
+            _mmf?.Dispose();
+            _view = null;
+            _mmf = null;
+            _proc?.Dispose();
+            _proc = null;
+            try { if (File.Exists(_shmPath)) File.Delete(_shmPath); } catch { }
+        }
+    }
+}

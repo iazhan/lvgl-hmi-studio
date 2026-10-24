@@ -37,7 +37,8 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private readonly ChengeExportOptions _options;
     private readonly SettingsService? _settings;
 
-    private ChengeEmbedSession? _session;
+    private IChengePreviewSession? _session;
+    private string _backend = "";
     private WriteableBitmap? _bitmap;
     private byte[] _frame = Array.Empty<byte>();
     private DispatcherTimer? _timer;
@@ -107,54 +108,86 @@ public partial class ChengeLivePreviewView : ChromeWindow
                 Fail(AppLocalization.Service["chenge.export.runtime_missing"]);
                 return;
             }
-            // 进程内预览要的是库，不是可执行文件
-            if (!ChengeEmbedSession.TryLocate(runtime.RuntimeDir, out var libPath))
-            {
-                Fail(AppLocalization.Service[Lang.LiveLibMissing]);
-                return;
-            }
 
-            // 1) 导出到**内存**：预览的是编辑器当前模型，不必先落盘。
-            //    含图片资产的工程暂时回落目录模式（assets/img/*.bin 还没走内存表）。
             var workRoot = AppPaths.TempSubdir("chenge-live");
             _exportDir = Path.Combine(workRoot, "project");
             var dataDir = Path.Combine(workRoot, "data");
             Directory.CreateDirectory(dataDir);
 
             var service = new ChengeExportService();
-            var (export, blobs) = await Task.Run(() =>
+            string? isolatedWhy = null;
+
+            // 后端 1（默认）：隔离进程。工程先导出到目录——宿主暂时只吃目录，
+            // 内存工程要等宿主支持 blob 输入（下一步）。崩了也只死预览。
+            if (ChengeProcessSession.TryLocate(runtime.RuntimeDir, out var hostExe))
             {
-                var mem = service.ExportToMemory(_project, _assets, _projectDirectory, _options, out var res);
-                return (res, mem);
-            });
-            if (!export.Success)
-            {
-                Fail(ChengeExportService.DescribeIssues(export));
-                return;
+                var onDisk = await Task.Run(() =>
+                    service.Export(_project, _assets, _projectDirectory, _options, _exportDir));
+                if (onDisk.Success)
+                {
+                    var proc = new ChengeProcessSession(hostExe, dataDir);
+                    if (await Task.Run(() => proc.Open(_exportDir)))
+                    {
+                        _session = proc;
+                        _backend = AppLocalization.Service["live.backend.isolated"];
+                    }
+                    else
+                    {
+                        isolatedWhy = proc.LastError;
+                        proc.Dispose();
+                    }
+                }
+                else
+                {
+                    Fail(ChengeExportService.DescribeIssues(onDisk));
+                    return;
+                }
             }
 
-            // 2) 加载库，先试内存工程，失败再回落目录
-            _session = await Task.Run(() =>
+            // 后端 2：进程内库（吃内存工程，不落盘）。隔离宿主没编出来/起不来时才走。
+            if (_session == null)
             {
-                var s = new ChengeEmbedSession(libPath, dataDir);
-                s.ClearProjectFiles();
-                foreach (var (rel, bytes) in blobs) s.PutFile(rel, bytes);
-                if (s.OpenMemory()) return s;
-
-                var memWhy = s.LastError;
-                if (Directory.Exists(_exportDir)) Directory.Delete(_exportDir, recursive: true);
-                var onDisk = service.Export(_project, _assets, _projectDirectory, _options, _exportDir);
-                if (!onDisk.Success)
+                if (!ChengeEmbedSession.TryLocate(runtime.RuntimeDir, out var libPath))
                 {
-                    s.Dispose();
-                    throw new InvalidOperationException(ChengeExportService.DescribeIssues(onDisk));
+                    Fail(AppLocalization.Service[Lang.LiveLibMissing] +
+                         (isolatedWhy == null ? "" : "\n" + isolatedWhy));
+                    return;
                 }
-                if (s.Open(_exportDir)) return s;
 
-                var why = AppLocalization.Service.Format("live.open.failed", memWhy, s.LastError);
-                s.Dispose();
-                throw new InvalidOperationException(why);
-            });
+                var (export, blobs) = await Task.Run(() =>
+                {
+                    var mem = service.ExportToMemory(_project, _assets, _projectDirectory, _options, out var res);
+                    return (res, mem);
+                });
+                if (!export.Success)
+                {
+                    Fail(ChengeExportService.DescribeIssues(export));
+                    return;
+                }
+
+                _session = await Task.Run(() =>
+                {
+                    var s = new ChengeEmbedSession(libPath, dataDir);
+                    s.ClearProjectFiles();
+                    foreach (var (rel, bytes) in blobs) s.PutFile(rel, bytes);
+                    if (s.OpenMemory()) return s;
+
+                    var memWhy = s.LastError;
+                    if (Directory.Exists(_exportDir)) Directory.Delete(_exportDir, recursive: true);
+                    var onDisk = service.Export(_project, _assets, _projectDirectory, _options, _exportDir);
+                    if (!onDisk.Success)
+                    {
+                        s.Dispose();
+                        throw new InvalidOperationException(ChengeExportService.DescribeIssues(onDisk));
+                    }
+                    if (s.Open(_exportDir)) return s;
+
+                    var why = AppLocalization.Service.Format("live.open.failed", memWhy, s.LastError);
+                    s.Dispose();
+                    throw new InvalidOperationException(why);
+                });
+                _backend = AppLocalization.Service["live.backend.inproc"];
+            }
 
             // 3) 位图（LVGL 的 ARGB8888 在内存里是 BGRA）
             _bitmap = new WriteableBitmap(new PixelSize(_session.Width, _session.Height),
@@ -167,7 +200,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
             BtnShot.IsEnabled = true;
 
             StateText.Text = AppLocalization.Service.Format("live.state",
-                _session.Width, _session.Height, _exportDir);
+                _session.Width, _session.Height, _backend);
 
             _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
             _timer.Tick += (_, _) => Pump();

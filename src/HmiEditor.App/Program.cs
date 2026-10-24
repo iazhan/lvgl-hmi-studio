@@ -81,6 +81,45 @@ class Program
         }
 
         var dataDir = AppPaths_ForSelftest();
+
+        // 隔离宿主自检：只验"共享内存帧 + stdin 输入"这两条通道（变量在子进程里，读不到）
+        if (args.Contains("--iso"))
+        {
+            if (!ChengeProcessSession.TryLocate(runtimeDir, out var hostExe))
+            {
+                Console.WriteLine($"FAIL: {runtimeDir} 下没有 {ChengeProcessSession.ExecutableName}（make PREVIEW=1）");
+                return 2;
+            }
+            using var proc = new ChengeProcessSession(hostExe, dataDir);
+            if (!proc.Open(projectDir))
+            {
+                Console.WriteLine($"FAIL: 宿主打开失败：{proc.LastError}");
+                return 3;
+            }
+            Thread.Sleep(500);
+            var buf = new byte[proc.Stride * proc.Height];
+            if (!proc.TryCopyFrame(buf))
+            {
+                Console.WriteLine("FAIL: 读不到共享内存帧");
+                return 4;
+            }
+            var step = 4 * 97;
+            var nz = 0;
+            var total = 0;
+            for (var i = 0; i + 2 < buf.Length; i += step, total++)
+                if (buf[i] != 0 || buf[i + 1] != 0 || buf[i + 2] != 0) nz++;
+            Console.WriteLine($"frame {proc.Width}x{proc.Height} stride={proc.Stride} 非黑 {(double)nz / total:P1}");
+
+            proc.Pointer(100, 148, true);
+            Thread.Sleep(120);
+            proc.Pointer(100, 148, false);
+            Thread.Sleep(500);
+
+            var hit = proc.Log.Any(l => l.Contains("tag-write"));
+            Console.WriteLine(hit ? "OK: 隔离宿主 帧 + 点击写变量 全部通过" : "FAIL: 点击没写进变量");
+            return hit ? 0 : 7;
+        }
+
         try
         {
             using var session = new ChengeEmbedSession(lib, dataDir);
