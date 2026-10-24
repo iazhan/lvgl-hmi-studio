@@ -659,6 +659,7 @@
   "live.fps": "{0} fps rendered · tick {1} · UI {2} ms",
   "live.shot.saved": "Screenshot saved: {0}",
   "live.shot.failed": "Failed to save the screenshot",
+  "live.open.failed": "In-memory open failed: {0}; directory open failed: {1}",
   "live.reload": "Reload",
   "live.shot": "Save screenshot",
   "live.hint": "Click or drag on the screen to drive the runtime: buttons write tags, sliders follow, inputs open the runtime keypad.",

@@ -39,6 +39,11 @@ public sealed class ChengeExportService
         ChengeExportOptions options, string outputDir)
         => _exporter.Export(project, assets, options, outputDir, projectDirectory);
 
+    /// <summary>导出到内存（预览用：运行时直接吃字节，不写临时目录）。</summary>
+    public Dictionary<string, byte[]> ExportToMemory(HmiProject project, AssetLibrary? assets,
+        string? projectDirectory, ChengeExportOptions options, out ChengeExportResult result)
+        => _exporter.ExportToMemory(project, assets, options, projectDirectory, out result);
+
     /// <summary>
     /// 定位运行时目录：**只认显式配置**（设置项 / 环境变量 / 安装目录内置），
     /// 不向上遍历也不假设平级仓库 —— 编辑器是独立安装的软件，

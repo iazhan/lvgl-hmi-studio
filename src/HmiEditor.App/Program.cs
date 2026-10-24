@@ -60,12 +60,13 @@ class Program
             return 64;
         }
 
-        var projectDir = args[1];
-        if (!Directory.Exists(projectDir))
+        var projectDir = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
+        if (projectDir == null || !Directory.Exists(projectDir))
         {
             Console.WriteLine($"FAIL: 工程目录不存在：{projectDir}");
             return 2;
         }
+        var useMemory = args.Contains("--mem");
 
         var runtimeDir = Environment.GetEnvironmentVariable("CHENGE_RUNTIME_DIR");
         if (string.IsNullOrWhiteSpace(runtimeDir))
@@ -83,7 +84,30 @@ class Program
         try
         {
             using var session = new ChengeEmbedSession(lib, dataDir);
-            if (!session.Open(projectDir))
+            var opened = false;
+            if (useMemory)
+            {
+                // 把目录里的工程文件塞进内存表，再从内存启动（验证 project_put/open_mem 这条路）
+                session.ClearProjectFiles();
+                var n = 0;
+                foreach (var file in Directory.EnumerateFiles(projectDir, "*", SearchOption.AllDirectories))
+                {
+                    var rel = Path.GetRelativePath(projectDir, file).Replace('\\', '/');
+                    if (!session.PutFile(rel, File.ReadAllBytes(file)))
+                    {
+                        Console.WriteLine($"FAIL: project_put 失败：{rel}");
+                        return 3;
+                    }
+                    n++;
+                }
+                Console.WriteLine($"内存工程：{n} 个文件");
+                opened = session.OpenMemory();
+            }
+            else
+            {
+                opened = session.Open(projectDir);
+            }
+            if (!opened)
             {
                 Console.WriteLine($"FAIL: 打开工程失败：{session.LastError}");
                 return 3;

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -32,6 +33,23 @@ public sealed class ChengeExporter
 
     public ChengeExportResult Export(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
         string outputDir, string? projectDirectory = null)
+        => ExportCore(project, assets, options, projectDirectory, new DirectoryExportSink(outputDir));
+
+    /// <summary>
+    /// 导出到内存：预览用（运行时直接吃字节，不落盘）。返回 相对路径 → 文件内容；
+    /// 有错误时 <paramref name="result"/> 里带问题清单，字典可能不完整。
+    /// </summary>
+    public Dictionary<string, byte[]> ExportToMemory(HmiProject project, AssetLibrary? assets,
+        ChengeExportOptions options, string? projectDirectory, out ChengeExportResult result)
+    {
+        var sink = new MemoryExportSink();
+
+        result = ExportCore(project, assets, options, projectDirectory, sink);
+        return sink.Files;
+    }
+
+    private ChengeExportResult ExportCore(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
+        string? projectDirectory, IChengeExportSink sink)
     {
         var issues = new ChengeIssueBag();
         var colors = new ChengeColors(project.Theme, issues);
@@ -125,7 +143,7 @@ public sealed class ChengeExporter
         var result = new ChengeExportResult
         {
             Issues = issues,
-            OutputDirectory = outputDir,
+            OutputDirectory = sink.Description,
             PageCount = pageDocs.Count,
             WidgetCount = widgetCount,
             TagCount = tags.Count,
@@ -134,11 +152,11 @@ public sealed class ChengeExporter
 
         if (issues.HasErrors) return result;
 
-        var written = WriteAll(outputDir, manifest, files, assetStore, issues);
+        var written = WriteAll(sink, manifest, files, assetStore, issues);
         return new ChengeExportResult
         {
             Issues = issues,
-            OutputDirectory = outputDir,
+            OutputDirectory = sink.Description,
             PageCount = pageDocs.Count,
             WidgetCount = widgetCount,
             TagCount = tags.Count,
@@ -913,23 +931,15 @@ public sealed class ChengeExporter
 
     // ── 落盘 ──
 
-    private List<string> WriteAll(string outputDir, JsonObject manifest, Dictionary<string, JsonNode> files,
+    private List<string> WriteAll(IChengeExportSink sink, JsonObject manifest, Dictionary<string, JsonNode> files,
         ChengeAssets assets, ChengeIssueBag issues)
     {
         var written = new List<string>();
-        Directory.CreateDirectory(outputDir);
-
-        // 清掉上一次导出的残留页面/资产：工程目录是运行时直接读的，残留页面会出现在页面栈里
-        foreach (var stale in new[] { Path.Combine(outputDir, "pages"), Path.Combine(outputDir, "assets") })
-        {
-            if (Directory.Exists(stale)) Directory.Delete(stale, recursive: true);
-        }
+        sink.Begin();
 
         void Write(string relative, string content)
         {
-            var path = Path.Combine(outputDir, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, content);
+            sink.Write(relative, Encoding.UTF8.GetBytes(content));
             written.Add(relative);
         }
 
@@ -941,9 +951,7 @@ public sealed class ChengeExporter
         }
         foreach (var (relative, bytes) in assets.Binaries.OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
-            var path = Path.Combine(outputDir, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllBytes(path, bytes);
+            sink.Write(relative, bytes);
             written.Add(relative);
         }
 

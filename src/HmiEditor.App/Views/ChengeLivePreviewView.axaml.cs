@@ -114,29 +114,44 @@ public partial class ChengeLivePreviewView : ChromeWindow
                 return;
             }
 
-            // 1) 导出到临时目录（与"导出"走同一个导出器，产物一致）
+            // 1) 导出到**内存**：预览的是编辑器当前模型，不必先落盘。
+            //    含图片资产的工程暂时回落目录模式（assets/img/*.bin 还没走内存表）。
             var workRoot = AppPaths.TempSubdir("chenge-live");
             _exportDir = Path.Combine(workRoot, "project");
-            if (Directory.Exists(_exportDir)) Directory.Delete(_exportDir, recursive: true);
-            Directory.CreateDirectory(_exportDir);
+            var dataDir = Path.Combine(workRoot, "data");
+            Directory.CreateDirectory(dataDir);
 
-            var export = await Task.Run(() =>
-                new ChengeExportService().Export(_project, _assets, _projectDirectory, _options, _exportDir));
+            var service = new ChengeExportService();
+            var (export, blobs) = await Task.Run(() =>
+            {
+                var mem = service.ExportToMemory(_project, _assets, _projectDirectory, _options, out var res);
+                return (res, mem);
+            });
             if (!export.Success)
             {
                 Fail(ChengeExportService.DescribeIssues(export));
                 return;
             }
 
-            var dataDir = Path.Combine(workRoot, "data");
-            Directory.CreateDirectory(dataDir);
-
-            // 2) 加载库并打开工程
+            // 2) 加载库，先试内存工程，失败再回落目录
             _session = await Task.Run(() =>
             {
                 var s = new ChengeEmbedSession(libPath, dataDir);
+                s.ClearProjectFiles();
+                foreach (var (rel, bytes) in blobs) s.PutFile(rel, bytes);
+                if (s.OpenMemory()) return s;
+
+                var memWhy = s.LastError;
+                if (Directory.Exists(_exportDir)) Directory.Delete(_exportDir, recursive: true);
+                var onDisk = service.Export(_project, _assets, _projectDirectory, _options, _exportDir);
+                if (!onDisk.Success)
+                {
+                    s.Dispose();
+                    throw new InvalidOperationException(ChengeExportService.DescribeIssues(onDisk));
+                }
                 if (s.Open(_exportDir)) return s;
-                var why = s.LastError;
+
+                var why = AppLocalization.Service.Format("live.open.failed", memWhy, s.LastError);
                 s.Dispose();
                 throw new InvalidOperationException(why);
             });

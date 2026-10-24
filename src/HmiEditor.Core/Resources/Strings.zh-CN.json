@@ -659,6 +659,7 @@
   "live.fps": "渲染 {0} 帧/秒 · tick {1} · 界面 {2} ms",
   "live.shot.saved": "截图已保存：{0}",
   "live.shot.failed": "截图保存失败",
+  "live.open.failed": "内存模式失败：{0}；目录模式失败：{1}",
   "live.reload": "重新加载",
   "live.shot": "保存截图",
   "live.hint": "在画面上点击或拖动，就是操作运行时：按钮会写变量、滑块会跟手、输入框会弹运行时键盘。",

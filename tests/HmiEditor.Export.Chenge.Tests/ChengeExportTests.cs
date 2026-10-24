@@ -118,6 +118,33 @@ public class ChengeExportTests : IDisposable
     }
 
     /// <summary>
+    /// 内存导出必须与目录导出**逐字节一致**：预览读内存、正式导出读目录，
+    /// 两者若有差异，就会出现"预览好看、导出到板上不对"。
+    /// </summary>
+    [Fact]
+    public void MemoryExport_MatchesDirectoryExport()
+    {
+        var project = ExportFixture.Build();
+        var exporter = new ChengeExporter();
+
+        var mem = exporter.ExportToMemory(project, null, new ChengeExportOptions(), null, out var memResult);
+        Assert.True(memResult.Success, string.Join("\n", memResult.Issues.Items));
+
+        var dir = Path.Combine(_dir, "disk");
+        var diskResult = exporter.Export(project, null, new ChengeExportOptions(), dir);
+        Assert.True(diskResult.Success, string.Join("\n", diskResult.Issues.Items));
+
+        var diskFiles = Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories)
+            .Select(p => Path.GetRelativePath(dir, p).Replace('\\', '/'))
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Equal(diskFiles, mem.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList());
+        foreach (var rel in diskFiles)
+            Assert.Equal(File.ReadAllBytes(Path.Combine(dir, rel)), mem[rel]);
+    }
+
+    /// <summary>
     /// 真跑宿主运行时：需要 CHENGE_RUNTIME_DIR（其下有 make HOST=1 的 chenge-runtime）。
     /// 没有就跳过——CI 上没编运行时不该是红。
     /// </summary>
