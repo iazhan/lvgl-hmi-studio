@@ -99,6 +99,7 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblTabHeight, TabHeightBox, false);
         SetParamRow(LblTabPos, TabPosCombo, false);
         DetailParamExpander.IsVisible = false;
+        ShowCurveRows(false);
 
         bool anyVisible = true;
         switch (control.Type)
@@ -256,6 +257,7 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblCgCurveVars, CgCurveVarsBox, true);
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
+                ShowCurveRows(true);
                 break;
             // I10: 基础绘图图形
             case HmiControlType.Arc:
@@ -346,6 +348,7 @@ public partial class PropertyPanelView : UserControl
         KnobArcWidthBox.Value = control.KnobArcWidth;
         TabHeightBox.Value = control.TabHeight;
         SelectComboByTag(TabPosCombo, control.TabPos, 0);
+        FillCurveFields(control);
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

@@ -351,6 +351,80 @@ public class HmiControl
     /// <summary>TabView：页签位置（top / bottom / left / right）。</summary>
     public string? TabPos { get; set; }
 
+    // ── 批次 2：曲线外观（history_curve / realtime_curve 共用，契约 props 名见 37）──
+
+    /// <summary>轴线颜色。</summary>
+    public string? CurveAxisColor { get; set; }
+
+    /// <summary>绘图区背景色。</summary>
+    public string? CurveBgColor { get; set; }
+
+    /// <summary>绘图区边框色。</summary>
+    public string? CurveBorderColor { get; set; }
+
+    /// <summary>拖动回看方向（lr / rl）。</summary>
+    public string? CurveDirection { get; set; }
+
+    /// <summary>辅助线。</summary>
+    public bool CurveGrid { get; set; } = true;
+
+    /// <summary>辅助线颜色。</summary>
+    public string? CurveGridColor { get; set; }
+
+    /// <summary>刻度标签颜色。</summary>
+    public string? CurveLabelColor { get; set; }
+
+    /// <summary>图例。</summary>
+    public bool CurveLegend { get; set; } = true;
+
+    /// <summary>绝对区间：最近多少分钟（0 = 用 SpanMin）。</summary>
+    public int CurveRangeLastMin { get; set; }
+
+    /// <summary>画轴线。</summary>
+    public bool CurveShowAxis { get; set; } = true;
+
+    /// <summary>画刻度标签。</summary>
+    public bool CurveShowLabels { get; set; } = true;
+
+    /// <summary>刻度短线颜色。</summary>
+    public string? CurveTickColor { get; set; }
+
+    /// <summary>X 主分隔数。</summary>
+    public int CurveXDiv { get; set; } = 4;
+
+    /// <summary>X 轴时间格式（clock / rel）。</summary>
+    public string? CurveXFormat { get; set; }
+
+    /// <summary>X 标签每隔几个主分隔标一个（0 = 自动抽稀）。</summary>
+    public int CurveXLabelStep { get; set; }
+
+    /// <summary>X 次分隔数。</summary>
+    public int CurveXMinor { get; set; }
+
+    /// <summary>左轴读数小数位。</summary>
+    public int CurveYDecimals { get; set; }
+
+    /// <summary>左轴读数整数位（右对齐用）。</summary>
+    public int CurveYDigits { get; set; }
+
+    /// <summary>Y 主分隔数。</summary>
+    public int CurveYDiv { get; set; } = 4;
+
+    /// <summary>Y 次分隔数。</summary>
+    public int CurveYMinor { get; set; }
+
+    /// <summary>右轴读数小数位。</summary>
+    public int CurveY2Decimals { get; set; }
+
+    /// <summary>右轴读数整数位。</summary>
+    public int CurveY2Digits { get; set; }
+
+    /// <summary>右轴上限。</summary>
+    public int CurveY2Max { get; set; } = 100;
+
+    /// <summary>右轴下限。</summary>
+    public int CurveY2Min { get; set; }
+
     // 按钮的**按下态**（契约 pressed）不在这里另开字段：它已经由
     // `VisualStates[Pressed]`（背景/边框/文字色/文字）表达，导出器 AddPressed() 负责组装。
     // 两套表达会互相覆盖，所以只保留那一条。

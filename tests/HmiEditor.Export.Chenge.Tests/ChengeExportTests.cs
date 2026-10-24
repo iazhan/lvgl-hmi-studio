@@ -164,6 +164,45 @@ public class ChengeExportTests : IDisposable
         Assert.Equal("blur", input.GetProperty("commit").GetString());
     }
 
+    /// <summary>
+    /// 批次 2：历史曲线的外观与刻度必须真的落进 JSON（运行时 build_curve 全读这些键）。
+    /// 属性名写错会先被 <see cref="Export_AllPropsAreDeclaredInSchema"/> 拦住。
+    /// </summary>
+    [Fact]
+    public void Export_CurveDetailProps_ReachThePageJson()
+    {
+        var project = ExportFixture.Build();
+        var curve = project.Screens[0].Controls.First(c => c.Type == HmiControlType.HistoryCurve);
+        curve.CurveGrid = false;
+        curve.CurveLegend = false;
+        curve.CurveXDiv = 6;
+        curve.CurveYDiv = 5;
+        curve.CurveYDecimals = 2;
+        curve.CurveY2Max = 200;
+        curve.CurveXFormat = "rel";
+        curve.CurveAxisColor = "#112233";
+        curve.CurveRangeLastMin = 45;
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var props = page.GetProperty("widgets").EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "history_curve")
+            .GetProperty("props");
+
+        Assert.False(props.GetProperty("grid").GetBoolean());
+        Assert.False(props.GetProperty("legend").GetBoolean());
+        Assert.Equal(6, props.GetProperty("x_div").GetInt32());
+        Assert.Equal(5, props.GetProperty("y_div").GetInt32());
+        Assert.Equal(2, props.GetProperty("y_decimals").GetInt32());
+        Assert.Equal(200, props.GetProperty("y2_max").GetInt32());
+        Assert.Equal("rel", props.GetProperty("x_format").GetString());
+        Assert.Equal("#112233", props.GetProperty("axis_color").GetString());
+        Assert.Equal(45, props.GetProperty("range").GetProperty("last_min").GetInt32());
+        Assert.Equal(1, props.GetProperty("curves").GetArrayLength());
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

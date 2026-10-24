@@ -118,6 +118,19 @@ public class AppXamlAttributeWiringFaceTests
             "enumerated@PropertyPanelWiringTests.cs", "同上：开关滑块色"),
         new("PropertyPanelView.axaml", "BarRangesBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs", "同上：进度条色段"),
+        // 批次 2：曲线外观
+        new("PropertyPanelView.axaml", "CurveAxisColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线轴线色"),
+        new("PropertyPanelView.axaml", "CurveBgColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线绘图区底色"),
+        new("PropertyPanelView.axaml", "CurveBorderColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线绘图区边框色"),
+        new("PropertyPanelView.axaml", "CurveGridColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线辅助线色"),
+        new("PropertyPanelView.axaml", "CurveTickColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线刻度线色"),
+        new("PropertyPanelView.axaml", "CurveLabelColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs", "同上：曲线刻度文字色"),
         new("PropertyPanelView.axaml", "PlaceholderBox", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
@@ -262,9 +275,9 @@ public class AppXamlAttributeWiringFaceTests
 
         // 🎯 棘轮：阶段 201 起 26 条**全部**有判据（3 元信息 + 3 搜索框 + 20 属性面板枚举驱动），
         //   `pending` 必须是 0 —— 新冒出来的属性式接线要么**驱动起来**，要么显式改这条下限并写清理由。
-        Assert.Equal(39, driven);
+        Assert.Equal(45, driven);
         Assert.True(pending == 0,
-            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 39 条全部驱动（chenge 数据控件 +4、批次 1a +5、批次 1b +4）");
+            $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面的棘轮是 45 条全部驱动（chenge 数据控件 +4、批次 1a +5、批次 1b +4、批次 2 +6）");
     }
 
     /// <summary>

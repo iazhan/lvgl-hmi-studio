@@ -116,6 +116,19 @@ public partial class PropertyPanelView : UserControl
         LineSpacingBox.ValueChanged += OnNumberChanged;
         KnobArcWidthBox.ValueChanged += OnNumberChanged;
         TabHeightBox.ValueChanged += OnNumberChanged;
+        // 批次 2：曲线刻度
+        CurveXDivBox.ValueChanged += OnNumberChanged;
+        CurveXMinorBox.ValueChanged += OnNumberChanged;
+        CurveXLabelStepBox.ValueChanged += OnNumberChanged;
+        CurveYDivBox.ValueChanged += OnNumberChanged;
+        CurveYMinorBox.ValueChanged += OnNumberChanged;
+        CurveYDecimalsBox.ValueChanged += OnNumberChanged;
+        CurveYDigitsBox.ValueChanged += OnNumberChanged;
+        CurveY2MinBox.ValueChanged += OnNumberChanged;
+        CurveY2MaxBox.ValueChanged += OnNumberChanged;
+        CurveY2DecimalsBox.ValueChanged += OnNumberChanged;
+        CurveY2DigitsBox.ValueChanged += OnNumberChanged;
+        CurveLastMinBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();

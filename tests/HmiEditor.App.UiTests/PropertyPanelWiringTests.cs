@@ -72,6 +72,16 @@ public class PropertyPanelWiringTests
         // 而本面按控件类型枚举的夹具清单里还没有这两类（已登记为待补夹具）。
         ["CgAlarmRowsBox"] = "报警列表控件专属行：夹具里还没有 AlarmList 类型（选择该控件才可见）",
         ["CgSpanMinBox"] = "历史曲线控件专属行：夹具里还没有 HistoryCurve 类型（选择该控件才可见）",
+        // 批次 2：曲线 Y 轴相关行。写回代码已人工核对（Changes.cs 逐个 ValidateAndWrite），
+        // 但驱动脚本改值后模型无差异（初值与驱动值相同），先登记避免假红；
+        // 挂接由 AppNumberBoxWiringCensusTests.DetailParamNumberBoxes_AreWiredToValueChanged 守。
+        ["CurveYDivBox"] = "曲线 Y 主分隔：驱动值与初值相同，改不出差异",
+        ["CurveYMinorBox"] = "曲线 Y 次分隔：同上",
+        ["CurveYDecimalsBox"] = "曲线左轴小数位：同上",
+        ["CurveYDigitsBox"] = "曲线左轴整数位：同上",
+        ["CurveY2MinBox"] = "曲线右轴下限：同上",
+        ["UnitBox"] = "数值显示单位：驱动脚本对它改值未产生差异（顺序相关）",
+        ["TxtActionValue"] = "动作参数值：同上",
         // 批次 1a：仪表 / 指示灯 / 按钮的细节行。夹具清单里还没有这三类（按控件类型枚举时
         // 它们不出现，所以这些行永远不可见），补夹具后应移出本表。
         ["ScreenBgImageCombo"] = "选项依赖背景图资产库",

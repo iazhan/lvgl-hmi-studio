@@ -1245,6 +1245,153 @@
                     </Grid>
                 </Expander>
 
+                <!-- ═══ 曲线设置（history_curve / realtime_curve 共用） ═══ -->
+                <Expander x:Name="CurveParamExpander" Header="{res:Loc prop.curve.title}" IsExpanded="True"
+                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
+                          IsVisible="False">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
+                        <TextBlock x:Name="LblCurveAxis" Text="{res:Loc prop.curve.axis}" Grid.Row="0" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveAxisColorBox" Grid.Row="0" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveBg" Text="{res:Loc prop.curve.bg}" Grid.Row="1" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveBgColorBox" Grid.Row="1" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveBorder" Text="{res:Loc prop.curve.border}" Grid.Row="2" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveBorderColorBox" Grid.Row="2" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveGrid" Text="{res:Loc prop.curve.grid}" Grid.Row="3" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveGridColorBox" Grid.Row="3" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveTick" Text="{res:Loc prop.curve.tick}" Grid.Row="4" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveTickColorBox" Grid.Row="4" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveLabel" Text="{res:Loc prop.curve.label}" Grid.Row="5" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="CurveLabelColorBox" Grid.Row="5" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveShowGrid" Text="{res:Loc prop.curve.showgrid}" Grid.Row="6" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="CurveGridCheck" Grid.Row="6" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveLegend" Text="{res:Loc prop.curve.legend}" Grid.Row="7" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="CurveLegendCheck" Grid.Row="7" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveShowAxis" Text="{res:Loc prop.curve.showaxis}" Grid.Row="8" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="CurveShowAxisCheck" Grid.Row="8" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveShowLabels" Text="{res:Loc prop.curve.showlabels}" Grid.Row="9" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="CurveShowLabelsCheck" Grid.Row="9" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblCurveDirection" Text="{res:Loc prop.curve.direction}" Grid.Row="10" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="CurveDirectionCombo" Grid.Row="10" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.curve.dir.lr}" Tag="lr"/>
+                            <ComboBoxItem Content="{res:Loc prop.curve.dir.rl}" Tag="rl"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblCurveXFormat" Text="{res:Loc prop.curve.xformat}" Grid.Row="11" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="CurveXFormatCombo" Grid.Row="11" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.curve.xformat.clock}" Tag="clock"/>
+                            <ComboBoxItem Content="{res:Loc prop.curve.xformat.rel}" Tag="rel"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblCurveXDiv" Text="{res:Loc prop.curve.xdiv}" Grid.Row="12" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveXDivBox" Grid.Row="12" Grid.Column="1"
+                                        Value="4" Minimum="1" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveXMinor" Text="{res:Loc prop.curve.xminor}" Grid.Row="13" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveXMinorBox" Grid.Row="13" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveXLabelStep" Text="{res:Loc prop.curve.xstep}" Grid.Row="14" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveXLabelStepBox" Grid.Row="14" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveYDiv" Text="{res:Loc prop.curve.ydiv}" Grid.Row="15" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveYDivBox" Grid.Row="15" Grid.Column="1"
+                                        Value="4" Minimum="1" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveYMinor" Text="{res:Loc prop.curve.yminor}" Grid.Row="16" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveYMinorBox" Grid.Row="16" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveYDecimals" Text="{res:Loc prop.curve.ydecimals}" Grid.Row="17" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveYDecimalsBox" Grid.Row="17" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="6"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveYDigits" Text="{res:Loc prop.curve.ydigits}" Grid.Row="18" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveYDigitsBox" Grid.Row="18" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveY2Min" Text="{res:Loc prop.curve.y2min}" Grid.Row="19" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveY2MinBox" Grid.Row="19" Grid.Column="1"
+                                        Value="0" Minimum="-1000000" Maximum="1000000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveY2Max" Text="{res:Loc prop.curve.y2max}" Grid.Row="20" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveY2MaxBox" Grid.Row="20" Grid.Column="1"
+                                        Value="100" Minimum="-1000000" Maximum="1000000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveY2Decimals" Text="{res:Loc prop.curve.y2decimals}" Grid.Row="21" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveY2DecimalsBox" Grid.Row="21" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="6"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveY2Digits" Text="{res:Loc prop.curve.y2digits}" Grid.Row="22" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveY2DigitsBox" Grid.Row="22" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="12"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblCurveLastMin" Text="{res:Loc prop.curve.lastmin}" Grid.Row="23" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="CurveLastMinBox" Grid.Row="23" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="1440"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                    </Grid>
+                </Expander>
+
                 <!-- ═══ Faceplate 参数 ═══ -->
                 <Expander x:Name="FaceplateParamExpander" Header="{res:Loc prop.faceplate.params}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"

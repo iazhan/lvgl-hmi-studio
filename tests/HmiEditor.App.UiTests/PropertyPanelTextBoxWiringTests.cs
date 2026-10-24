@@ -93,6 +93,13 @@ public class PropertyPanelTextBoxWiringTests
         ["SwitchColorOffBox"] = "开关关闭底色：同上（**XAML 属性式接线**，不在本面）",
         ["SwitchKnobColorBox"] = "开关滑块色：同上（**XAML 属性式接线**，不在本面）",
         ["BarRangesBox"] = "进度条的按值色段：同上（**XAML 属性式接线**，不在本面）",
+        // 批次 2：曲线外观
+        ["CurveAxisColorBox"] = "曲线轴线色：同上（**XAML 属性式接线**，不在本面）",
+        ["CurveBgColorBox"] = "曲线绘图区底色：同上（**XAML 属性式接线**，不在本面）",
+        ["CurveBorderColorBox"] = "曲线绘图区边框色：同上（**XAML 属性式接线**，不在本面）",
+        ["CurveGridColorBox"] = "曲线辅助线色：同上（**XAML 属性式接线**，不在本面）",
+        ["CurveTickColorBox"] = "曲线刻度线色：同上（**XAML 属性式接线**，不在本面）",
+        ["CurveLabelColorBox"] = "曲线刻度文字色：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

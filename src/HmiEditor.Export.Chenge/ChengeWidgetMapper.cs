@@ -418,14 +418,38 @@ internal sealed class ChengeWidgetMapper
         }
 
         props["group"] = control.TrendGroup!.Trim();
-        props["range"] = new JsonObject { ["last_min"] = Clamp(control.SpanMin, 1, 1440) };
+        var lastMin = control.CurveRangeLastMin > 0 ? control.CurveRangeLastMin : (int)control.SpanMin;
+        props["range"] = new JsonObject { ["last_min"] = Clamp(lastMin, 1, 1440) };
         props["refresh_ms"] = Clamp(control.RefreshMs, 0, 60000);
         props["curves"] = curves;
         props["y_min"] = (int)Math.Round(control.MinValue);
         props["y_max"] = (int)Math.Round(control.MaxValue);
-        props["grid"] = true;
-        props["legend"] = true;
-        props["x_format"] = "clock";
+
+        // 外观与刻度（契约 32 项里的其余部分；运行时 build_curve 全部读）
+        props["grid"] = control.CurveGrid;
+        props["legend"] = control.CurveLegend;
+        props["show_axis"] = control.CurveShowAxis;
+        props["show_ticks"] = control.ShowTicks;
+        props["show_labels"] = control.CurveShowLabels;
+        props["direction"] = string.Equals(control.CurveDirection, "rl", StringComparison.OrdinalIgnoreCase) ? "rl" : "lr";
+        props["x_format"] = string.Equals(control.CurveXFormat, "rel", StringComparison.OrdinalIgnoreCase) ? "rel" : "clock";
+        props["x_div"] = Clamp(control.CurveXDiv, 1, 12);
+        props["x_minor"] = Clamp(control.CurveXMinor, 0, 12);
+        props["x_label_step"] = Clamp(control.CurveXLabelStep, 0, 12);
+        props["y_div"] = Clamp(control.CurveYDiv, 1, 12);
+        props["y_minor"] = Clamp(control.CurveYMinor, 0, 12);
+        props["y_decimals"] = Clamp(control.CurveYDecimals, 0, 6);
+        props["y_digits"] = Clamp(control.CurveYDigits, 0, 12);
+        props["y2_min"] = Clamp(control.CurveY2Min, -1000000, 1000000);
+        props["y2_max"] = Clamp(control.CurveY2Max, -1000000, 1000000);
+        props["y2_decimals"] = Clamp(control.CurveY2Decimals, 0, 6);
+        props["y2_digits"] = Clamp(control.CurveY2Digits, 0, 12);
+        if (_colors.ResolveOr(control.CurveAxisColor, "#4A5A6A", where) is { } axisC) props["axis_color"] = axisC;
+        if (_colors.ResolveOr(control.CurveBgColor, "#141C26", where) is { } bgC) props["bg_color"] = bgC;
+        if (_colors.ResolveOr(control.CurveBorderColor, "#3A4A5A", where) is { } bdC) props["border_color"] = bdC;
+        if (_colors.ResolveOr(control.CurveGridColor, "#2F3D4C", where) is { } grC) props["grid_color"] = grC;
+        if (_colors.ResolveOr(control.CurveTickColor, "#9AA7B5", where) is { } tkC) props["tick_color"] = tkC;
+        if (_colors.ResolveOr(control.CurveLabelColor, "#C8D2DC", where) is { } lbC) props["label_color"] = lbC;
         SetFont(props, control, DefaultFont(14));
         _features.Add("curves");
     }
