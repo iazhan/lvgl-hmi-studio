@@ -53,6 +53,14 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private long _uiTicks;
     private long _fpsMark = Environment.TickCount64;
 
+    // ── 心跳（见 Services/PreviewHealth.cs）──
+    private long _lastFrameChangeMs;     // 最近一次 seq 推进的时刻
+    private long _heartbeatMark;         // 上次检查的时刻（500ms 节流）
+    private long _firstCrashMs;          // 本轮第一次崩溃的时刻（0 = 还没崩过）
+    private int _autoRestarts;
+    private bool _restarting;
+    private string _frozenLog = "";      // 崩溃前的宿主日志：dispose 后就读不到了
+
     /// <summary>设计器/无参构造：只为了让 XAML 预览器能加载。</summary>
     public ChengeLivePreviewView()
     {
@@ -218,6 +226,12 @@ public partial class ChengeLivePreviewView : ChromeWindow
             StateText.Text = AppLocalization.Service.Format("live.state",
                 _session.Width, _session.Height, _backend);
 
+            // 心跳从"第一帧到达"开始计时：建页/首帧之前的等待由 WaitSharedMemory 的超时管，
+            // 这里若从打开瞬间计时，慢机器上第一帧还没出来就会被误判成卡死。
+            _lastFrameChangeMs = Environment.TickCount64;
+            _heartbeatMark = _lastFrameChangeMs;
+            _frozenLog = "";
+
             CollectWatchNames();
             _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
             _timer.Tick += (_, _) => Pump();
@@ -239,9 +253,15 @@ public partial class ChengeLivePreviewView : ChromeWindow
     {
         if (_session == null || _bitmap == null) return;
 
+        var nowMs = Environment.TickCount64;
         var version = _session.FrameVersion;
-        if (version == _lastVersion) return;
+        if (version == _lastVersion)
+        {
+            CheckHealth(nowMs);
+            return;
+        }
         _lastVersion = version;
+        _lastFrameChangeMs = nowMs;
 
         // 量"贴图 + 失效"这一段：帧率上不去时先看是这段贵，还是 tick 线程给不出帧。
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -256,7 +276,6 @@ public partial class ChengeLivePreviewView : ChromeWindow
         // 显示**实际刷新的帧率**，不是 tick 频率：tick 一直 60 而画面不动时，
         // 这个数字会掉到 0，正好区分"没渲染"与"渲染了但内容没变"。
         _renderCount++;
-        var nowMs = Environment.TickCount64;
         if (nowMs - _fpsMark >= 1000)
         {
             var fps = _renderCount * 1000.0 / (nowMs - _fpsMark);
@@ -325,8 +344,72 @@ public partial class ChengeLivePreviewView : ChromeWindow
         if (text != TagBox.Text) TagBox.Text = text;
     }
 
+    /// <summary>
+    /// 心跳：每 500ms 看一次"帧序号还在不在动"。只有隔离模式有进程可判死；
+    /// 进程内模式崩的是编辑器自己，谈不上重启。
+    /// </summary>
+    private void CheckHealth(long nowMs)
+    {
+        if (_session is not ChengeProcessSession || _restarting) return;
+        if (nowMs - _heartbeatMark < 500) return;
+        _heartbeatMark = nowMs;
+
+        if (!PreviewHealth.IsStalled(_session.IsOpen, _lastFrameChangeMs, nowMs)) return;
+
+        var why = _session.IsOpen ? "" : _session.LastError;
+        _ = HandleCrashAsync(why);
+    }
+
+    /// <summary>
+    /// 宿主没了/卡死了：冻结日志 → 停表 → 释放 → 在窗口内自动重启，超限就交给人。
+    ///
+    /// <para><b>为什么要冻结日志</b>：日志是从会话对象里读的，<c>Dispose</c> 之后就读不到了；
+    /// 而崩溃现场恰恰是唯一能说明"为什么崩"的东西。所以先拷最后十几行再释放。</para>
+    /// </summary>
+    private async Task HandleCrashAsync(string why)
+    {
+        if (_restarting) return;
+        _restarting = true;
+        try
+        {
+            if (_session is ChengeProcessSession proc)
+            {
+                var log = proc.Log;
+                _frozenLog = string.Join("\n", log.Count <= 12 ? log : log.Skip(log.Count - 12));
+            }
+
+            _timer?.Stop();
+            _timer = null;
+            _session?.Dispose();
+            _session = null;
+
+            var now = Environment.TickCount64;
+            if (_firstCrashMs == 0) _firstCrashMs = now;
+
+            if (PreviewHealth.ShouldAutoRestart(_autoRestarts, _firstCrashMs, now))
+            {
+                _autoRestarts++;
+                StateText.Text = AppLocalization.Service.Format("live.crashed",
+                    _autoRestarts.ToString(), PreviewHealth.MaxAutoRestarts.ToString());
+                _lastVersion = -1;
+                await StartAsync();
+                return;
+            }
+
+            Fail(AppLocalization.Service.Format(Lang.LiveCrashedGiveup, _autoRestarts.ToString()) +
+                 (string.IsNullOrEmpty(why) ? "" : "\n" + why));
+        }
+        finally
+        {
+            _restarting = false;
+        }
+    }
+
     private async void OnReloadClicked(object? sender, RoutedEventArgs e)
     {
+        // 手动重来：把崩溃计数清零，否则一次卡死之后永远只剩"放弃"
+        _autoRestarts = 0;
+        _firstCrashMs = 0;
         _lastVersion = -1;
         await StartAsync();
     }
@@ -426,5 +509,13 @@ public partial class ChengeLivePreviewView : ChromeWindow
         Placeholder.IsVisible = true;
         Placeholder.Text = message;
         StateText.Text = "";
+
+        // 崩溃现场：日志区留在屏幕上，别让用户只剩一句"预览已停止"
+        if (!string.IsNullOrEmpty(_frozenLog))
+        {
+            var text = AppLocalization.Service["live.frozenlog"] + "\n" + _frozenLog;
+            WatchBox.Text = text;
+            WatchBox.CaretIndex = text.Length;
+        }
     }
 }
