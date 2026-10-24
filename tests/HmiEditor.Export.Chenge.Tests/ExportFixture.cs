@@ -64,6 +64,11 @@ internal static class ExportFixture
         {
             Id = "c3", Type = HmiControlType.Button, Name = "BtnStart", X = 40, Y = 80, Width = 140, Height = 56,
             Text = "启动", FontSize = 20, BgColor = "#2F70D0", TextColor = "#FFFFFF", Radius = 8,
+            // 批次 1a：长按 + 禁用表现（**不设 confirm**：二次确认会拦住宿主测试的单击，
+            // 那条属性由 Export_DetailProps_ReachThePageJson 单独构造工程来验）
+            ButtonHoldMs = 100,   // 要小于注入点击的按住时长（约 130ms），否则 click 会被忽略
+            ButtonLongPressMs = 1200,
+            ButtonOffStyle = "hide",
             Actions =
             {
                 new HmiAction { ActionType = "SetVariable", Target = "v_start", Value = "1", TriggerEvent = "OnClick" },
@@ -73,6 +78,16 @@ internal static class ExportFixture
         {
             Id = "c4", Type = HmiControlType.Led, Name = "Lamp1", X = 220, Y = 88, Width = 40, Height = 40,
             IndicatorColor = "#38C172",
+            // 批次 1a：灯珠直径 + 按值换色
+            LampSize = 32, LampRanges = "50:#38C172,80:#F5A524,:#E5484D",
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c4b", Type = HmiControlType.Gauge, Name = "Gauge1", X = 220, Y = 140, Width = 120, Height = 120,
+            MinValue = 0, MaxValue = 100, ShowPointer = true, MajorTickCount = 6, ShowTicks = true,
+            // 批次 1a：弧/刻度/指针/中心圆 + 色段
+            GaugeArcWidth = 12, GaugeTickLen = 8, GaugeNeedleLen = 0.7, GaugeNeedleWidth = 5,
+            GaugeCenterRadius = 8, GaugeRanges = "60:#38C172,:#E5484D",
         });
         screen.Controls.Add(new HmiControl
         {

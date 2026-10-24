@@ -56,6 +56,15 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 - **用户与权限** `users.json`：`groups[].perms[]` 为 10 个命名权限位，词表 `spec/perms.json`。
 - **文本** `strings.json`：多语言 + 占位符三种写法 `{tag:id}` / `{tag:id|fmt}` / `{tag:id|fmt|@空值键}`。
 - **特性开关**：`manifest.features[]` 按工程实际用到的子系统声明（curves/alarm/datalog/…）。
+- **批次 1a（v2.2.0）补齐的细节属性**（面板在「控件细节」区）：
+  - `gauge`：`arc_width` / `tick_len` / `needle_len` / `needle_width` / `center_radius` / `ranges` / `show_value`；
+  - `lamp`：`size` / `ranges`；
+  - `button`：`confirm{text,yes,no,wait_ms}` / `hold_ms` / `long_press_ms` / `off_style`。
+
+  色段写法 `50:#38C172,80:#F5A524,:#E5484D`（`值:颜色` 逗号分隔，末段省略阈值=兜底）。
+  越界值**钳制并告警**：运行时对 `hold_ms`（0..5000）与 `long_press_ms`（300..5000）是硬校验，
+  越界会**拒绝整页**，所以不能让一个数字把整页带死。
+  按钮的按下态（`pressed`）不另开字段，仍由 `VisualStates[Pressed]` 表达（避免两套互相覆盖）。
 
 ## 3 暂不支持（连原因一起记）
 
@@ -70,6 +79,10 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 | CVS/图表之外的高级图元参数 | 以 `spec/widget-schema.json` 的 `props` 白名单为准，白名单外的属性会被跳过并告警 |
 
 这些都在导出结果里以 **Warning** 出现（不是静默丢弃）；Error 才会阻断导出。
+
+> 批次 1a 之后仍缺的属性（按控件统计，共 58 项）：`history_curve` 25、`alarm_list` 10、
+> `gauge` 1（`label_pos`，见 §6）、`spinner` 3、`bar` 3、`switch` 3、`label` 3、`pipe` 5、
+> `tabview` 2、`input` 1、`knob` 1、`svg` 1 —— 计划在批次 2/3 补齐。
 
 ## 4 删掉的旧路径
 
@@ -118,6 +131,10 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
    编辑器目前只在缺失时给 Warning，不阻断。
 6. **`features[]`**：`spec/features.json` 列了模块的 `build` 开关，编辑器无法知道目标镜像实际编了哪些，
    只能按工程用到的能力声明；镜像关掉某能力时装载会被运行时拒绝，错误信息在编辑器侧不可见。
+
+- `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
+  `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
+  ⇒ 编辑器**不导出**这个属性，避免写一个没人读的字段（面板也不提供）。
 
 ## 7 已知遗留
 

@@ -72,6 +72,17 @@ public class PropertyPanelWiringTests
         // 而本面按控件类型枚举的夹具清单里还没有这两类（已登记为待补夹具）。
         ["CgAlarmRowsBox"] = "报警列表控件专属行：夹具里还没有 AlarmList 类型（选择该控件才可见）",
         ["CgSpanMinBox"] = "历史曲线控件专属行：夹具里还没有 HistoryCurve 类型（选择该控件才可见）",
+        // 批次 1a：仪表 / 指示灯 / 按钮的细节行。夹具清单里还没有这三类（按控件类型枚举时
+        // 它们不出现，所以这些行永远不可见），补夹具后应移出本表。
+        ["GaugeArcWidthBox"] = "仪表专属行：夹具里还没有 Gauge 类型",
+        ["GaugeTickLenBox"] = "仪表专属行：夹具里还没有 Gauge 类型",
+        ["GaugeNeedleLenBox"] = "仪表专属行：夹具里还没有 Gauge 类型",
+        ["GaugeNeedleWidthBox"] = "仪表专属行：夹具里还没有 Gauge 类型",
+        ["GaugeCenterRadiusBox"] = "仪表专属行：夹具里还没有 Gauge 类型",
+        ["LampSizeBox"] = "指示灯专属行：夹具里还没有 Led 类型",
+        ["ConfirmWaitMsBox"] = "按钮专属行：夹具里还没有 Button 类型（且只有填了确认提示才用得上）",
+        ["HoldMsBox"] = "按钮专属行：夹具里还没有 Button 类型",
+        ["LongPressMsBox"] = "按钮专属行：夹具里还没有 Button 类型",
         ["ScreenBgImageCombo"] = "选项依赖背景图资产库",
         ["ScreenPresetCombo"] = "预设分辨率在打开下拉时才填充",
         ["PropFontFamily"] = "选项依赖字体服务异步回填",

@@ -152,6 +152,39 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.SpanMin), (int)CgSpanMinBox.Value, v => _currentControl.SpanMin = v);
             if (CgCurveVarsBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.CurveVariableIds), string.IsNullOrWhiteSpace(CgCurveVarsBox.Text) ? null : CgCurveVarsBox.Text.Trim(), v => _currentControl.CurveVariableIds = v);
+            // 批次 1a：仪表 / 指示灯 / 按钮的细节属性（面板可见时才写）
+            if (GaugeArcWidthBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeArcWidth), (int)GaugeArcWidthBox.Value, v => _currentControl.GaugeArcWidth = v);
+            if (GaugeTickLenBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeTickLen), (int)GaugeTickLenBox.Value, v => _currentControl.GaugeTickLen = v);
+            if (GaugeNeedleLenBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeNeedleLen), GaugeNeedleLenBox.Value, v => _currentControl.GaugeNeedleLen = v);
+            if (GaugeNeedleWidthBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeNeedleWidth), (int)GaugeNeedleWidthBox.Value, v => _currentControl.GaugeNeedleWidth = v);
+            if (GaugeCenterRadiusBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeCenterRadius), (int)GaugeCenterRadiusBox.Value, v => _currentControl.GaugeCenterRadius = v);
+            if (GaugeShowValueCheck.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeShowValue), GaugeShowValueCheck.IsChecked == true, v => _currentControl.GaugeShowValue = v);
+            if (GaugeRangesBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.GaugeRanges), string.IsNullOrWhiteSpace(GaugeRangesBox.Text) ? null : GaugeRangesBox.Text.Trim(), v => _currentControl.GaugeRanges = v);
+            if (LampSizeBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.LampSize), (int)LampSizeBox.Value, v => _currentControl.LampSize = v);
+            if (LampRangesBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.LampRanges), string.IsNullOrWhiteSpace(LampRangesBox.Text) ? null : LampRangesBox.Text.Trim(), v => _currentControl.LampRanges = v);
+            if (ConfirmTextBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonConfirmText), string.IsNullOrWhiteSpace(ConfirmTextBox.Text) ? null : ConfirmTextBox.Text.Trim(), v => _currentControl.ButtonConfirmText = v);
+            if (ConfirmYesBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonConfirmYes), string.IsNullOrWhiteSpace(ConfirmYesBox.Text) ? null : ConfirmYesBox.Text.Trim(), v => _currentControl.ButtonConfirmYes = v);
+            if (ConfirmNoBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonConfirmNo), string.IsNullOrWhiteSpace(ConfirmNoBox.Text) ? null : ConfirmNoBox.Text.Trim(), v => _currentControl.ButtonConfirmNo = v);
+            if (ConfirmWaitMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonConfirmWaitMs), (int)ConfirmWaitMsBox.Value, v => _currentControl.ButtonConfirmWaitMs = v);
+            if (HoldMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonHoldMs), (int)HoldMsBox.Value, v => _currentControl.ButtonHoldMs = v);
+            if (LongPressMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonLongPressMs), (int)LongPressMsBox.Value, v => _currentControl.ButtonLongPressMs = v);
+            if (OffStyleCombo.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ButtonOffStyle), GetComboTag(OffStyleCombo), v => _currentControl.ButtonOffStyle = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

@@ -69,6 +69,7 @@ internal sealed class ChengeWidgetMapper
                 props["color"] = _colors.ResolveOr(control.TextColor, "#FFFFFF", where);
                 AddCommonBox(props, control, where);
                 AddPressed(props, control, where);
+                AddButtonBehavior(props, control, where);
                 break;
 
             case HmiControlType.Switch:
@@ -87,7 +88,11 @@ internal sealed class ChengeWidgetMapper
 
             case HmiControlType.Led:
                 props["color"] = _colors.ResolveOr(control.IndicatorColor ?? control.TextColor, _colors.Success, where);
-                props["size"] = (int)Math.Round(Math.Min(control.Width, control.Height));
+                // size 0 = 按控件宽高取小者（契约语义），所以 0 不写
+                props["size"] = control.LampSize > 0
+                    ? Clamp(control.LampSize, 4, 400)
+                    : (int)Math.Round(Math.Min(control.Width, control.Height));
+                if (ParseRanges(control.LampRanges, where) is { } lampRanges) props["ranges"] = lampRanges;
                 break;
 
             case HmiControlType.Bar:
@@ -112,7 +117,15 @@ internal sealed class ChengeWidgetMapper
                 props["color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
                 props["ticks"] = control.ShowTicks ? Clamp(control.MajorTickCount, 2, 11) : 0;
                 props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
-                props["show_value"] = true;
+                props["show_value"] = control.GaugeShowValue;
+                // 下面几项 0 都表示"按控件尺寸自动"，所以 0 不写，交给运行时默认
+                if (control.GaugeArcWidth > 0) props["arc_width"] = Clamp(control.GaugeArcWidth, 1, 64);
+                if (control.GaugeTickLen > 0) props["tick_len"] = Clamp(control.GaugeTickLen, 1, 32);
+                if (control.GaugeNeedleWidth > 0) props["needle_width"] = Clamp(control.GaugeNeedleWidth, 1, 32);
+                if (control.GaugeCenterRadius > 0) props["center_radius"] = Clamp(control.GaugeCenterRadius, 0, 64);
+                if (control.GaugeNeedleLen > 0)
+                    props["needle_len"] = Math.Round(Math.Clamp(control.GaugeNeedleLen, 0.2, 1.0), 2);
+                if (ParseRanges(control.GaugeRanges, where) is { } gaugeRanges) props["ranges"] = gaugeRanges;
                 break;
 
             case HmiControlType.Knob:
@@ -502,6 +515,86 @@ internal sealed class ChengeWidgetMapper
         if (border != null) props["border_color"] = border;
         if (control.BorderWidth > 0) props["border_width"] = control.BorderWidth;
         if (control.Radius > 0) props["radius"] = control.Radius;
+    }
+
+    /// <summary>
+    /// 按钮的交互属性：长按门槛 / 长按阈值 / 二次确认 / 禁用表现。
+    ///
+    /// <para><b>越界会拒绝整页</b>：运行时的 button 建页对 <c>hold_ms</c>（0..5000）与
+    /// <c>long_press_ms</c>（300..5000）是**硬校验**，超范围直接 `return -1`。所以这里
+    /// 一律钳到合法区间并告警，绝不让一个数字把整页带死。</para>
+    /// </summary>
+    private void AddButtonBehavior(JsonObject props, HmiControl control, string where)
+    {
+        if (control.ButtonHoldMs > 0)
+            props["hold_ms"] = Clamp(control.ButtonHoldMs, 0, 5000);
+
+        if (control.ButtonLongPressMs is > 0 and not 800)
+        {
+            if (control.ButtonLongPressMs is < 300 or > 5000)
+                _issues.Warn("button.long_press_range", where,
+                    $"长按阈值 {control.ButtonLongPressMs}ms 超出 300..5000，已钳到边界（运行时会对越界值拒绝整页）");
+            props["long_press_ms"] = Clamp(control.ButtonLongPressMs, 300, 5000);
+        }
+
+        var offStyle = (control.ButtonOffStyle ?? "").Trim().ToLowerInvariant();
+        if (offStyle == "hide") props["off_style"] = "hide";      // dim 是运行时默认，不写
+        else if (offStyle.Length > 0 && offStyle != "dim")
+            _issues.Warn("button.off_style", where,
+                $"禁用表现 {control.ButtonOffStyle} 非法（dim/hide），已按 dim 处理");
+
+        var confirmText = control.ButtonConfirmText?.Trim();
+        if (!string.IsNullOrEmpty(confirmText))
+        {
+            var cf = new JsonObject { ["text"] = confirmText };
+            if (!string.IsNullOrWhiteSpace(control.ButtonConfirmYes)) cf["yes"] = control.ButtonConfirmYes!.Trim();
+            if (!string.IsNullOrWhiteSpace(control.ButtonConfirmNo)) cf["no"] = control.ButtonConfirmNo!.Trim();
+            if (control.ButtonConfirmWaitMs > 0) cf["wait_ms"] = Clamp(control.ButtonConfirmWaitMs, 0, 600_000);
+            props["confirm"] = cf;
+        }
+    }
+
+    /// <summary>
+    /// 把 <c>50:#38C172,80:#F5A524,:#E5484D</c> 解析成契约的 ranges 数组
+    /// （<c>[{lt:50,color},{lt:80,color},{color}]</c>；最后一段省略 lt 作兜底）。
+    /// 写坏的段只告警跳过 —— 一个错颜色不该让整页导不出去。
+    /// </summary>
+    private JsonArray? ParseRanges(string? text, string where)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+
+        var arr = new JsonArray();
+        foreach (var raw in text.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var seg = raw.Trim();
+            if (seg.Length == 0) continue;
+
+            var idx = seg.IndexOf(':');
+            var ltPart = idx > 0 ? seg[..idx].Trim() : "";
+            var colorPart = idx > 0 ? seg[(idx + 1)..].Trim() : seg;
+            if (colorPart.Length == 0) continue;
+
+            var color = _colors.Resolve(colorPart, where);
+            if (color == null)
+            {
+                _issues.Warn("widget.ranges.color", where, $"色段「{seg}」的颜色不是 #RRGGBB，已跳过");
+                continue;
+            }
+
+            var obj = new JsonObject();
+            if (ltPart.Length > 0)
+            {
+                if (!double.TryParse(ltPart, NumberStyles.Float, CultureInfo.InvariantCulture, out var lt))
+                {
+                    _issues.Warn("widget.ranges.lt", where, $"色段「{seg}」的阈值不是数字，已跳过");
+                    continue;
+                }
+                obj["lt"] = lt;
+            }
+            obj["color"] = color;
+            arr.Add(obj);
+        }
+        return arr.Count > 0 ? arr : null;
     }
 
     private void AddPressed(JsonObject props, HmiControl control, string where)

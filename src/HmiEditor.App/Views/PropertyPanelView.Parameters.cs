@@ -65,6 +65,24 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblCgTrendGroup, CgTrendGroupBox, false);
         SetParamRow(LblCgSpanMin, CgSpanMinBox, false);
         SetParamRow(LblCgCurveVars, CgCurveVarsBox, false);
+        // 批次 1a：仪表 / 指示灯 / 按钮的细节属性（独立 Expander，行数够，不与参数区挤）
+        SetParamRow(LblGaugeArcWidth, GaugeArcWidthBox, false);
+        SetParamRow(LblGaugeTickLen, GaugeTickLenBox, false);
+        SetParamRow(LblGaugeNeedleLen, GaugeNeedleLenBox, false);
+        SetParamRow(LblGaugeNeedleWidth, GaugeNeedleWidthBox, false);
+        SetParamRow(LblGaugeCenterRadius, GaugeCenterRadiusBox, false);
+        SetParamRow(LblGaugeShowValue, GaugeShowValueCheck, false);
+        SetParamRow(LblGaugeRanges, GaugeRangesBox, false);
+        SetParamRow(LblLampSize, LampSizeBox, false);
+        SetParamRow(LblLampRanges, LampRangesBox, false);
+        SetParamRow(LblBtnConfirm, ConfirmTextBox, false);
+        SetParamRow(LblBtnConfirmYes, ConfirmYesBox, false);
+        SetParamRow(LblBtnConfirmNo, ConfirmNoBox, false);
+        SetParamRow(LblBtnConfirmWait, ConfirmWaitMsBox, false);
+        SetParamRow(LblBtnHold, HoldMsBox, false);
+        SetParamRow(LblBtnLongPress, LongPressMsBox, false);
+        SetParamRow(LblBtnOffStyle, OffStyleCombo, false);
+        DetailParamExpander.IsVisible = false;
 
         bool anyVisible = true;
         switch (control.Type)
@@ -91,6 +109,15 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblTickCount, TickCountBox, true);
+                // 批次 1a：仪表细节（弧宽/刻度/指针/中心圆/色段）
+                SetParamRow(LblGaugeArcWidth, GaugeArcWidthBox, true);
+                SetParamRow(LblGaugeTickLen, GaugeTickLenBox, true);
+                SetParamRow(LblGaugeNeedleLen, GaugeNeedleLenBox, true);
+                SetParamRow(LblGaugeNeedleWidth, GaugeNeedleWidthBox, true);
+                SetParamRow(LblGaugeCenterRadius, GaugeCenterRadiusBox, true);
+                SetParamRow(LblGaugeShowValue, GaugeShowValueCheck, true);
+                SetParamRow(LblGaugeRanges, GaugeRangesBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Knob:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -128,6 +155,10 @@ public partial class PropertyPanelView : UserControl
                 break;
             case HmiControlType.Led:
                 SetParamRow(LblBrightness, BrightnessBox, true);
+                // 批次 1a：指示灯（直径 / 色段）
+                SetParamRow(LblLampSize, LampSizeBox, true);
+                SetParamRow(LblLampRanges, LampRangesBox, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Spinner:
                 SetParamRow(LblSpinSpeed, SpinSpeedBox, true);
@@ -154,6 +185,17 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblValveType, ValveTypeCombo, true);
+                break;
+            // 批次 1a：按钮（二次确认 / 长按 / 禁用表现）
+            case HmiControlType.Button:
+                SetParamRow(LblBtnConfirm, ConfirmTextBox, true);
+                SetParamRow(LblBtnConfirmYes, ConfirmYesBox, true);
+                SetParamRow(LblBtnConfirmNo, ConfirmNoBox, true);
+                SetParamRow(LblBtnConfirmWait, ConfirmWaitMsBox, true);
+                SetParamRow(LblBtnHold, HoldMsBox, true);
+                SetParamRow(LblBtnLongPress, LongPressMsBox, true);
+                SetParamRow(LblBtnOffStyle, OffStyleCombo, true);
+                DetailParamExpander.IsVisible = true;
                 break;
             // chenge-runtime 目标新增
             case HmiControlType.Value:
@@ -231,6 +273,22 @@ public partial class PropertyPanelView : UserControl
         CgTrendGroupBox.Text = control.TrendGroup ?? "";
         CgSpanMinBox.Value = control.SpanMin;
         CgCurveVarsBox.Text = control.CurveVariableIds ?? "";
+        GaugeArcWidthBox.Value = control.GaugeArcWidth;
+        GaugeTickLenBox.Value = control.GaugeTickLen;
+        GaugeNeedleLenBox.Value = control.GaugeNeedleLen;
+        GaugeNeedleWidthBox.Value = control.GaugeNeedleWidth;
+        GaugeCenterRadiusBox.Value = control.GaugeCenterRadius;
+        GaugeShowValueCheck.IsChecked = control.GaugeShowValue;
+        GaugeRangesBox.Text = control.GaugeRanges ?? "";
+        LampSizeBox.Value = control.LampSize;
+        LampRangesBox.Text = control.LampRanges ?? "";
+        ConfirmTextBox.Text = control.ButtonConfirmText ?? "";
+        ConfirmYesBox.Text = control.ButtonConfirmYes ?? "";
+        ConfirmNoBox.Text = control.ButtonConfirmNo ?? "";
+        ConfirmWaitMsBox.Value = control.ButtonConfirmWaitMs;
+        HoldMsBox.Value = control.ButtonHoldMs;
+        LongPressMsBox.Value = control.ButtonLongPressMs;
+        SelectComboByTag(OffStyleCombo, control.ButtonOffStyle, 0);
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

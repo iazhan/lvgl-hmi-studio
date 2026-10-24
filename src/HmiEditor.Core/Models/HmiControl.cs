@@ -251,6 +251,63 @@ public class HmiControl
     /// <summary>历史曲线通道（HistoryCurve，逗号分隔的变量 Id，最多 4 个）。</summary>
     public string? CurveVariableIds { get; set; }
 
+    // ── 批次 1a：仪表 / 指示灯 / 按钮的细节属性（契约 props，见 spec/widget-schema.json）──
+
+    /// <summary>Gauge：弧宽（0 = 按控件尺寸自动）。</summary>
+    public int GaugeArcWidth { get; set; }
+
+    /// <summary>Gauge：中心圆半径（style=pointer 时的轴心）。</summary>
+    public int GaugeCenterRadius { get; set; } = 6;
+
+    /// <summary>Gauge：指针长度比例（0.2~1.0）。</summary>
+    public double GaugeNeedleLen { get; set; } = 0.8;
+
+    /// <summary>Gauge：指针宽度。</summary>
+    public int GaugeNeedleWidth { get; set; } = 4;
+
+    /// <summary>Gauge：刻度线长度。</summary>
+    public int GaugeTickLen { get; set; } = 6;
+
+    /// <summary>Gauge：是否显示中心读数（契约 show_value，默认 true）。</summary>
+    public bool GaugeShowValue { get; set; } = true;
+
+    /// <summary>
+    /// Gauge / Lamp / Bar：按值换色的色段。写法 <c>50:#38C172,80:#F5A524,:#E5484D</c>
+    /// （<c>lt:color</c> 逗号分隔，最后一段省略 <c>lt</c> 作兜底）。null = 不换色。
+    /// </summary>
+    public string? GaugeRanges { get; set; }
+
+    /// <summary>Lamp：按值换色的色段（同 <see cref="GaugeRanges"/> 写法）。</summary>
+    public string? LampRanges { get; set; }
+
+    /// <summary>Lamp：灯珠直径（0 = 按控件宽高取小者）。</summary>
+    public int LampSize { get; set; }
+
+    /// <summary>Button：二次确认提示文字。空 = 不做确认（契约 confirm.text）。</summary>
+    public string? ButtonConfirmText { get; set; }
+
+    /// <summary>Button：二次确认的「确定」按钮文字（空 = 内置文案）。</summary>
+    public string? ButtonConfirmYes { get; set; }
+
+    /// <summary>Button：二次确认的「取消」按钮文字（空 = 内置文案）。</summary>
+    public string? ButtonConfirmNo { get; set; }
+
+    /// <summary>Button：二次确认的等待超时毫秒（0 = 不超时，超时按取消处理）。</summary>
+    public int ButtonConfirmWaitMs { get; set; }
+
+    /// <summary>Button：长按生效门槛毫秒（按住不足此时长的 click 被忽略；0 = 不限制）。</summary>
+    public int ButtonHoldMs { get; set; }
+
+    /// <summary>Button：长按判定阈值毫秒（契约范围 300~5000，默认 800）。</summary>
+    public int ButtonLongPressMs { get; set; } = 800;
+
+    /// <summary>Button：enabled 为假时的表现（dim 变灰 / hide 整块消失）。</summary>
+    public string? ButtonOffStyle { get; set; }
+
+    // 按钮的**按下态**（契约 pressed）不在这里另开字段：它已经由
+    // `VisualStates[Pressed]`（背景/边框/文字色/文字）表达，导出器 AddPressed() 负责组装。
+    // 两套表达会互相覆盖，所以只保留那一条。
+
     // ── LVGL 标准行为配置（对齐官方文档）──
 
     /// <summary>

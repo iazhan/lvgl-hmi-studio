@@ -82,6 +82,12 @@ public class PropertyPanelTextBoxWiringTests
         ["CgAlarmGroupBox"] = "报警列表的报警组过滤：同上（**XAML 属性式接线**，不在本面）",
         ["CgTrendGroupBox"] = "历史曲线的采集组名：同上（**XAML 属性式接线**，不在本面）",
         ["CgCurveVarsBox"] = "历史曲线的通道变量：同上（**XAML 属性式接线**，不在本面）",
+        // 批次 1a：仪表色段 / 指示灯色段 / 按钮二次确认文案
+        ["GaugeRangesBox"] = "仪表的按值换色段：同上（**XAML 属性式接线**，不在本面）",
+        ["LampRangesBox"] = "指示灯的按值换色段：同上（**XAML 属性式接线**，不在本面）",
+        ["ConfirmTextBox"] = "按钮的二次确认提示：同上（**XAML 属性式接线**，不在本面）",
+        ["ConfirmYesBox"] = "按钮的确认按钮文案：同上（**XAML 属性式接线**，不在本面）",
+        ["ConfirmNoBox"] = "按钮的取消按钮文案：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

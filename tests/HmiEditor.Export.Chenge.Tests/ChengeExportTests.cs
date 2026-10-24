@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using HmiEditor.Core.Models;
 using Xunit;
 
 namespace HmiEditor.Export.Chenge.Tests;
@@ -71,6 +72,55 @@ public class ChengeExportTests : IDisposable
         // 报警列表：source.alarm_group 指到报警组
         Assert.Equal("温度", byType["alarm_list"][0].GetProperty("props").GetProperty("source")
             .GetProperty("alarm_group").GetString());
+    }
+
+    /// <summary>
+    /// 批次 1a：仪表 / 指示灯 / 按钮的细节属性必须真的落进 JSON（面板能改 ≠ 导得出去）。
+    /// 属性名写错会先被 <see cref="Export_AllPropsAreDeclaredInSchema"/> 拦住，这里再钉住取值。
+    /// </summary>
+    [Fact]
+    public void Export_DetailProps_ReachThePageJson()
+    {
+        // 二次确认单独构造：它会拦住"点一下就写变量"，所以不能进宿主测试的公共夹具
+        var project = ExportFixture.Build();
+        var button = project.Screens[0].Controls.First(c => c.Type == HmiControlType.Button);
+        button.ButtonConfirmText = "确定启动？";
+        button.ButtonConfirmYes = "确定";
+        button.ButtonConfirmNo = "取消";
+        button.ButtonConfirmWaitMs = 5000;
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var byType = page.GetProperty("widgets").EnumerateArray()
+            .GroupBy(w => w.GetProperty("type").GetString()!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var btn = byType["button"][0].GetProperty("props");
+        Assert.Equal("确定启动？", btn.GetProperty("confirm").GetProperty("text").GetString());
+        Assert.Equal("确定", btn.GetProperty("confirm").GetProperty("yes").GetString());
+        Assert.Equal(5000, btn.GetProperty("confirm").GetProperty("wait_ms").GetInt32());
+        Assert.Equal(100, btn.GetProperty("hold_ms").GetInt32());
+        Assert.Equal(1200, btn.GetProperty("long_press_ms").GetInt32());
+        Assert.Equal("hide", btn.GetProperty("off_style").GetString());
+
+        var lamp = byType["lamp"][0].GetProperty("props");
+        Assert.Equal(32, lamp.GetProperty("size").GetInt32());
+        var lampRanges = lamp.GetProperty("ranges").EnumerateArray().ToList();
+        Assert.Equal(3, lampRanges.Count);
+        Assert.Equal(50, lampRanges[0].GetProperty("lt").GetInt32());
+        Assert.Equal("#38C172", lampRanges[0].GetProperty("color").GetString());
+        Assert.False(lampRanges[2].TryGetProperty("lt", out _));   // 最后一段是兜底
+
+        var gauge = byType["gauge"][0].GetProperty("props");
+        Assert.Equal("pointer", gauge.GetProperty("style").GetString());
+        Assert.Equal(12, gauge.GetProperty("arc_width").GetInt32());
+        Assert.Equal(8, gauge.GetProperty("tick_len").GetInt32());
+        Assert.Equal(5, gauge.GetProperty("needle_width").GetInt32());
+        Assert.Equal(8, gauge.GetProperty("center_radius").GetInt32());
+        Assert.Equal(0.7, gauge.GetProperty("needle_len").GetDouble(), 2);
+        Assert.Equal(2, gauge.GetProperty("ranges").EnumerateArray().Count());
     }
 
     [Fact]
@@ -171,7 +221,9 @@ public class ChengeExportTests : IDisposable
         psi.Environment["HMI_DATA_DIR"] = Path.Combine(_dir, "data");
         psi.Environment["HMI_SHOT"] = shot;
         psi.Environment["HMI_RT_TRACE"] = "1";
-        psi.Environment["HMI_HOST_CLICK"] = "110,108,800"; // 按钮中心：启动
+        // 按钮中心：启动。delay 给足 1500ms —— 整组测试并行跑时机器更忙，
+        // 800ms 偶尔会在建页完成前注入，点击落空（本测试只在整组跑时偶发失败）。
+        psi.Environment["HMI_HOST_CLICK"] = "110,108,1500";
 
         using var process = Process.Start(psi)!;
         var stdout = process.StandardOutput.ReadToEnd();

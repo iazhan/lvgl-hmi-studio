@@ -727,7 +727,9 @@
                 <Expander x:Name="ControlParamExpander" Header="{res:Loc prop.param.title}" IsExpanded="False"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
+                         少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1038,6 +1040,107 @@
                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
                                  TextChanged="OnPropertyChanged"/>
+                    </Grid>
+                </Expander>
+
+                <!-- ═══ 控件细节（批次 1a：仪表 / 指示灯 / 按钮的契约属性） ═══ -->
+                <Expander x:Name="DetailParamExpander" Header="{res:Loc prop.detail}" IsExpanded="True"
+                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
+                          IsVisible="False">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
+                        <TextBlock x:Name="LblGaugeArcWidth" Text="{res:Loc prop.detail.gauge.arcwidth}" Grid.Row="0" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="GaugeArcWidthBox" Grid.Row="0" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="64"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblGaugeTickLen" Text="{res:Loc prop.detail.gauge.ticklen}" Grid.Row="1" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="GaugeTickLenBox" Grid.Row="1" Grid.Column="1"
+                                        Value="6" Minimum="0" Maximum="32"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblGaugeNeedleLen" Text="{res:Loc prop.detail.gauge.needlelen}" Grid.Row="2" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="GaugeNeedleLenBox" Grid.Row="2" Grid.Column="1"
+                                        Value="0.8" Minimum="0.2" Maximum="1" SmallChange="0.05"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblGaugeNeedleWidth" Text="{res:Loc prop.detail.gauge.needlewidth}" Grid.Row="3" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="GaugeNeedleWidthBox" Grid.Row="3" Grid.Column="1"
+                                        Value="4" Minimum="0" Maximum="32"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblGaugeCenterRadius" Text="{res:Loc prop.detail.gauge.centerradius}" Grid.Row="4" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="GaugeCenterRadiusBox" Grid.Row="4" Grid.Column="1"
+                                        Value="6" Minimum="0" Maximum="64"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblGaugeShowValue" Text="{res:Loc prop.detail.gauge.showvalue}" Grid.Row="5" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="GaugeShowValueCheck" Grid.Row="5" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblGaugeRanges" Text="{res:Loc prop.detail.gauge.ranges}" Grid.Row="6" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="GaugeRangesBox" Grid.Row="6" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.ranges.hint}"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblLampSize" Text="{res:Loc prop.detail.lamp.size}" Grid.Row="7" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="LampSizeBox" Grid.Row="7" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="400"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblLampRanges" Text="{res:Loc prop.detail.lamp.ranges}" Grid.Row="8" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="LampRangesBox" Grid.Row="8" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.ranges.hint}"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBtnConfirm" Text="{res:Loc prop.detail.button.confirm}" Grid.Row="9" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="ConfirmTextBox" Grid.Row="9" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBtnConfirmYes" Text="{res:Loc prop.detail.button.yes}" Grid.Row="10" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="ConfirmYesBox" Grid.Row="10" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBtnConfirmNo" Text="{res:Loc prop.detail.button.no}" Grid.Row="11" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="ConfirmNoBox" Grid.Row="11" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblBtnConfirmWait" Text="{res:Loc prop.detail.button.wait}" Grid.Row="12" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="ConfirmWaitMsBox" Grid.Row="12" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="600000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblBtnHold" Text="{res:Loc prop.detail.button.hold}" Grid.Row="13" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="HoldMsBox" Grid.Row="13" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="5000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblBtnLongPress" Text="{res:Loc prop.detail.button.longpress}" Grid.Row="14" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="LongPressMsBox" Grid.Row="14" Grid.Column="1"
+                                        Value="800" Minimum="300" Maximum="5000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblBtnOffStyle" Text="{res:Loc prop.detail.button.offstyle}" Grid.Row="15" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="OffStyleCombo" Grid.Row="15" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.dim}" Tag="dim"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.hide}" Tag="hide"/>
+                        </ComboBox>
                     </Grid>
                 </Expander>
 
