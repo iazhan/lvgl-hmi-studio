@@ -132,16 +132,17 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 6. **`features[]`**：`spec/features.json` 列了模块的 `build` 开关，编辑器无法知道目标镜像实际编了哪些，
    只能按工程用到的能力声明；镜像关掉某能力时装载会被运行时拒绝，错误信息在编辑器侧不可见。
 
-- **gauge 的 14 个 props 里运行时只读 7 个**（0.47.0）：`min`/`max`/`color`/`ticks`/
-  `decimals`/`show_value`/`style`。其余：`arc_width` 在 gauge 分支里是**硬编码 8**
-  （`widget_indicator.c:301-302`），`tick_len`/`needle_len`/`needle_width`/`center_radius`/
-  `ranges` **没有任何读取代码**。
-  实测证据：同一工程只改这 6 项（arc_width 4→30、tick_len 4→20、needle_len 0.4→1.0、
-  needle_width 2→12、center_radius 3→16、ranges 两段换色）→ **整屏像素差异 0.00%**。
-- 同类「契约有、运行时实现没读」的属性（静态审计，已排除 `widgets_schema.h` 白名单）：
-  `input.commit`、`label.font_style` / `letter_spacing` / `line_spacing`、`switch.knob_color`、
-  `value.prefix` / `suffix`、`figure container.layout`。
-  编辑器照契约导出（产物正确），但**预览与上板都不会有差异**。
+- **gauge 的细节属性已在运行时补齐（0.48.0）**：`arc_width`（弧/环）、`tick_len`、
+  `needle_len`（指针长度百分比）、`needle_width`、`center_radius` 都读 props 了，
+  缺省仍走历史值（弧 8 / 环 6 / 刻度 6、7 / 指针 4px / 轴心 5），老工程与 golden 不变。
+  实测：只改这 5 项 → gauge 区域像素差异 2.2%（补齐前 0.00%）。
+  仍未实现：`ranges`（运行时现有的 ranges 走 `bind[].kind=ranges`，与契约把它放在 props
+  不一致，需要单独设计）、`label_pos`（见下条）。
+- **同批补齐（0.48.0）**：`label.letter_spacing` / `line_spacing`、`switch.knob_color`、
+  `value.prefix` / `suffix`（只作用于 value，不作用于 input）。实测整屏差异 0.83%。
+- 仍「契约有、实现没读」的只剩：`input.commit`（涉及键盘提交时机，属行为改动）、
+  `label.font_style`（粗/斜体需要第二套字体文件，运行时只有一套）、
+  `figure container.layout`。
 
 - `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
   `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
