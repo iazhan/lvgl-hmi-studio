@@ -91,7 +91,10 @@ class Program
                 return 2;
             }
             using var proc = new ChengeProcessSession(hostExe, dataDir);
-            if (!proc.Open(projectDir))
+            var opened = useMemory
+                ? proc.OpenWithBlob(ReadProjectFiles(projectDir))
+                : proc.Open(projectDir);
+            if (!opened)
             {
                 Console.WriteLine($"FAIL: 宿主打开失败：{proc.LastError}");
                 return 3;
@@ -206,6 +209,18 @@ class Program
     /// 走 <see cref="AppPaths.TempSubdir"/>：应用数据根只允许 AppPaths 解析。
     /// </summary>
     private static string AppPaths_ForSelftest() => AppPaths.TempSubdir("chenge-embed-selftest");
+
+    /// <summary>把一个已导出的工程目录读成"相对路径 → 字节"，模拟编辑器内存里的产物。</summary>
+    private static Dictionary<string, byte[]> ReadProjectFiles(string dir)
+    {
+        var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+        {
+            var rel = Path.GetRelativePath(dir, file).Replace('\\', '/');
+            files[rel] = File.ReadAllBytes(file);
+        }
+        return files;
+    }
 
     /// <summary>安装文件日志器（写 %APPDATA%/zhishu-hmi/logs）。</summary>
     private static void InstallLogging()

@@ -119,37 +119,57 @@ public partial class ChengeLivePreviewView : ChromeWindow
             var service = new ChengeExportService();
             string? isolatedWhy = null;
 
-            // 后端 1（默认）：隔离进程。工程先导出到目录——宿主暂时只吃目录，
-            // 内存工程要等宿主支持 blob 输入（下一步）。崩了也只死预览。
+            // 先导出到内存：隔离与进程内两条后端都从这一份产物起步，
+            // 不再"隔离就得先写临时目录"。
+            var (export, blobs) = await Task.Run(() =>
+            {
+                var mem = service.ExportToMemory(_project, _assets, _projectDirectory, _options, out var res);
+                return (res, mem);
+            });
+            if (!export.Success)
+            {
+                Fail(ChengeExportService.DescribeIssues(export));
+                return;
+            }
+            _warnings = export.Issues.WarningCount > 0
+                ? ChengeExportService.DescribeIssues(export)
+                : "";
+
+            // 后端 1（默认）：隔离进程，工程从内存推过去（宿主 --project-stdin）。
             if (ChengeProcessSession.TryLocate(runtime.RuntimeDir, out var hostExe))
             {
-                var onDisk = await Task.Run(() =>
-                    service.Export(_project, _assets, _projectDirectory, _options, _exportDir));
-                if (onDisk.Success)
+                var proc = new ChengeProcessSession(hostExe, dataDir);
+                if (await Task.Run(() => proc.OpenWithBlob(blobs)))
                 {
-                    _warnings = onDisk.Issues.WarningCount > 0
-                        ? ChengeExportService.DescribeIssues(onDisk)
-                        : "";
-                    var proc = new ChengeProcessSession(hostExe, dataDir);
-                    if (await Task.Run(() => proc.Open(_exportDir)))
-                    {
-                        _session = proc;
-                        _backend = AppLocalization.Service["live.backend.isolated"];
-                    }
-                    else
-                    {
-                        isolatedWhy = proc.LastError;
-                        proc.Dispose();
-                    }
+                    _session = proc;
+                    _backend = AppLocalization.Service["live.backend.isolated"];
                 }
                 else
                 {
-                    Fail(ChengeExportService.DescribeIssues(onDisk));
-                    return;
+                    // 含图片资产时内存表还没覆盖 assets/img/*.bin ⇒ 回落目录再试一次
+                    isolatedWhy = proc.LastError;
+                    proc.Dispose();
+
+                    var onDisk = await Task.Run(() =>
+                        service.Export(_project, _assets, _projectDirectory, _options, _exportDir));
+                    if (onDisk.Success)
+                    {
+                        var proc2 = new ChengeProcessSession(hostExe, dataDir);
+                        if (await Task.Run(() => proc2.Open(_exportDir)))
+                        {
+                            _session = proc2;
+                            _backend = AppLocalization.Service["live.backend.isolated"];
+                        }
+                        else
+                        {
+                            isolatedWhy += " / " + proc2.LastError;
+                            proc2.Dispose();
+                        }
+                    }
                 }
             }
 
-            // 后端 2：进程内库（吃内存工程，不落盘）。隔离宿主没编出来/起不来时才走。
+            // 后端 2：进程内库（同一份内存工程）。隔离宿主没编出来/起不来时才走。
             if (_session == null)
             {
                 if (!ChengeEmbedSession.TryLocate(runtime.RuntimeDir, out var libPath))
@@ -158,20 +178,6 @@ public partial class ChengeLivePreviewView : ChromeWindow
                          (isolatedWhy == null ? "" : "\n" + isolatedWhy));
                     return;
                 }
-
-                var (export, blobs) = await Task.Run(() =>
-                {
-                    var mem = service.ExportToMemory(_project, _assets, _projectDirectory, _options, out var res);
-                    return (res, mem);
-                });
-                if (!export.Success)
-                {
-                    Fail(ChengeExportService.DescribeIssues(export));
-                    return;
-                }
-                _warnings = export.Issues.WarningCount > 0
-                    ? ChengeExportService.DescribeIssues(export)
-                    : "";
 
                 _session = await Task.Run(() =>
                 {

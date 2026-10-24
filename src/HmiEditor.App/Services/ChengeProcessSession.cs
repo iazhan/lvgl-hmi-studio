@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Text;
 using System.Threading;
 using HmiEditor.App.Resources;
 
@@ -39,6 +40,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     private MemoryMappedFile? _mmf;
     private MemoryMappedViewAccessor? _view;
     private Thread? _logThread;
+    private Stream? _stdin;
     private volatile bool _disposed;
 
     public int Width { get; private set; }
@@ -75,7 +77,37 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         return true;
     }
 
+    /// <summary>从磁盘目录启动（正式导出产物所在）。</summary>
     public bool Open(string projectDir)
+        => StartHost(stdinProject: false, projectDir) && WaitSharedMemory();
+
+    /// <summary>
+    /// 从内存把工程推给宿主：隔离进程 + 不落盘同时成立。
+    /// 分块格式见 <c>preview_host.c</c> 的 <c>read_project_blob</c>。
+    /// </summary>
+    public bool OpenWithBlob(IReadOnlyDictionary<string, byte[]> files)
+    {
+        if (!StartHost(stdinProject: true, projectDir: null)) return false;
+
+        try
+        {
+            foreach (var (rel, bytes) in files)
+            {
+                WriteStdin(Encoding.UTF8.GetBytes($"F {rel} {bytes.Length}\n"));
+                WriteStdin(bytes);
+                WriteStdin(new[] { (byte)'\n' });
+            }
+            WriteStdin(Encoding.UTF8.GetBytes("E\n"));
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            return false;
+        }
+        return WaitSharedMemory();
+    }
+
+    private bool StartHost(bool stdinProject, string? projectDir)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -92,8 +124,15 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
-            psi.ArgumentList.Add("--project");
-            psi.ArgumentList.Add(projectDir);
+            if (stdinProject)
+            {
+                psi.ArgumentList.Add("--project-stdin");
+            }
+            else
+            {
+                psi.ArgumentList.Add("--project");
+                psi.ArgumentList.Add(projectDir!);
+            }
             psi.ArgumentList.Add("--shm");
             psi.ArgumentList.Add(_shmName);
             psi.ArgumentList.Add("--data");
@@ -106,43 +145,59 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 return false;
             }
 
+            _stdin = _proc.StandardInput.BaseStream;
             _logThread = new Thread(ReadLog) { IsBackground = true, Name = "chenge-host-log" };
             _logThread.Start();
-
-            // 等宿主把共享内存建好（含 800×480 的 ftruncate，通常 < 200ms）
-            var deadline = Environment.TickCount64 + 8000;
-            while (Environment.TickCount64 < deadline)
-            {
-                if (_proc.HasExited)
-                {
-                    LastError = AppLocalization.Service.Format("live.err.host_exit", _proc.ExitCode.ToString(), LastLog());
-                    return false;
-                }
-                if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > HeaderSize)
-                {
-                    _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
-                        MemoryMappedFileAccess.Read);
-                    _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
-                    if (_view.ReadUInt32(0) == FrameMagic)
-                    {
-                        Width = (int)_view.ReadUInt32(8);
-                        Height = (int)_view.ReadUInt32(12);
-                        Stride = (int)_view.ReadUInt32(16);
-                        if (Width > 0 && Height > 0 && Stride >= Width * 4) return true;
-                        LastError = AppLocalization.Service.Format("live.err.shm_header", $"{Width}x{Height}", Stride.ToString());
-                        return false;
-                    }
-                }
-                Thread.Sleep(50);
-            }
-
-            LastError = AppLocalization.Service["live.err.shm_timeout"];
-            return false;
+            return true;
         }
         catch (Exception ex)
         {
             LastError = ex.Message;
             return false;
+        }
+    }
+
+    /// <summary>等宿主把共享内存建好（含整屏 ftruncate，通常 &lt; 200ms）。</summary>
+    private bool WaitSharedMemory()
+    {
+        var deadline = Environment.TickCount64 + 8000;
+        while (Environment.TickCount64 < deadline)
+        {
+            if (_proc is { HasExited: true })
+            {
+                LastError = AppLocalization.Service.Format("live.err.host_exit", _proc.ExitCode.ToString(), LastLog());
+                return false;
+            }
+            if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > HeaderSize)
+            {
+                _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
+                    MemoryMappedFileAccess.Read);
+                _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                if (_view.ReadUInt32(0) == FrameMagic)
+                {
+                    Width = (int)_view.ReadUInt32(8);
+                    Height = (int)_view.ReadUInt32(12);
+                    Stride = (int)_view.ReadUInt32(16);
+                    if (Width > 0 && Height > 0 && Stride >= Width * 4) return true;
+                    LastError = AppLocalization.Service.Format("live.err.shm_header", $"{Width}x{Height}", Stride.ToString());
+                    return false;
+                }
+            }
+            Thread.Sleep(50);
+        }
+
+        LastError = AppLocalization.Service["live.err.shm_timeout"];
+        return false;
+    }
+
+    private readonly object _stdinLock = new();
+
+    private void WriteStdin(byte[] bytes)
+    {
+        lock (_stdinLock)
+        {
+            _stdin!.Write(bytes, 0, bytes.Length);
+            _stdin.Flush();
         }
     }
 
@@ -182,8 +237,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         if (_proc is not { HasExited: false }) return;
         try
         {
-            _proc.StandardInput.WriteLine($"P {x} {y} {(down ? 1 : 0)}");
-            _proc.StandardInput.Flush();
+            WriteStdin(Encoding.UTF8.GetBytes($"P {x} {y} {(down ? 1 : 0)}\n"));
         }
         catch (IOException)
         {
@@ -203,8 +257,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         if (_proc is not { HasExited: false }) return false;
         try
         {
-            _proc.StandardInput.WriteLine("S " + path);
-            _proc.StandardInput.Flush();
+            WriteStdin(Encoding.UTF8.GetBytes("S " + path + "\n"));
             return true;
         }
         catch (IOException)
@@ -222,7 +275,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         {
             if (_proc is { HasExited: false })
             {
-                try { _proc.StandardInput.WriteLine("Q"); _proc.StandardInput.Flush(); } catch { }
+                try { WriteStdin(Encoding.UTF8.GetBytes("Q\n")); } catch { }
                 if (!_proc.WaitForExit(1500)) _proc.Kill(entireProcessTree: true);
             }
         }
