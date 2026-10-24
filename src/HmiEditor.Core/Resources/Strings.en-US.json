@@ -656,7 +656,7 @@
   "live.starting": "Exporting and loading the runtime...",
   "live.lib_missing": "libchenge_runtime.so not found. Run make EMBED=1 in that folder (or point the runtime folder to it in Settings).",
   "live.state": "{0}x{1}, project: {2}",
-  "live.fps": "{0} fps",
+  "live.fps": "{0} fps rendered · tick {1} · UI {2} ms",
   "live.shot.saved": "Screenshot saved: {0}",
   "live.shot.failed": "Failed to save the screenshot",
   "live.reload": "Reload",

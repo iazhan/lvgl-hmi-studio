@@ -45,6 +45,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private string _exportDir = "";
     private bool _busy;
     private long _renderCount;
+    private long _uiTicks;
     private long _fpsMark = Environment.TickCount64;
 
     /// <summary>设计器/无参构造：只为了让 XAML 预览器能加载。</summary>
@@ -153,7 +154,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
             StateText.Text = AppLocalization.Service.Format("live.state",
                 _session.Width, _session.Height, _exportDir);
 
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+            _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
             _timer.Tick += (_, _) => Pump();
             _timer.Start();
         }
@@ -177,12 +178,15 @@ public partial class ChengeLivePreviewView : ChromeWindow
         if (version == _lastVersion) return;
         _lastVersion = version;
 
+        // 量"贴图 + 失效"这一段：帧率上不去时先看是这段贵，还是 tick 线程给不出帧。
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         if (!_session.TryCopyFrame(_frame)) return;
         using (var fb = _bitmap.Lock())
         {
             System.Runtime.InteropServices.Marshal.Copy(_frame, 0, fb.Address, _frame.Length);
         }
         ScreenImage.InvalidateVisual();
+        _uiTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
 
         // 显示**实际刷新的帧率**，不是 tick 频率：tick 一直 60 而画面不动时，
         // 这个数字会掉到 0，正好区分"没渲染"与"渲染了但内容没变"。
@@ -191,8 +195,13 @@ public partial class ChengeLivePreviewView : ChromeWindow
         if (nowMs - _fpsMark >= 1000)
         {
             var fps = _renderCount * 1000.0 / (nowMs - _fpsMark);
-            FpsText.Text = AppLocalization.Service.Format("live.fps", fps.ToString("0.0"));
+            var uiMs = _renderCount == 0
+                ? 0
+                : _uiTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / _renderCount;
+            FpsText.Text = AppLocalization.Service.Format("live.fps",
+                fps.ToString("0.0"), _session.Fps.ToString("0"), uiMs.ToString("0.0"));
             _renderCount = 0;
+            _uiTicks = 0;
             _fpsMark = nowMs;
         }
     }

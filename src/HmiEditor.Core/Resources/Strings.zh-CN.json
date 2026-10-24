@@ -656,7 +656,7 @@
   "live.starting": "正在导出并加载运行时…",
   "live.lib_missing": "找不到 libchenge_runtime.so。先在该目录执行 make EMBED=1（或在设置里把运行时目录指向它）。",
   "live.state": "{0}×{1}，工程：{2}",
-  "live.fps": "每秒 {0} 帧",
+  "live.fps": "渲染 {0} 帧/秒 · tick {1} · 界面 {2} ms",
   "live.shot.saved": "截图已保存：{0}",
   "live.shot.failed": "截图保存失败",
   "live.reload": "重新加载",
