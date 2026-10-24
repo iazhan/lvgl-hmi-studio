@@ -132,6 +132,17 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 6. **`features[]`**：`spec/features.json` 列了模块的 `build` 开关，编辑器无法知道目标镜像实际编了哪些，
    只能按工程用到的能力声明；镜像关掉某能力时装载会被运行时拒绝，错误信息在编辑器侧不可见。
 
+- **gauge 的 14 个 props 里运行时只读 7 个**（0.47.0）：`min`/`max`/`color`/`ticks`/
+  `decimals`/`show_value`/`style`。其余：`arc_width` 在 gauge 分支里是**硬编码 8**
+  （`widget_indicator.c:301-302`），`tick_len`/`needle_len`/`needle_width`/`center_radius`/
+  `ranges` **没有任何读取代码**。
+  实测证据：同一工程只改这 6 项（arc_width 4→30、tick_len 4→20、needle_len 0.4→1.0、
+  needle_width 2→12、center_radius 3→16、ranges 两段换色）→ **整屏像素差异 0.00%**。
+- 同类「契约有、运行时实现没读」的属性（静态审计，已排除 `widgets_schema.h` 白名单）：
+  `input.commit`、`label.font_style` / `letter_spacing` / `line_spacing`、`switch.knob_color`、
+  `value.prefix` / `suffix`、`figure container.layout`。
+  编辑器照契约导出（产物正确），但**预览与上板都不会有差异**。
+
 - `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
   `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
   ⇒ 编辑器**不导出**这个属性，避免写一个没人读的字段（面板也不提供）。
