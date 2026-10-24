@@ -104,7 +104,13 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 > 批次 2 之后**编辑器侧属性缺口已清零**。剩下的都是运行时侧或契约本身的问题：
 > `gauge.label_pos`（白名单里有、实现没读）、`svg.kind`（运行时没有 SVG）、
 > `label.font_style`（要第二套字体）、`input.commit`（失焦写回属行为改动）、
-> `pipe` 的 5 项（契约把 pipe 同时列在 widgets 与 figures，运行时按 figure 建）。
+> `pipe` 的 5 项**已对齐（v2.8.0）**：契约里 pipe 是**控件**（`widgets.pipe`，6 个 props），
+> 运行时也有 `W_PIPE` 分派（`build_pipe` 带流动动画）；错的是编辑器一直导成 shape 的
+> `pipe_h/pipe_v`（图元版只读 `wall`）。现在 `TargetType → "pipe"` 并写全
+> `direction`/`wall`/`color`/`channel_color`/`flow_ms`，同时在 `manifest.features` 声明 `pipe`。
+>
+> ⚠ 顺手记一个坑：**删掉 `widgets.pipe` 会让 golden 6 个项目失败** —— g02 与 allinone
+> 里真的有 `type: "pipe"` 的控件，说明契约条目是对的，错的是编辑器映射。
 
 ## 4 删掉的旧路径
 
@@ -158,13 +164,16 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
   `needle_len`（指针长度百分比）、`needle_width`、`center_radius` 都读 props 了，
   缺省仍走历史值（弧 8 / 环 6 / 刻度 6、7 / 指针 4px / 轴心 5），老工程与 golden 不变。
   实测：只改这 5 项 → gauge 区域像素差异 2.2%（补齐前 0.00%）。
+  `label_pos` 也已补（0.49.0：inside 贴弧内侧 / outside 放到控件外侧下方）。
   仍未实现：`ranges`（运行时现有的 ranges 走 `bind[].kind=ranges`，与契约把它放在 props
-  不一致，需要单独设计）、`label_pos`（见下条）。
+  不一致，需要单独设计）。
 - **同批补齐（0.48.0）**：`label.letter_spacing` / `line_spacing`、`switch.knob_color`、
   `value.prefix` / `suffix`（只作用于 value，不作用于 input）。实测整屏差异 0.83%。
-- 仍「契约有、实现没读」的只剩：`input.commit`（涉及键盘提交时机，属行为改动）、
-  `label.font_style`（粗/斜体需要第二套字体文件，运行时只有一套）、
-  `figure container.layout`。
+- **0.49.0 又补了三项**（编辑器侧早就导出、运行时一直忽略的）：
+  `label.font_style`（FreeType 合成粗/斜体，**不需要第二套字体文件**）、
+  `input.commit`（keypad 加 `on_close_*`：`blur` 时"这次输入结束"就写回，取消也写）、
+  `gauge.label_pos`。
+- 仍「契约有、实现没读」的只剩 `figure container.layout`。
 
 - `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
   `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
