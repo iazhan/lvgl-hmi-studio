@@ -82,6 +82,7 @@ public class MainWindowMenuInvocationUiTests
         ["MenuCommConfig"] = Popup(typeof(CommunicationConfigView), "通讯配置"),
         ["MenuExportChenge"] = Silent("导出 chenge 工程：打开目录选择器；headless 桩返回空 ⇒ 提前 return，不弹窗"),
         ["MenuExportPreview"] = Skipped("导出并预览会启动宿主 chenge-runtime 进程并等它截图，属外部进程动作，本层不点"),
+        ["MenuLivePreview"] = Popup(typeof(ChengeLivePreviewView), "实时预览窗口（进程内加载 libchenge_runtime.so；弹窗本身可测，点击链路要真库）"),
         ["MenuLogin"] = Popup(typeof(LoginDialog), "登录对话框（async void 处理器，ShowDialog 仍同步显示）"),
         ["MenuProjectSettings"] = Popup(typeof(ProjectSettingsView), "工程设置"),
         ["MenuRecipeEditor"] = Popup(typeof(RecipeEditorView), "配方编辑器"),

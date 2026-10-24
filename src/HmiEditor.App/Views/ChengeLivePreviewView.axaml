@@ -1,0 +1,126 @@
+<cw:ChromeWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:res="clr-namespace:HmiEditor.App.Resources"
+        xmlns:chrome="using:Avalonia.Controls.Chrome"
+        xmlns:cw="using:HmiEditor.App.Controls"
+        x:Class="HmiEditor.App.Views.ChengeLivePreviewView"
+        Title="{res:Loc win.chenge.live}"
+        Width="1180"
+        Height="780"
+        MinWidth="900"
+        MinHeight="600"
+        WindowStartupLocation="CenterOwner">
+    <Border CornerRadius="{StaticResource HmiWindowCornerRadius}"
+            BorderBrush="{StaticResource HmiWindowBorderBrush}"
+            BorderThickness="{StaticResource HmiWindowBorderThickness}"
+            Background="{StaticResource HmiBgWindowBrush}"
+            ClipToBounds="True">
+        <Grid RowDefinitions="36,*,Auto">
+            <Border Grid.Row="0"
+                    CornerRadius="10,10,0,0"
+                    Background="{StaticResource HmiWindowTitleBgBrush}"
+                    BorderBrush="{StaticResource HmiBorderBrush}"
+                    BorderThickness="0,0,0,1"
+                    chrome:WindowDecorationProperties.ElementRole="TitleBar"
+                    PointerPressed="OnTitleBarPointerPressed">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{res:Loc win.chenge.live}"
+                               Foreground="{StaticResource HmiTextPrimaryBrush}"
+                               FontSize="13" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Margin="16,0,8,0"/>
+                    <Button x:Name="BtnTitleClose"
+                            Grid.Column="1"
+                            Width="40" Height="36"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{StaticResource HmiTextSecondaryBrush}"
+                            CornerRadius="0,10,0,0"
+                            Click="OnTitleCloseClicked"
+                            chrome:WindowDecorationProperties.ElementRole="CloseButton">
+                        <Path Data="{StaticResource HmiCloseGlyph}"
+                              Width="10" Height="10"
+                              Stretch="Uniform"
+                              Stroke="{StaticResource HmiTextSecondaryBrush}"
+                              StrokeThickness="1.5"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,300" Margin="12">
+                <Border Grid.Column="0" Background="{StaticResource HmiBgPanelBrush}"
+                        BorderBrush="{StaticResource HmiBorderBrush}" BorderThickness="1" CornerRadius="4"
+                        ClipToBounds="True">
+                    <Panel>
+                        <Image x:Name="ScreenImage"
+                               Stretch="Uniform"
+                               Margin="8"
+                               RenderOptions.BitmapInterpolationMode="None"
+                               PointerPressed="OnScreenPointerPressed"
+                               PointerMoved="OnScreenPointerMoved"
+                               PointerReleased="OnScreenPointerReleased"/>
+                        <TextBlock x:Name="Placeholder"
+                                   Foreground="{StaticResource HmiTextSecondaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" MaxWidth="420"/>
+                    </Panel>
+                </Border>
+
+                <Border Grid.Column="1" Background="{StaticResource HmiBgPanelBrush}"
+                        BorderBrush="{StaticResource HmiBorderBrush}" BorderThickness="1" CornerRadius="4"
+                        Padding="10" Margin="10,0,0,0">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="8">
+                            <TextBlock x:Name="StateText"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                       FontSize="12" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="HintText"
+                                       Foreground="{StaticResource HmiTextSecondaryBrush}"
+                                       FontSize="11" TextWrapping="Wrap"
+                                       Text="{res:Loc live.hint}"/>
+                            <TextBlock x:Name="FpsText"
+                                       Foreground="{StaticResource HmiTextHintBrush}"
+                                       FontSize="11"/>
+                            <TextBlock Text="{res:Loc live.watch.title}"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                            <TextBox x:Name="WatchBox"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     MinHeight="220"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     TextWrapping="NoWrap"
+                                     Background="{StaticResource HmiBgInputBrush}"
+                                     Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                     BorderBrush="{StaticResource HmiInputBorderBrush}"/>
+                            <TextBlock x:Name="ErrorText"
+                                       Foreground="{StaticResource HmiDangerBrush}"
+                                       FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" Margin="12,0,12,12">
+                <Button x:Name="BtnReload"
+                        Content="{res:Loc live.reload}"
+                        Margin="0,0,8,0" Padding="14,6"
+                        Click="OnReloadClicked"/>
+                <Button x:Name="BtnShot"
+                        Grid.Column="1"
+                        Content="{res:Loc live.shot}"
+                        Margin="0,0,8,0" Padding="14,6"
+                        Click="OnShotClicked"/>
+                <TextBlock x:Name="FootText"
+                           Grid.Column="2"
+                           Foreground="{StaticResource HmiTextHintBrush}"
+                           FontSize="11" VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+            </Grid>
+        </Grid>
+    </Border>
+</cw:ChromeWindow>

@@ -51,6 +51,8 @@ public class AppUnwiredInputReadFaceTests
             "只读展示（#50：角色名与描述都是只读展示）：由 `ShowRoleDetail` 回填，没人读它",
         [("ChengePreviewView.axaml", "LogBox")] =
             "只读展示：预览日志由宿主运行时输出回填（`LogBox.Text = preview.Log`），没人读它",
+        [("ChengeLivePreviewView.axaml", "WatchBox")] =
+            "只读展示：变量监视区（`IsReadOnly`），后续由会话按 tag 名轮询回填，没人读它",
     };
 
     private sealed record Box(string File, string Name);

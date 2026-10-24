@@ -60,6 +60,7 @@ public partial class MainWindow
         MenuSaveProject.Click += (_, _) => SaveProject();
         MenuExportChenge.Click += (_, _) => ExportChengeProject();
         BtnExportChenge.Click += (_, _) => ExportChengeProject();
+        MenuLivePreview.Click += (_, _) => ShowLivePreview();
         MenuExportPreview.Click += (_, _) => ExportAndPreview();
         BtnExportPreview.Click += (_, _) => ExportAndPreview();
         MenuExit.Click += (_, _) => Close();

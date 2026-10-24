@@ -22,6 +22,7 @@
                 <MenuItem x:Name="MenuSaveProject" Header="{res:Loc project.save}" InputGesture="Ctrl+S" />
                 <Separator />
                 <MenuItem x:Name="MenuExportChenge" Header="{res:Loc menu.export.chenge}" InputGesture="Ctrl+E" />
+                <MenuItem x:Name="MenuLivePreview" Header="{res:Loc menu.live.preview}" InputGesture="Ctrl+Shift+E" />
                 <MenuItem x:Name="MenuExportPreview" Header="{res:Loc menu.export.preview}" InputGesture="Ctrl+Shift+E" />
                 <Separator />
                 <MenuItem x:Name="MenuExit" Header="{res:Loc project.exit}" InputGesture="Alt+F4" />

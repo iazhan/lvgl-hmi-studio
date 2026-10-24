@@ -1294,6 +1294,7 @@ public static class Lang
     public const string TbValue        = "tb.value";
     public const string TbAlarmList    = "tb.alarmlist";
     public const string TbHistoryCurve = "tb.historycurve";
+    public const string LiveLibMissing = "live.lib_missing";
 
     // ── I10: 绘图工具栏 ──
     public const string DrawGroupShapes = "draw.group.shapes";
