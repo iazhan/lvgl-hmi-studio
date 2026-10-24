@@ -670,7 +670,7 @@
   "live.reload": "重新加载",
   "live.shot": "保存截图",
   "live.hint": "在画面上点击或拖动，就是操作运行时：按钮会写变量、滑块会跟手、输入框会弹运行时键盘。",
-  "live.watch.title": "变量监视（下一版接）",
+  "live.watch.title": "宿主日志（隔离模式）",
   "chenge.preview.clicks": "点击序列（x,y,ms;…，空=不点）",
   "chenge.preview.clicks.hint": "例：120,240,800;760,32,800",
   "chenge.preview.log": "运行时日志",

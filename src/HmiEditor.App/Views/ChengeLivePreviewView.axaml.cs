@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -39,6 +40,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
 
     private IChengePreviewSession? _session;
     private string _backend = "";
+    private string _warnings = "";
     private WriteableBitmap? _bitmap;
     private byte[] _frame = Array.Empty<byte>();
     private DispatcherTimer? _timer;
@@ -125,6 +127,9 @@ public partial class ChengeLivePreviewView : ChromeWindow
                     service.Export(_project, _assets, _projectDirectory, _options, _exportDir));
                 if (onDisk.Success)
                 {
+                    _warnings = onDisk.Issues.WarningCount > 0
+                        ? ChengeExportService.DescribeIssues(onDisk)
+                        : "";
                     var proc = new ChengeProcessSession(hostExe, dataDir);
                     if (await Task.Run(() => proc.Open(_exportDir)))
                     {
@@ -164,6 +169,9 @@ public partial class ChengeLivePreviewView : ChromeWindow
                     Fail(ChengeExportService.DescribeIssues(export));
                     return;
                 }
+                _warnings = export.Issues.WarningCount > 0
+                    ? ChengeExportService.DescribeIssues(export)
+                    : "";
 
                 _session = await Task.Run(() =>
                 {
@@ -251,6 +259,20 @@ public partial class ChengeLivePreviewView : ChromeWindow
             _renderCount = 0;
             _uiTicks = 0;
             _fpsMark = nowMs;
+
+            // 宿主日志：隔离模式下这是唯一能看到运行时说法的窗口
+            // （比如 "keypad: 文本键盘" / "input: 键盘打不开"）。
+            var log = _session.Log;
+            var tail = log.Count == 0
+                ? ""
+                : string.Join("\n", log.Count <= 24 ? log : log.Skip(log.Count - 24));
+            var text = string.IsNullOrEmpty(_warnings) ? tail
+                : string.IsNullOrEmpty(tail) ? _warnings : _warnings + "\n---\n" + tail;
+            if (text != WatchBox.Text)
+            {
+                WatchBox.Text = text;
+                WatchBox.CaretIndex = text.Length;
+            }
         }
     }
 

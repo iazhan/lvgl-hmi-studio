@@ -149,6 +149,16 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.TextArea:
+                // 运行时 input_click_cb 的第一句是 `if (bind_tag < 0) return;` —— 没绑定变量的
+                // 输入框点了**不会弹键盘，也不报错**。导出期必须先说清楚，否则用户只能猜。
+                // 编辑器里输入框绑的是 Text（契约 bind 名也叫 text），Value 只是兼容写法。
+                if (!control.VariableBindings.Any(b => b.PropertyName is "Text" or "text" or "Value" or "value"))
+                {
+                    _issues.Warn("input.no_bind", where,
+                        "输入框没有绑定变量：运行时点了不会弹键盘（input 靠 bind.text 提交值）");
+                }
+                // num/text 由**绑定变量的类型**决定，不是由用户填的哪个属性名决定：
+                // 绑 f32 却导成 text 模式，运行时就会弹文本键盘、提交时再转数值。
                 props["mode"] = control.PasswordMode ? "password"
                     : IsNumericBinding(control) ? "num" : "text";
                 props["min"] = (int)Math.Round(control.MinValue);
@@ -899,8 +909,19 @@ internal sealed class ChengeWidgetMapper
 
     private static string FmtOf(int decimals) => decimals < 0 ? "%g" : decimals == 0 ? "%d" : "%." + decimals + "f";
 
-    private static bool IsNumericBinding(HmiControl control)
-        => control.VariableBindings.Any(b => b.PropertyName is "Value" or "value");
+    /// <summary>
+    /// 输入框该用数字键盘还是文本键盘：看**绑定变量的类型**。
+    /// 早先按属性名（"Value"）判，而编辑器里输入框绑的是 "Text" ⇒ 永远判成 text，
+    /// 数字框导出后弹的是文本键盘（运行时的 KEYPAD_NUM 分支根本没走到）。
+    /// </summary>
+    private bool IsNumericBinding(HmiControl control)
+    {
+        var b = control.VariableBindings.FirstOrDefault(x =>
+            x.PropertyName is "Text" or "text" or "Value" or "value");
+        if (b == null) return false;
+        if (!_maps.TagByVariableId.TryGetValue(b.VariableId, out var tag)) return false;
+        return _maps.TypeByTag.TryGetValue(tag, out var type) && type is not ("string" or "bool");
+    }
 }
 
 /// <summary>表达式改写期的内部错误（与语法错误区分：前者是我们的问题，后者是用户输入）。</summary>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace HmiEditor.App.Services;
@@ -56,6 +57,9 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
     public double Fps { get; private set; }
 
     public bool IsOpen => _opened;
+
+    /// <summary>进程内模式没有单独的日志通道（HMI_LOG 走 stderr，直接进编辑器控制台）。</summary>
+    public IReadOnlyList<string> Log => Array.Empty<string>();
     public string LastError => _lastErrorText;
 
     public ChengeEmbedSession(string libraryPath, string dataDir)
@@ -301,6 +305,9 @@ public interface IChengePreviewSession : IDisposable
     bool IsOpen { get; }
     string LastError { get; }
     long FrameVersion { get; }
+
+    /// <summary>宿主日志（隔离模式有；进程内模式为空，日志直接进编辑器控制台）。</summary>
+    IReadOnlyList<string> Log { get; }
 
     void Pointer(int x, int y, bool down);
     bool TryCopyFrame(byte[] dest);
