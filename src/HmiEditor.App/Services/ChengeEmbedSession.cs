@@ -36,6 +36,7 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
     private readonly SaveBmpFn _saveBmp;
     private readonly TagBoolFn _tagBool;
     private readonly TagNumFn _tagNum;
+    private readonly TagKindFn _tagKind;
     private readonly CloseFn _close;
     private readonly LastErrorFn _lastError;
 
@@ -60,6 +61,35 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
 
     /// <summary>进程内模式没有单独的日志通道（HMI_LOG 走 stderr，直接进编辑器控制台）。</summary>
     public IReadOnlyList<string> Log => Array.Empty<string>();
+
+    /// <summary>进程内模式直接读 tagdb，不需要"轮询"这个动作。</summary>
+    public void PollTag(string name)
+    {
+    }
+
+    public bool TryGetTag(string name, out string value)
+    {
+        value = "";
+        if (!_opened) return false;
+
+        var kind = TagKind(name);
+        if (kind < 0) return false;
+        if (kind == 1)
+        {
+            if (!TryGetBool(name, out var b)) return false;
+            value = b ? "1" : "0";
+            return true;
+        }
+        if (!TryGetNumber(name, out var d)) return false;
+        value = d.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private int TagKind(string name)
+    {
+        using var n = Utf8(name);
+        return _tagKind(n.Ptr);
+    }
     public string LastError => _lastErrorText;
 
     public ChengeEmbedSession(string libraryPath, string dataDir)
@@ -78,6 +108,7 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
         _saveBmp = Bind<SaveBmpFn>("chenge_embed_save_bmp");
         _tagBool = Bind<TagBoolFn>("chenge_embed_tag_bool");
         _tagNum = Bind<TagNumFn>("chenge_embed_tag_num");
+        _tagKind = Bind<TagKindFn>("chenge_embed_tag_kind");
         _close = Bind<CloseFn>("chenge_embed_close");
         _lastError = Bind<LastErrorFn>("chenge_embed_last_error");
 
@@ -288,6 +319,7 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
     private delegate int SaveBmpFn(IntPtr path);
     private delegate int TagBoolFn(IntPtr name, out int value);
     private delegate int TagNumFn(IntPtr name, out double value);
+    private delegate int TagKindFn(IntPtr name);
     private delegate void CloseFn();
     private delegate IntPtr LastErrorFn();
 }
@@ -308,6 +340,12 @@ public interface IChengePreviewSession : IDisposable
 
     /// <summary>宿主日志（隔离模式有；进程内模式为空，日志直接进编辑器控制台）。</summary>
     IReadOnlyList<string> Log { get; }
+
+    /// <summary>请求刷新一个变量的值（隔离模式发一条查询；进程内模式无需动作）。</summary>
+    void PollTag(string name);
+
+    /// <summary>取上一次轮询到的值（显示用字符串，质量差时以 "?" 表示）。</summary>
+    bool TryGetTag(string name, out string value);
 
     void Pointer(int x, int y, bool down);
     bool TryCopyFrame(byte[] dest);

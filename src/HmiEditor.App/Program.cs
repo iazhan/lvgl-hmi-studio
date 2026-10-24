@@ -119,8 +119,21 @@ class Program
             Thread.Sleep(500);
 
             var hit = proc.Log.Any(l => l.Contains("tag-write"));
-            Console.WriteLine(hit ? "OK: 隔离宿主 帧 + 点击写变量 全部通过" : "FAIL: 点击没写进变量");
-            return hit ? 0 : 7;
+            if (!hit)
+            {
+                Console.WriteLine("FAIL: 点击没写进变量");
+                return 7;
+            }
+
+            // 变量监视通道：T 查询 → V 回报（编辑器右侧面板走的就是这条）
+            proc.PollTag("启动");
+            Thread.Sleep(300);
+            var got = proc.TryGetTag("启动", out var tagValue);
+            Console.WriteLine(got ? $"变量监视：启动 = {tagValue}" : "FAIL: 变量监视读不到");
+            if (!got || tagValue != "1") return 8;
+
+            Console.WriteLine("OK: 隔离宿主 帧 + 点击写变量 + 变量监视 全部通过");
+            return 0;
         }
 
         try

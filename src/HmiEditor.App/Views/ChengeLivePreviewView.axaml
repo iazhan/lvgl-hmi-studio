@@ -87,6 +87,19 @@
                             <TextBlock x:Name="FpsText"
                                        Foreground="{StaticResource HmiTextHintBrush}"
                                        FontSize="11"/>
+                            <TextBlock Text="{res:Loc live.tags.title}"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0"/>
+                            <TextBox x:Name="TagBox"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     MinHeight="120"
+                                     FontFamily="Consolas"
+                                     FontSize="11"
+                                     TextWrapping="NoWrap"
+                                     Background="{StaticResource HmiBgInputBrush}"
+                                     Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                     BorderBrush="{StaticResource HmiInputBorderBrush}"/>
                             <TextBlock Text="{res:Loc live.watch.title}"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}"
                                        FontSize="12" FontWeight="SemiBold" Margin="0,6,0,0"/>

@@ -671,6 +671,7 @@
   "live.shot": "Save screenshot",
   "live.hint": "Click or drag on the screen to drive the runtime: buttons write tags, sliders follow, inputs open the runtime keypad.",
   "live.watch.title": "Host log (isolated mode)",
+  "live.tags.title": "Tag watch (bound on this page)",
   "chenge.preview.clicks": "Click sequence (x,y,ms;..., empty = none)",
   "chenge.preview.clicks.hint": "e.g. 120,240,800;760,32,800",
   "chenge.preview.log": "Runtime log",

@@ -35,11 +35,13 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     private readonly string _shmName;
     private readonly string _shmPath;
     private readonly List<string> _log = new();
+    private readonly Dictionary<string, string> _tags = new(StringComparer.Ordinal);
 
     private Process? _proc;
     private MemoryMappedFile? _mmf;
     private MemoryMappedViewAccessor? _view;
     private Thread? _logThread;
+    private Thread? _outThread;
     private Stream? _stdin;
     private volatile bool _disposed;
 
@@ -120,6 +122,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             var psi = new ProcessStartInfo(_exePath)
             {
                 RedirectStandardInput = true,
+                RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -148,6 +151,8 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             _stdin = _proc.StandardInput.BaseStream;
             _logThread = new Thread(ReadLog) { IsBackground = true, Name = "chenge-host-log" };
             _logThread.Start();
+            _outThread = new Thread(ReadValues) { IsBackground = true, Name = "chenge-host-tags" };
+            _outThread.Start();
             return true;
         }
         catch (Exception ex)
@@ -199,6 +204,56 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             _stdin!.Write(bytes, 0, bytes.Length);
             _stdin.Flush();
         }
+    }
+
+    /// <summary>标准输出只承载变量回报：`V <名字> <值> <质量>`。</summary>
+    private void ReadValues()
+    {
+        try
+        {
+            while (_proc != null && !_proc.StandardOutput.EndOfStream)
+            {
+                var line = _proc.StandardOutput.ReadLine();
+                if (line == null) break;
+                if (line.Length < 3 || line[0] != 'V' || line[1] != ' ') continue;
+
+                var parts = line[2..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2) continue;
+                // 质量：0 = GOOD（值有效），非 0 = 未初始化/坏 ⇒ 显示 ? 而不是假值
+                var shown = parts[2] == "0" ? parts[1] : "?";
+                lock (_tags) _tags[parts[0]] = shown;
+            }
+        }
+        catch
+        {
+            // 进程退出时流会断，正常
+        }
+    }
+
+    public void PollTag(string name)
+    {
+        if (_proc is not { HasExited: false }) return;
+        try
+        {
+            WriteStdin(Encoding.UTF8.GetBytes($"T {name}\n"));
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    public bool TryGetTag(string name, out string value)
+    {
+        lock (_tags)
+        {
+            if (_tags.TryGetValue(name, out var v))
+            {
+                value = v;
+                return true;
+            }
+        }
+        value = "";
+        return false;
     }
 
     private void ReadLog()

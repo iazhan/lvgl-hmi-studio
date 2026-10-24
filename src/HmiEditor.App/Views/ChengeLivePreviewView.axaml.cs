@@ -47,6 +47,8 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private long _lastVersion = -1;
     private string _exportDir = "";
     private bool _busy;
+    private readonly List<string> _watchNames = new();
+    private long _tagMark;
     private long _renderCount;
     private long _uiTicks;
     private long _fpsMark = Environment.TickCount64;
@@ -216,6 +218,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
             StateText.Text = AppLocalization.Service.Format("live.state",
                 _session.Width, _session.Height, _backend);
 
+            CollectWatchNames();
             _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
             _timer.Tick += (_, _) => Pump();
             _timer.Start();
@@ -279,7 +282,47 @@ public partial class ChengeLivePreviewView : ChromeWindow
                 WatchBox.Text = text;
                 WatchBox.CaretIndex = text.Length;
             }
+            PumpTags(nowMs);
         }
+    }
+
+    /// <summary>
+    /// 变量监视的取样名单：当前工程里**被控件绑定的**变量（按首次出现顺序、去重）。
+    /// 不列全量变量表——一页几十个变量刷起来没意义，用户要看的是"我点这个控件改了谁"。
+    /// </summary>
+    private void CollectWatchNames()
+    {
+        _watchNames.Clear();
+        if (_project == null) return;
+
+        var byId = _project.VariableManager.Variables
+            .GroupBy(v => v.Id)
+            .ToDictionary(g => g.Key, g => g.First().Name, StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var screen in _project.Screens)
+        foreach (var control in screen.Controls)
+        foreach (var binding in control.VariableBindings)
+        {
+            if (byId.TryGetValue(binding.VariableId, out var name) && seen.Add(name))
+                _watchNames.Add(name);
+        }
+    }
+
+    private void PumpTags(long nowMs)
+    {
+        if (_session == null) return;
+        if (nowMs - _tagMark < 400) return;
+        _tagMark = nowMs;
+
+        var sb = new System.Text.StringBuilder();
+        foreach (var name in _watchNames.Take(24))
+        {
+            _session.PollTag(name);
+            sb.Append(name).Append(" = ")
+              .Append(_session.TryGetTag(name, out var v) ? v : "…").Append('\n');
+        }
+        var text = sb.ToString();
+        if (text != TagBox.Text) TagBox.Text = text;
     }
 
     private async void OnReloadClicked(object? sender, RoutedEventArgs e)
