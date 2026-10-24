@@ -91,6 +91,8 @@ public class PropertyPanelWiringTests
         ["AlarmRowHeightBox"] = "报警行高：同上",
         ["AlarmRefreshBox"] = "报警刷新周期：同上",
         ["AlarmBlinkMsBox"] = "报警闪烁周期：同上",
+        ["SampleMsBox"] = "实时曲线采样周期：夹具里还没有 RealtimeCurve 类型",
+        ["HistorySBox"] = "实时曲线保留历史：夹具里还没有 RealtimeCurve 类型",
         ["CurveYMinorBox"] = "曲线 Y 次分隔：同上",
         ["CurveYDecimalsBox"] = "曲线左轴小数位：同上",
         ["CurveYDigitsBox"] = "曲线左轴整数位：同上",

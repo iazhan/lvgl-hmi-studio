@@ -427,6 +427,12 @@ public class HmiControl
 
     // ── 批次 2c：报警列表的显示细节（契约 alarm_list 的其余 props）──
 
+    /// <summary>实时曲线：采样周期毫秒（契约 sample_ms，默认 1000）。</summary>
+    public int SampleMs { get; set; } = 1000;
+
+    /// <summary>实时曲线：内存里保留多少秒历史（契约 history_s，0 = 只保留窗口内的）。</summary>
+    public int HistoryS { get; set; }
+
     /// <summary>报警列表排序（newest_first / newest_last）。</summary>
     public string? AlarmOrder { get; set; }
 

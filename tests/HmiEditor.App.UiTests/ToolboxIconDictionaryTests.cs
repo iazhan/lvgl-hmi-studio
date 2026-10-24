@@ -107,6 +107,7 @@ public class ToolboxIconDictionaryTests
         [HmiControlType.Value] = "chenge-runtime 数据控件，只在工具箱出现（主窗口无快捷图标）",
         [HmiControlType.AlarmList] = "同上",
         [HmiControlType.HistoryCurve] = "同上",
+        [HmiControlType.RealtimeCurve] = "与 HistoryCurve 同批新增：工具箱用内联几何，字典里没有独立镜像键",
     };
 
     /// <summary>

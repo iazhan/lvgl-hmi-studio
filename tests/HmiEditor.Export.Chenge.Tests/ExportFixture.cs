@@ -151,6 +151,12 @@ internal static class ExportFixture
         });
         screen.Controls.Add(new HmiControl
         {
+            Id = "c13", Type = HmiControlType.RealtimeCurve, Name = "RealtimeCurve1", X = 380, Y = 300, Width = 400, Height = 160,
+            MinValue = 0, MaxValue = 100, SpanMin = 5, SampleMs = 500, HistoryS = 60,
+            CurveVariableIds = "v_temp",
+        });
+        screen.Controls.Add(new HmiControl
+        {
             Id = "c9", Type = HmiControlType.HistoryCurve, Name = "HistoryCurve1", X = 380, Y = 280, Width = 400, Height = 180,
             TrendGroup = "temp", SpanMin = 30, RefreshMs = 5000, CurveVariableIds = "v_temp", MinValue = 0, MaxValue = 500,
         });

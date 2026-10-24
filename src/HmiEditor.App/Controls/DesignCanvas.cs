@@ -838,6 +838,10 @@ public partial class DesignCanvas : Control
                 RenderDataWidgetPlaceholder(context, control, rect, z,
                     $"{control.TrendGroup} · {control.SpanMin}min");
                 return;
+            case HmiControlType.RealtimeCurve:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    $"{control.SampleMs}ms · {control.SpanMin}min");
+                return;
             case HmiControlType.Button:
                 RenderButton(context, control, rect, z);
                 return;

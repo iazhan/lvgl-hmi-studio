@@ -304,6 +304,10 @@ internal sealed class ChengeWidgetMapper
                 MapHistoryCurve(props, control, where);
                 break;
 
+            case HmiControlType.RealtimeCurve:
+                MapRealtimeCurve(props, control, where);
+                break;
+
             case HmiControlType.Screen:
                 _issues.Warn("screen.not_exported", where, "嵌套屏幕控件不导出（页面切换用 goto_page 动作）");
                 return null;
@@ -432,10 +436,60 @@ internal sealed class ChengeWidgetMapper
         props["range"] = new JsonObject { ["last_min"] = Clamp(lastMin, 1, 1440) };
         props["refresh_ms"] = Clamp(control.RefreshMs, 0, 60000);
         props["curves"] = curves;
+        MapCurveCommon(props, control, where);
+        _features.Add("curves");
+    }
+
+    /// <summary>
+    /// 实时曲线：数据来自 sim 采样（`sample_ms` 一条），不读 trends.json，
+    /// 所以没有 group / range / refresh_ms，取而代之的是 sample_ms 与 history_s。
+    /// </summary>
+    private void MapRealtimeCurve(JsonObject props, HmiControl control, string where)
+    {
+        var curves = new JsonArray();
+        var ids = (control.CurveVariableIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim()).Where(x => x.Length > 0).Distinct().Take(4).ToArray();
+        var palette = new[] { _colors.Primary, _colors.Success, _colors.Warning, _colors.Danger };
+        var i = 0;
+        foreach (var varRef in ids)
+        {
+            var tag = _maps.ResolveTag(varRef);
+            if (tag == null)
+            {
+                _issues.Error("realtime_curve.tag", where, $"实时曲线通道引用了不存在的变量 {varRef}");
+                continue;
+            }
+            curves.Add(new JsonObject
+            {
+                ["tag"] = tag.Value,
+                ["color"] = palette[i % palette.Length],
+                ["label"] = _maps.TagName(varRef) ?? "",
+                ["axis"] = "left",
+            });
+            i++;
+        }
+        if (curves.Count == 0)
+        {
+            _issues.Error("realtime_curve.curves", where, "实时曲线至少要有一条通道（37：curves 1..4 条）");
+            return;
+        }
+
+        props["curves"] = curves;
+        props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
+        if (control.HistoryS > 0) props["history_s"] = Clamp(control.HistoryS, 1, 86400);
+        props["span_s"] = Clamp((int)control.SpanMin * 60, 10, 86400);
+        MapCurveCommon(props, control, where);
+        _features.Add("curves");
+    }
+
+    /// <summary>
+    /// 两条曲线共用的外观与刻度（契约里 20 余项，运行时 build_curve 全读）。
+    /// 抽出来的目的只有一个：history 与 realtime 不能各写一份而慢慢漂移。
+    /// </summary>
+    private void MapCurveCommon(JsonObject props, HmiControl control, string where)
+    {
         props["y_min"] = (int)Math.Round(control.MinValue);
         props["y_max"] = (int)Math.Round(control.MaxValue);
-
-        // 外观与刻度（契约 32 项里的其余部分；运行时 build_curve 全部读）
         props["grid"] = control.CurveGrid;
         props["legend"] = control.CurveLegend;
         props["show_axis"] = control.CurveShowAxis;
@@ -461,7 +515,6 @@ internal sealed class ChengeWidgetMapper
         if (_colors.ResolveOr(control.CurveTickColor, "#9AA7B5", where) is { } tkC) props["tick_color"] = tkC;
         if (_colors.ResolveOr(control.CurveLabelColor, "#C8D2DC", where) is { } lbC) props["label_color"] = lbC;
         SetFont(props, control, DefaultFont(14));
-        _features.Add("curves");
     }
 
     private void MapTable(JsonObject props, HmiControl control, string pageId, string widgetId, string where)
@@ -985,6 +1038,7 @@ internal sealed class ChengeWidgetMapper
             HmiControlType.Svg => null,
             HmiControlType.AlarmList => "alarm_list",
             HmiControlType.HistoryCurve => "history_curve",
+            HmiControlType.RealtimeCurve => "realtime_curve",
             HmiControlType.Screen => null,
             _ => null,
         };

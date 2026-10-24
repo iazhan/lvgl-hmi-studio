@@ -111,6 +111,9 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblAlarmBlinkMs, AlarmBlinkMsBox, false);
         SetParamRow(LblAlarmDateFormat, AlarmDateFormatBox, false);
         SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, false);
+        // 批次 2b：实时曲线采样参数
+        SetParamRow(LblSampleMs, SampleMsBox, false);
+        SetParamRow(LblHistoryS, HistorySBox, false);
 
         bool anyVisible = true;
         switch (control.Type)
@@ -274,6 +277,15 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, true);
                 DetailParamExpander.IsVisible = true;
                 break;
+            case HmiControlType.RealtimeCurve:
+                SetParamRow(LblCgSpanMin, CgSpanMinBox, true);
+                SetParamRow(LblCgCurveVars, CgCurveVarsBox, true);
+                SetParamRow(LblMinValue, MinValueBox, true);
+                SetParamRow(LblMaxValue, MaxValueBox, true);
+                SetParamRow(LblSampleMs, SampleMsBox, true);
+                SetParamRow(LblHistoryS, HistorySBox, true);
+                ShowCurveRows(true);
+                break;
             case HmiControlType.HistoryCurve:
                 SetParamRow(LblCgTrendGroup, CgTrendGroupBox, true);
                 SetParamRow(LblCgSpanMin, CgSpanMinBox, true);
@@ -382,6 +394,8 @@ public partial class PropertyPanelView : UserControl
         AlarmBlinkMsBox.Value = control.AlarmBlinkMs;
         AlarmDateFormatBox.Text = control.AlarmDateFormat ?? "";
         AlarmTimeFormatBox.Text = control.AlarmTimeFormat ?? "";
+        SampleMsBox.Value = control.SampleMs;
+        HistorySBox.Value = control.HistoryS;
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;

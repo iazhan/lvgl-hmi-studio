@@ -133,6 +133,8 @@ public partial class PropertyPanelView : UserControl
         AlarmRowHeightBox.ValueChanged += OnNumberChanged;
         AlarmRefreshBox.ValueChanged += OnNumberChanged;
         AlarmBlinkMsBox.ValueChanged += OnNumberChanged;
+        SampleMsBox.ValueChanged += OnNumberChanged;
+        HistorySBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();

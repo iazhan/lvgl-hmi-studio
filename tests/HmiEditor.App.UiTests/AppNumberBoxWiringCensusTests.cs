@@ -41,7 +41,7 @@ public class AppNumberBoxWiringCensusTests
     private static readonly FileFace[] WiredNamedNumberBoxes =
     {
         // 批次 1a 加了 9 个数字框（仪表 5 / 指示灯 1 / 按钮 3），接线同步补齐
-        new("PropertyPanelView.axaml", 61, "enumerated", "PropertyPanelWiringTests.cs"),
+        new("PropertyPanelView.axaml", 63, "enumerated", "PropertyPanelWiringTests.cs"),
         new("SettingsDialog.axaml", 9, "perBox", "SettingsDialogNumberBoxWiringTests.cs"),
         new("ScreenManagerView.axaml", 2, "perBox", "ScreenManagerNumberBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 1, "perBox", "ProjectSettingsNumberBoxWiringTests.cs"),

@@ -286,6 +286,11 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.AlarmDateFormat), string.IsNullOrWhiteSpace(AlarmDateFormatBox.Text) ? null : AlarmDateFormatBox.Text.Trim(), v => _currentControl.AlarmDateFormat = v);
             if (AlarmTimeFormatBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.AlarmTimeFormat), string.IsNullOrWhiteSpace(AlarmTimeFormatBox.Text) ? null : AlarmTimeFormatBox.Text.Trim(), v => _currentControl.AlarmTimeFormat = v);
+            // 批次 2b：实时曲线采样参数
+            if (SampleMsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.SampleMs), (int)SampleMsBox.Value, v => _currentControl.SampleMs = v);
+            if (HistorySBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.HistoryS), (int)HistorySBox.Value, v => _currentControl.HistoryS = v);
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

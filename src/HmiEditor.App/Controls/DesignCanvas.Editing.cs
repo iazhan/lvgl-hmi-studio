@@ -89,6 +89,7 @@ public partial class DesignCanvas : Control
         HmiControlType.Value => (180.0, 40.0),
         HmiControlType.AlarmList => (400.0, 180.0),
         HmiControlType.HistoryCurve => (400.0, 180.0),
+        HmiControlType.RealtimeCurve => (400.0, 180.0),
         _ => (100.0, 40.0)
     };
 

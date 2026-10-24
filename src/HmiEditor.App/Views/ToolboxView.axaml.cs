@@ -129,6 +129,7 @@ public partial class ToolboxView : UserControl
         HmiControlType.Value      => "M4,7 L16,7 M4,12 L20,12 M4,17 L13,17",                  // 数值：三行数字
         HmiControlType.AlarmList  => "M3,5 L21,5 M3,10 L21,10 M3,15 L21,15 M3,20 L21,20",     // 报警列表：多行
         HmiControlType.HistoryCurve => "M4,19 L4,5 M4,19 L21,19 M5,16 L9,10 L13,14 L19,7",    // 曲线：坐标轴+折线
+        HmiControlType.RealtimeCurve => "M4,19 L4,5 M4,19 L21,19 M5,15 L9,9 L13,13 L19,6 M20,4 L20,8 M18,6 L22,6",  // 实时曲线：折线+时钟
         _ => "M4,4 L20,4 L20,20 L4,20 Z",
     };
 
@@ -166,6 +167,7 @@ public partial class ToolboxView : UserControl
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Value)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Value),      AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Value));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AlarmList)),   Services.ControlTypeTextKeys.Describe(HmiControlType.AlarmList),  AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.AlarmList));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.HistoryCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.HistoryCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.HistoryCurve));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.RealtimeCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.RealtimeCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.RealtimeCurve));
     }
 
     // ── 拖拽 ──

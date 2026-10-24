@@ -1294,6 +1294,7 @@ public static class Lang
     public const string TbValue        = "tb.value";
     public const string TbAlarmList    = "tb.alarmlist";
     public const string TbHistoryCurve = "tb.historycurve";
+    public const string TbRealtimeCurve = "tb.realtimecurve";
     public const string LiveLibMissing = "live.lib_missing";
     public const string LiveCrashedGiveup = "live.crashed.giveup";
 

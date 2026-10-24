@@ -40,5 +40,6 @@ public enum HmiControlType
     // chenge-runtime 目标新增（导出契约见 docs/chenge-rt/37）
     Value,       // 数值显示（decimals/unit；绑定 value 后自动刷新）
     AlarmList,   // 报警列表（数据来自 alarms.json，可确认）
-    HistoryCurve // 历史曲线（数据来自 trends.json / savecfg.json 的存盘组）
+    HistoryCurve,  // 历史曲线（数据来自 trends.json / savecfg.json 的存盘组）
+    RealtimeCurve, // 实时曲线（数据来自 sim 采样，按 sample_ms 滚动）
 }
