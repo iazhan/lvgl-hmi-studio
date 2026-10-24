@@ -277,6 +277,15 @@ public class HmiControl
     /// <summary>FrameAnim：循环播放。</summary>
     public bool FrameLoop { get; set; } = true;
 
+    // ── 批次 4：通用图元 ──
+
+    /// <summary>
+    /// 图元种类（契约 figures 的 40 个 kind 之一，如 rect / star5 / valve_ball / arrow）。
+    /// 一个控件 + 一个下拉，替代"每种图元各做一个控件类型"——契约里 kind 本来就是
+    /// shape 的属性，40 个枚举成员只会让工具箱变得不可用。
+    /// </summary>
+    public string? ShapeKind { get; set; } = "rect";
+
     /// <summary>阀门类型（Valve：Ball/Gate/Butterfly/Globe）。默认 Ball。</summary>
     public string? ValveType { get; set; }
 

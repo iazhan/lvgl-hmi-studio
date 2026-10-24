@@ -97,6 +97,7 @@ public partial class DesignCanvas : Control
         HmiControlType.Roller => (160.0, 120.0),
         HmiControlType.StateImage => (120.0, 120.0),
         HmiControlType.FrameAnim => (120.0, 120.0),
+        HmiControlType.Shape => (120.0, 120.0),
         _ => (100.0, 40.0)
     };
 

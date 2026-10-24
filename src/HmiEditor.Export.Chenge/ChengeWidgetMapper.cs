@@ -391,6 +391,14 @@ internal sealed class ChengeWidgetMapper
                 _features.Add("widgets_ext");
                 break;
 
+            case HmiControlType.Shape:
+                // 40 个 kind 任一非法都拒绝整页，所以先过白名单（未知值回落 rect 并告警）
+                kind = OneOf(control.ShapeKind, ShapeKinds, "rect", where, "shape.kind");
+                MapShapeCommon(props, control, where);
+                if (kind is "polygon" or "polyline")
+                    props["points"] = PointsOf(control, where);
+                break;
+
             case HmiControlType.Message:
                 props["text"] = control.MessageText ?? "";
                 props["level"] = OneOf(control.MessageLevel, "info", "warn", "error", "info", where, "message.level");
@@ -423,6 +431,11 @@ internal sealed class ChengeWidgetMapper
             ["h"] = (int)Math.Round(Math.Max(1, control.Height)),
             ["props"] = finalProps,
         };
+        /* 图元的 kind 写在 **props 里**（契约 figures 用 props.kind 区分 40 种）。
+         * 早先只把 kind 当局部变量用于白名单过滤，**没有写进 JSON** —— 导出的图元
+         * 全靠运行时默认值，等于"选什么形状都画成同一个"。放在 FilterProps 之后写，
+         * 避免它被当成"契约外属性"丢掉。 */
+        if (!string.IsNullOrEmpty(kind)) finalProps["kind"] = kind;
 
         CheckBounds(widget, control, where);
         AddBindings(widget, control, target, pageId, widgetId, where);
@@ -809,6 +822,55 @@ internal sealed class ChengeWidgetMapper
         return fallback;
     }
 
+    /// <summary>
+    /// 契约 figures 的 40 个 kind（与 spec/widget-schema.json 一一对应）。
+    /// 少一个会让那个图元"选得到但导不出去"，多一个会被运行时拒绝 —— 两边都难查，
+    /// 所以集中在这里，配合测试里的数量断言。
+    /// </summary>
+    private static readonly string[] ShapeKinds =
+        {
+            "arc",
+            "arrow",
+            "arrow_thick",
+            "arrow_thin",
+            "ball3d",
+            "callout",
+            "circle",
+            "cone3d",
+            "container",
+            "cross",
+            "cube",
+            "diamond",
+            "ellipse",
+            "hexagon",
+            "line",
+            "octagon",
+            "parallelogram",
+            "pie",
+            "pipe_elbow",
+            "pipe_h",
+            "pipe_joint",
+            "pipe_v",
+            "plane_concave",
+            "plane_convex",
+            "plane_groove",
+            "polygon",
+            "polyline",
+            "rect",
+            "right_triangle",
+            "round_rect",
+            "star",
+            "star5",
+            "tank",
+            "torus3d",
+            "trapezoid",
+            "triangle",
+            "valve_ball",
+            "valve_butterfly",
+            "valve_gate",
+            "wedge"
+        };
+
     /// <summary>按行切分（去空行、trim）。</summary>
     private static IEnumerable<string> SplitLines(string? text)
         => (text ?? "").Replace("\r", "").Split('\n')
@@ -874,9 +936,12 @@ internal sealed class ChengeWidgetMapper
             var seg = raw.Trim();
             if (seg.Length == 0) continue;
 
+            // `:#E5484D` 这种**省略阈值**的兜底段，冒号在下标 0 —— 早先写成 idx > 0，
+            // 于是 ":#E5484D" 整段被当成颜色，回退成主题色（兜底段永远不生效）。
             var idx = seg.IndexOf(':');
             var ltPart = idx > 0 ? seg[..idx].Trim() : "";
-            var colorPart = idx > 0 ? seg[(idx + 1)..].Trim() : seg;
+            var colorPart = idx >= 0 ? seg[(idx + 1)..].Trim() : seg;
+            if (colorPart.Length == 0) continue;
             if (colorPart.Length == 0) continue;
 
             var color = _colors.Resolve(colorPart, where);
@@ -1211,6 +1276,7 @@ internal sealed class ChengeWidgetMapper
             HmiControlType.Roller => "roller",
             HmiControlType.StateImage => "state_image",
             HmiControlType.FrameAnim => "frame_anim",
+            HmiControlType.Shape => "shape",
             HmiControlType.Screen => null,
             _ => null,
         };

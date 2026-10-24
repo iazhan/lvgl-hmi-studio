@@ -137,6 +137,7 @@ public partial class ToolboxView : UserControl
         HmiControlType.Roller => "M5,5 L19,5 M5,12 L19,12 M5,19 L19,19 M8,8 L8,10 M8,15 L8,17",   // 滚轮：多条+选中线
         HmiControlType.StateImage => "M3,4 L21,4 L21,20 L3,20 Z M3,16 L9,10 L13,14 L17,8 L21,12",   // 值换图：图片框+山
         HmiControlType.FrameAnim => "M4,6 L8,6 L8,18 L4,18 Z M10,6 L14,6 L14,18 L10,18 Z M16,6 L20,6 L20,18 L16,18 Z",   // 帧动画：三格
+        HmiControlType.Shape => "M12,3 L21,20 L3,20 Z",   // 通用图元：三角形
         _ => "M4,4 L20,4 L20,20 L4,20 Z",
     };
 
@@ -182,6 +183,7 @@ public partial class ToolboxView : UserControl
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Roller)), Services.ControlTypeTextKeys.Describe(HmiControlType.Roller), AppLocalization.Service[Lang.TbCatInput], HmiControlType.Roller));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.StateImage)), Services.ControlTypeTextKeys.Describe(HmiControlType.StateImage), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.StateImage));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.FrameAnim)), Services.ControlTypeTextKeys.Describe(HmiControlType.FrameAnim), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.FrameAnim));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Shape)), Services.ControlTypeTextKeys.Describe(HmiControlType.Shape), AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Shape));
     }
 
     // ── 拖拽 ──

@@ -867,6 +867,9 @@ public partial class DesignCanvas : Control
             case HmiControlType.FrameAnim:
                 RenderDataWidgetPlaceholder(context, control, rect, z, $"frames · {control.FrameIntervalMs}ms");
                 return;
+            case HmiControlType.Shape:
+                RenderDataWidgetPlaceholder(context, control, rect, z, control.ShapeKind ?? "rect");
+                return;
             case HmiControlType.Button:
                 RenderButton(context, control, rect, z);
                 return;

@@ -48,5 +48,6 @@ public enum HmiControlType
     EnumText,      // 枚举文本（值 → 文字/颜色，映射走绑定层）
     Roller,        // 滚轮选择,
     StateImage,    // 值 → 图片
-    FrameAnim,     // 帧动画
+    FrameAnim,     // 帧动画,
+    Shape,         // 通用图元（kind 在属性里选，覆盖契约 40 种）
 }

@@ -138,7 +138,7 @@ internal static class ExportFixture
             Text = "", MaxLength = 8, InputCommit = "blur",
             VariableBindings =
             {
-                new VariableBindingData { PropertyName = "Text", VariableId = "v_set", Direction = BindingDirection.ReadWrite },
+                new VariableBindingData { PropertyName = "Value", VariableId = "v_set", Direction = BindingDirection.ReadWrite },
             },
         });
         screen.Controls.Add(new HmiControl
@@ -148,6 +148,11 @@ internal static class ExportFixture
             AlarmRowHeight = 30, AlarmBlink = false, AlarmRefreshMs = 1000,
             AlarmDateFormat = "yyyy-MM-dd", AlarmTimeFormat = "HH:mm",
             AlarmGroupFilter = "温度", AlarmMode = "active", AlarmLevelFilter = "1~4", AlarmMaxRows = 8,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c20", Type = HmiControlType.Shape, Name = "Shape1", X = 660, Y = 330, Width = 100, Height = 100,
+            ShapeKind = "star5", BgColor = "#38C172", BorderColor = "#1F7A45", BorderWidth = 2,
         });
         screen.Controls.Add(new HmiControl
         {

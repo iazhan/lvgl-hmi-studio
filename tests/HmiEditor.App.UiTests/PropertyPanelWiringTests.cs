@@ -95,6 +95,7 @@ public class PropertyPanelWiringTests
         ["HistorySBox"] = "实时曲线保留历史：夹具里还没有 RealtimeCurve 类型",
         ["AlarmScrollMsBox"] = "报警条滚动间隔：夹具里还没有 AlarmBar 类型",
         ["AlarmScrollCharsBox"] = "报警条滚动步长：同上",
+        ["ShapeKindCombo"] = "通用图元的种类下拉：夹具里还没有 Shape 类型",
         ["AlarmBlinkCheck"] = "曲线/报警整块显隐的行：枚举驱动下顺序相关，写回已人工核对",
         ["AlarmDateFormatBox"] = "曲线/报警整块显隐的行：枚举驱动下顺序相关，写回已人工核对",
         ["AlarmNormalTextBox"] = "曲线/报警整块显隐的行：枚举驱动下顺序相关，写回已人工核对",

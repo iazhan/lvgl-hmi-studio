@@ -1302,6 +1302,7 @@ public static class Lang
     public const string TbRoller = "tb.roller";
     public const string TbStateImage = "tb.stateimage";
     public const string TbFrameAnim = "tb.frameanim";
+    public const string TbShapeKind = "tb.shape";
     public const string LiveLibMissing = "live.lib_missing";
     public const string LiveCrashedGiveup = "live.crashed.giveup";
 

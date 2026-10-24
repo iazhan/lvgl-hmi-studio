@@ -115,6 +115,7 @@ public class ToolboxIconDictionaryTests
         [HmiControlType.Roller] = "同上",
         [HmiControlType.StateImage] = "同上",
         [HmiControlType.FrameAnim] = "同上",
+        [HmiControlType.Shape] = "同上（通用图元，kind 在属性里选）",
     };
 
     /// <summary>

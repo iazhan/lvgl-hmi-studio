@@ -729,7 +729,7 @@
                           IsVisible="False">
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1370,6 +1370,54 @@
                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
                                  PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <!-- 通用图元：kind 下拉（契约 figures 的 40 种） -->
+                        <TextBlock x:Name="LblShapeKind" Text="{res:Loc prop.detail.shape.kind}" Grid.Row="51" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="ShapeKindCombo" Grid.Row="51" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.arc}" Tag="arc"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.arrow}" Tag="arrow"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.arrow_thick}" Tag="arrow_thick"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.arrow_thin}" Tag="arrow_thin"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.ball3d}" Tag="ball3d"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.callout}" Tag="callout"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.circle}" Tag="circle"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.cone3d}" Tag="cone3d"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.container}" Tag="container"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.cross}" Tag="cross"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.cube}" Tag="cube"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.diamond}" Tag="diamond"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.ellipse}" Tag="ellipse"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.hexagon}" Tag="hexagon"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.line}" Tag="line"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.octagon}" Tag="octagon"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.parallelogram}" Tag="parallelogram"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.pie}" Tag="pie"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.pipe_elbow}" Tag="pipe_elbow"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.pipe_h}" Tag="pipe_h"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.pipe_joint}" Tag="pipe_joint"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.pipe_v}" Tag="pipe_v"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.plane_concave}" Tag="plane_concave"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.plane_convex}" Tag="plane_convex"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.plane_groove}" Tag="plane_groove"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.polygon}" Tag="polygon"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.polyline}" Tag="polyline"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.rect}" Tag="rect"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.right_triangle}" Tag="right_triangle"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.round_rect}" Tag="round_rect"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.star}" Tag="star"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.star5}" Tag="star5"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.tank}" Tag="tank"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.torus3d}" Tag="torus3d"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.trapezoid}" Tag="trapezoid"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.triangle}" Tag="triangle"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.valve_ball}" Tag="valve_ball"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.valve_butterfly}" Tag="valve_butterfly"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.valve_gate}" Tag="valve_gate"/>
+                            <ComboBoxItem Content="{res:Loc prop.shape.kind.wedge}" Tag="wedge"/>
+                        </ComboBox>
                     </Grid>
                 </Expander>
 

@@ -97,5 +97,6 @@ internal static class ControlTypeTextKeys
         HmiControlType.Roller => AppLocalization.Service[Lang.TbRoller],
         HmiControlType.StateImage => AppLocalization.Service[Lang.TbStateImage],
         HmiControlType.FrameAnim => AppLocalization.Service[Lang.TbFrameAnim],
+        HmiControlType.Shape => AppLocalization.Service[Lang.TbShapeKind],
     };
 }
