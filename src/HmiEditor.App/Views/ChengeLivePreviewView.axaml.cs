@@ -44,6 +44,8 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private long _lastVersion = -1;
     private string _exportDir = "";
     private bool _busy;
+    private long _renderCount;
+    private long _fpsMark = Environment.TickCount64;
 
     /// <summary>设计器/无参构造：只为了让 XAML 预览器能加载。</summary>
     public ChengeLivePreviewView()
@@ -182,7 +184,17 @@ public partial class ChengeLivePreviewView : ChromeWindow
         }
         ScreenImage.InvalidateVisual();
 
-        FpsText.Text = AppLocalization.Service.Format("live.fps", _session.Fps.ToString("0.0"));
+        // 显示**实际刷新的帧率**，不是 tick 频率：tick 一直 60 而画面不动时，
+        // 这个数字会掉到 0，正好区分"没渲染"与"渲染了但内容没变"。
+        _renderCount++;
+        var nowMs = Environment.TickCount64;
+        if (nowMs - _fpsMark >= 1000)
+        {
+            var fps = _renderCount * 1000.0 / (nowMs - _fpsMark);
+            FpsText.Text = AppLocalization.Service.Format("live.fps", fps.ToString("0.0"));
+            _renderCount = 0;
+            _fpsMark = nowMs;
+        }
     }
 
     private async void OnReloadClicked(object? sender, RoutedEventArgs e)
@@ -202,43 +214,81 @@ public partial class ChengeLivePreviewView : ChromeWindow
     }
 
     // ── 指针：屏幕坐标 = (鼠标 - 居中偏移) / 缩放 ──
+    //
+    // ⚠ 抬起**必须无条件发出去**。早先的实现在坐标越界时直接 return，
+    // 于是"按下 → 拖出画面 → 松开"会让运行时一直停在 PRESSED：
+    // 之后所有点击都被当成"按住没放"，表现就是键盘不弹、滑块不跟手。
+    // 所以拖动与抬起一律钳位到屏幕内，只有"按下"那一下要求落在画面里。
 
-    private (int X, int Y)? MapPoint(Point p)
+    private bool _pointerDown;
+
+    private (int X, int Y)? MapPoint(Point p, bool clamp)
     {
-        if (_session == null) return null;
+        if (_session == null || _session.Width <= 0 || _session.Height <= 0) return null;
         var b = ScreenImage.Bounds;
         var scale = Math.Min(b.Width / _session.Width, b.Height / _session.Height);
         if (scale <= 0) return null;
-        var shownW = _session.Width * scale;
-        var shownH = _session.Height * scale;
-        var dx = (b.Width - shownW) / 2;
-        var dy = (b.Height - shownH) / 2;
-        var x = (int)((p.X - dx) / scale);
-        var y = (int)((p.Y - dy) / scale);
+        var dx = (b.Width - _session.Width * scale) / 2;
+        var dy = (b.Height - _session.Height * scale) / 2;
+        var x = (int)Math.Round((p.X - dx) / scale);
+        var y = (int)Math.Round((p.Y - dy) / scale);
+        if (clamp)
+        {
+            x = Math.Clamp(x, 0, _session.Width - 1);
+            y = Math.Clamp(y, 0, _session.Height - 1);
+            return (x, y);
+        }
         if (x < 0 || y < 0 || x >= _session.Width || y >= _session.Height) return null;
         return (x, y);
     }
 
+    private void ShowPointer(int x, int y, bool down)
+    {
+        FootText.Text = $"ptr=({x},{y}) {(down ? "down" : "up")}";
+    }
+
     private void OnScreenPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (MapPoint(e.GetPosition(ScreenImage)) is not { } pt) return;
+        if (MapPoint(e.GetPosition(ScreenImage), clamp: false) is not { } pt) return;
+        _pointerDown = true;
         e.Pointer.Capture(ScreenImage);
         _session?.Pointer(pt.X, pt.Y, true);
+        ShowPointer(pt.X, pt.Y, true);
         e.Handled = true;
     }
 
     private void OnScreenPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (!e.GetCurrentPoint(ScreenImage).Properties.IsLeftButtonPressed) return;
-        if (MapPoint(e.GetPosition(ScreenImage)) is not { } pt) return;
+        if (!_pointerDown) return;
+        if (MapPoint(e.GetPosition(ScreenImage), clamp: true) is not { } pt) return;
         _session?.Pointer(pt.X, pt.Y, true);
+        ShowPointer(pt.X, pt.Y, true);
     }
 
     private void OnScreenPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (MapPoint(e.GetPosition(ScreenImage)) is { } pt)
+        if (!_pointerDown) return;
+        _pointerDown = false;
+        if (MapPoint(e.GetPosition(ScreenImage), clamp: true) is { } pt)
+        {
             _session?.Pointer(pt.X, pt.Y, false);
+            ShowPointer(pt.X, pt.Y, false);
+        }
+        else
+        {
+            _session?.Pointer(0, 0, false);
+        }
         e.Pointer.Capture(null);
+        e.Handled = true;
+    }
+
+    /// <summary>捕获丢失（窗口失焦/被抢走）：补一次抬起，别把运行时留在按下态。</summary>
+    private void OnScreenPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        if (!_pointerDown) return;
+        _pointerDown = false;
+        _session?.Pointer(0, 0, false);
+        FootText.Text = "ptr lost → up";
     }
 
     private void Fail(string message)

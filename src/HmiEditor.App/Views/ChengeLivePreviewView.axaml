@@ -51,17 +51,20 @@
             </Border>
 
             <Grid Grid.Row="1" ColumnDefinitions="*,300" Margin="12">
+                <!-- 指针事件挂在外层 Border：它有背景，命中测试一定成立；
+                     Image 只负责显示位图（空 Image 的命中测试依赖绘制内容，不可靠）。 -->
                 <Border Grid.Column="0" Background="{StaticResource HmiBgPanelBrush}"
                         BorderBrush="{StaticResource HmiBorderBrush}" BorderThickness="1" CornerRadius="4"
-                        ClipToBounds="True">
+                        ClipToBounds="True"
+                        PointerPressed="OnScreenPointerPressed"
+                        PointerMoved="OnScreenPointerMoved"
+                        PointerReleased="OnScreenPointerReleased"
+                        PointerCaptureLost="OnScreenPointerCaptureLost">
                     <Panel>
                         <Image x:Name="ScreenImage"
                                Stretch="Uniform"
                                Margin="8"
-                               RenderOptions.BitmapInterpolationMode="None"
-                               PointerPressed="OnScreenPointerPressed"
-                               PointerMoved="OnScreenPointerMoved"
-                               PointerReleased="OnScreenPointerReleased"/>
+                               RenderOptions.BitmapInterpolationMode="None"/>
                         <TextBlock x:Name="Placeholder"
                                    Foreground="{StaticResource HmiTextSecondaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
