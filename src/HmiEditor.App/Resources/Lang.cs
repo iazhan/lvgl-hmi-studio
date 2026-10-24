@@ -1303,6 +1303,11 @@ public static class Lang
     public const string TbStateImage = "tb.stateimage";
     public const string TbFrameAnim = "tb.frameanim";
     public const string TbShapeKind = "tb.shape";
+    public const string TbChart = "tb.chart";
+    public const string TbXyCurve = "tb.xycurve";
+    public const string TbHistoryTable = "tb.historytable";
+    public const string TbRecipeTable = "tb.recipetable";
+    public const string TbAsciiDisplay = "tb.asciidisplay";
     public const string LiveLibMissing = "live.lib_missing";
     public const string LiveCrashedGiveup = "live.crashed.giveup";
 

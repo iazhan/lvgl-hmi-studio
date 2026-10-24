@@ -104,6 +104,14 @@ public class PropertyPanelTextBoxWiringTests
         ["AlarmTimeFormatBox"] = "报警时间格式：同上（**XAML 属性式接线**，不在本面）",
         ["AlarmNormalTextBox"] = "报警条无报警文字：同上（**XAML 属性式接线**，不在本面）",
         ["PipeChannelColorBox"] = "管道通道底色：同上（**XAML 属性式接线**，不在本面）",
+        // 批次 5
+        ["ChartSeriesBox"] = "图表系列：同上（**XAML 属性式接线**，不在本面）",
+        ["XyTagXBox"] = "XY 曲线的 X 变量：同上",
+        ["XyTagYBox"] = "XY 曲线的 Y 变量：同上",
+        ["HistColumnsBox"] = "历史表列定义：同上",
+        ["HistGroupBox"] = "历史表趋势组：同上",
+        ["RecipeColumnsBox"] = "配方表列定义：同上",
+        ["RecipeGroupBox"] = "配方表配方组：同上",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

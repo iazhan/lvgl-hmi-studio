@@ -98,5 +98,10 @@ internal static class ControlTypeTextKeys
         HmiControlType.StateImage => AppLocalization.Service[Lang.TbStateImage],
         HmiControlType.FrameAnim => AppLocalization.Service[Lang.TbFrameAnim],
         HmiControlType.Shape => AppLocalization.Service[Lang.TbShapeKind],
+        HmiControlType.Chart => AppLocalization.Service[Lang.TbChart],
+        HmiControlType.XyCurve => AppLocalization.Service[Lang.TbXyCurve],
+        HmiControlType.HistoryTable => AppLocalization.Service[Lang.TbHistoryTable],
+        HmiControlType.RecipeTable => AppLocalization.Service[Lang.TbRecipeTable],
+        HmiControlType.AsciiDisplay => AppLocalization.Service[Lang.TbAsciiDisplay],
     };
 }

@@ -98,6 +98,11 @@ public partial class DesignCanvas : Control
         HmiControlType.StateImage => (120.0, 120.0),
         HmiControlType.FrameAnim => (120.0, 120.0),
         HmiControlType.Shape => (120.0, 120.0),
+        HmiControlType.Chart => (320.0, 200.0),
+        HmiControlType.XyCurve => (400.0, 180.0),
+        HmiControlType.HistoryTable => (400.0, 180.0),
+        HmiControlType.RecipeTable => (400.0, 180.0),
+        HmiControlType.AsciiDisplay => (200.0, 32.0),
         _ => (100.0, 40.0)
     };
 

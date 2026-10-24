@@ -870,6 +870,22 @@ public partial class DesignCanvas : Control
             case HmiControlType.Shape:
                 RenderDataWidgetPlaceholder(context, control, rect, z, control.ShapeKind ?? "rect");
                 return;
+            case HmiControlType.Chart:
+                RenderDataWidgetPlaceholder(context, control, rect, z, control.ChartKind ?? "bar");
+                return;
+            case HmiControlType.XyCurve:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    $"{control.XyTagX} / {control.XyTagY}");
+                return;
+            case HmiControlType.HistoryTable:
+                RenderDataWidgetPlaceholder(context, control, rect, z, control.HistTableGroup ?? "history");
+                return;
+            case HmiControlType.RecipeTable:
+                RenderDataWidgetPlaceholder(context, control, rect, z, control.RecipeGroup ?? "recipe");
+                return;
+            case HmiControlType.AsciiDisplay:
+                RenderDataWidgetPlaceholder(context, control, rect, z, control.AsciiEncoding ?? "gbk");
+                return;
             case HmiControlType.Button:
                 RenderButton(context, control, rect, z);
                 return;

@@ -310,6 +310,7 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.PipeChannelColor), string.IsNullOrWhiteSpace(PipeChannelColorBox.Text) ? null : PipeChannelColorBox.Text.Trim(), v => _currentControl.PipeChannelColor = v);
             if (ShapeKindCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ShapeKind), GetComboTag(ShapeKindCombo), v => _currentControl.ShapeKind = v);
+            WriteBatch5Fields();
             // StretchMode 仅对图片控件有意义：下拉框隐藏（非图片控件）时不写，避免污染模型
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);

@@ -1,0 +1,23 @@
+批次 5：新增 5 种数据控件（chart / xy_curve / history_table / recipe_table / ascii_display，v3.1.0）
+
+运行时这 5 种都有 build 函数与白名单，编辑器一个都没有 —— 补完后契约里 33 种控件
+编辑器已全部覆盖。
+
+- 图表：柱/饼/环 + 多序列（每行 变量Id:标签，最多 8 条，颜色走主题调色板）+ 图例/数值开关；
+- XY 曲线：X/Y 各绑一个变量，点/线开关，轴范围与分隔复用「曲线设置」那一整块；
+- 历史表：列写「键:标签[:宽]」，数据源是趋势组；
+- 配方表：列写「键:标签[:宽]」，数据源是配方组；
+- ASCII 显示：解码方式与最大字符数（复用颜色/字号/对齐那几行）。
+
+**三处"契约比实现宽"，按实现收紧并留注释**（否则导出后被运行时整页拒绝）：
+1. `history_table.columns[].key` 只认 `time` 或**数值 tag id** —— 契约写的 level/name/
+   state/ack 与 "key=tag" 写法都会让整页失败；
+2. `ascii_display.encoding` 运行时只认 `gbk`/`utf8`，契约写的是 `gbk`/`ascii`；
+3. `alarm_bar.color` 运行时读，契约没列（已在 spec 侧补上，另一次提交）。
+
+- 面板：`PropertyPanelView.Parameters.Batch5.cs` + `Changes.Batch5.cs` 两个新分部文件
+  （Parameters/Changes 都已逼近 500 行上限）。
+- 版本 3.0.0 → 3.1.0。
+
+验证：dotnet test 全绿（2763 例）；新增 Export_Batch5Widgets_ReachThePageJson；
+宿主建页通过（chart/xy_curve/history_table/ascii_display 全部真实建出）。

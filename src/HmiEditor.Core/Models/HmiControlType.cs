@@ -49,5 +49,10 @@ public enum HmiControlType
     Roller,        // 滚轮选择,
     StateImage,    // 值 → 图片
     FrameAnim,     // 帧动画,
-    Shape,         // 通用图元（kind 在属性里选，覆盖契约 40 种）
+    Shape,         // 通用图元（kind 在属性里选，覆盖契约 40 种）,
+    Chart,         // 图表（柱/饼/环，多序列）
+    XyCurve,       // X-Y 散点/连线
+    HistoryTable,  // 历史数据表
+    RecipeTable,   // 配方表
+    AsciiDisplay   // ASCII 串显示（GBK/ASCII 解码）
 }

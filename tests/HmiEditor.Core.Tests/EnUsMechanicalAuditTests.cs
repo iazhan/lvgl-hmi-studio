@@ -43,6 +43,8 @@ public class EnUsMechanicalAuditTests
     /// </summary>
     private static readonly Dictionary<string, string> IdenticalAllowed = new(StringComparer.Ordinal)
     {
+        ["prop.detail.ascii.encoding.gbk"] = "GBK 是编码名，不是词，两语都写 GBK",
+        ["prop.detail.ascii.encoding.utf8"] = "UTF-8 是编码名，不是词，两语都写 UTF-8",
         ["ai.api.key"] = "API Key",
         ["ai.api.key.hint"] = "sk-...",
         ["ai.endpoint"] = "Endpoint",

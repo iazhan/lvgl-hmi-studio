@@ -286,6 +286,59 @@ public class HmiControl
     /// </summary>
     public string? ShapeKind { get; set; } = "rect";
 
+    // ── 批次 5：图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示 ──
+
+    /// <summary>Chart：柱 / 饼 / 环（bar / pie / donut）。</summary>
+    public string? ChartKind { get; set; } = "bar";
+
+    /// <summary>Chart：序列，每行 <c>变量Id:标签</c>（最多 8 条，颜色按主题调色板分配）。</summary>
+    public string? ChartSeries { get; set; }
+
+    /// <summary>Chart：显示图例。</summary>
+    public bool ChartShowLegend { get; set; } = true;
+
+    /// <summary>Chart：在图上显示数值。</summary>
+    public bool ChartShowValue { get; set; } = true;
+
+    /// <summary>XyCurve：X 值的变量 Id。</summary>
+    public string? XyTagX { get; set; }
+
+    /// <summary>XyCurve：Y 值的变量 Id。</summary>
+    public string? XyTagY { get; set; }
+
+    /// <summary>XyCurve：画点。</summary>
+    public bool XyDot { get; set; } = true;
+
+    /// <summary>XyCurve：连成线。</summary>
+    public bool XyLine { get; set; }
+
+    /// <summary>HistoryTable：列定义，每行 <c>键:标签[:宽]</c>（键取 time/level/name/value/text/state/ack 或变量 Id）。</summary>
+    public string? HistTableColumns { get; set; }
+
+    /// <summary>HistoryTable：趋势组（savecfg 组名）。</summary>
+    public string? HistTableGroup { get; set; }
+
+    /// <summary>HistoryTable：行高（0 = 默认 26）。</summary>
+    public int HistTableRowHeight { get; set; }
+
+    /// <summary>HistoryTable：右侧滚动条。</summary>
+    public bool HistTableScrollbar { get; set; } = true;
+
+    /// <summary>RecipeTable：列定义，每行 <c>键:标签[:宽]</c>（键取 name/desc/成员序号）。</summary>
+    public string? RecipeColumns { get; set; }
+
+    /// <summary>RecipeTable：配方组名。</summary>
+    public string? RecipeGroup { get; set; }
+
+    /// <summary>RecipeTable：显示单位。</summary>
+    public bool RecipeShowUnit { get; set; } = true;
+
+    /// <summary>AsciiDisplay：解码方式（gbk / ascii）。</summary>
+    public string? AsciiEncoding { get; set; } = "gbk";
+
+    /// <summary>AsciiDisplay：最多显示字符数。</summary>
+    public int AsciiMaxLen { get; set; } = 32;
+
     /// <summary>阀门类型（Valve：Ball/Gate/Butterfly/Globe）。默认 Ball。</summary>
     public string? ValveType { get; set; }
 

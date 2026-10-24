@@ -151,6 +151,27 @@ internal static class ExportFixture
         });
         screen.Controls.Add(new HmiControl
         {
+            Id = "c21", Type = HmiControlType.Chart, Name = "Chart1", X = 20, Y = 330, Width = 240, Height = 140,
+            ChartKind = "pie", ChartSeries = "v_temp:炉温", ChartShowLegend = false,
+            MinValue = 0, MaxValue = 100,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c22", Type = HmiControlType.XyCurve, Name = "XyCurve1", X = 270, Y = 330, Width = 240, Height = 140,
+            XyTagX = "v_set", XyTagY = "v_temp", XyLine = true, MinValue = 0, MaxValue = 100,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c23", Type = HmiControlType.HistoryTable, Name = "HistTable1", X = 520, Y = 20, Width = 260, Height = 140,
+            HistTableColumns = "time:时间\nv_temp:炉温", HistTableGroup = "temp", HistTableRowHeight = 30,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c25", Type = HmiControlType.AsciiDisplay, Name = "Ascii1", X = 20, Y = 400, Width = 200, Height = 32,
+            AsciiEncoding = "utf8", AsciiMaxLen = 16,
+        });
+        screen.Controls.Add(new HmiControl
+        {
             Id = "c20", Type = HmiControlType.Shape, Name = "Shape1", X = 660, Y = 330, Width = 100, Height = 100,
             ShapeKind = "star5", BgColor = "#38C172", BorderColor = "#1F7A45", BorderWidth = 2,
         });

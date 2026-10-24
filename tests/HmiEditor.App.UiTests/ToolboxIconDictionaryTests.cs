@@ -116,6 +116,11 @@ public class ToolboxIconDictionaryTests
         [HmiControlType.StateImage] = "同上",
         [HmiControlType.FrameAnim] = "同上",
         [HmiControlType.Shape] = "同上（通用图元，kind 在属性里选）",
+        [HmiControlType.Chart] = "批次 5：工具箱用内联几何，字典里没有独立镜像键",
+        [HmiControlType.XyCurve] = "同上",
+        [HmiControlType.HistoryTable] = "同上",
+        [HmiControlType.RecipeTable] = "同上",
+        [HmiControlType.AsciiDisplay] = "同上",
     };
 
     /// <summary>

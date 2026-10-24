@@ -365,6 +365,41 @@ public class ChengeExportTests : IDisposable
         Assert.Contains("torus3d", kinds);
     }
 
+    /// <summary>
+    /// 批次 5：图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示的核心属性要落进 JSON。
+    /// </summary>
+    [Fact]
+    public void Export_Batch5Widgets_ReachThePageJson()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var byType = page.GetProperty("widgets").EnumerateArray()
+            .GroupBy(w => w.GetProperty("type").GetString()!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var chart = byType["chart"][0].GetProperty("props");
+        Assert.Equal("pie", chart.GetProperty("kind").GetString());
+        Assert.Equal(1, chart.GetProperty("series").GetArrayLength());
+        Assert.Equal("炉温", chart.GetProperty("series")[0].GetProperty("label").GetString());
+        Assert.False(chart.GetProperty("show_legend").GetBoolean());
+
+        var xy = byType["xy_curve"][0].GetProperty("props");
+        Assert.True(xy.GetProperty("line").GetBoolean());
+        Assert.True(xy.GetProperty("x").TryGetProperty("tag", out _));
+        Assert.True(xy.GetProperty("y").TryGetProperty("tag", out _));
+
+        var hist = byType["history_table"][0].GetProperty("props");
+        Assert.Equal("temp", hist.GetProperty("source").GetProperty("group").GetString());
+        Assert.Equal(2, hist.GetProperty("columns").GetArrayLength());
+        Assert.Equal(30, hist.GetProperty("row_height").GetInt32());
+
+        var ascii = byType["ascii_display"][0].GetProperty("props");
+        Assert.Equal("utf8", ascii.GetProperty("encoding").GetString());
+        Assert.Equal(16, ascii.GetProperty("max_len").GetInt32());
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

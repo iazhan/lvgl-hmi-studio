@@ -729,7 +729,7 @@
                           IsVisible="False">
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1418,6 +1418,113 @@
                             <ComboBoxItem Content="{res:Loc prop.shape.kind.valve_gate}" Tag="valve_gate"/>
                             <ComboBoxItem Content="{res:Loc prop.shape.kind.wedge}" Tag="wedge"/>
                         </ComboBox>
+                        <TextBlock x:Name="LblChartKind" Text="{res:Loc prop.detail.chart.kind}" Grid.Row="52" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="ChartKindCombo" Grid.Row="52" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.chart.kind.bar}" Tag="bar"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.chart.kind.pie}" Tag="pie"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.chart.kind.donut}" Tag="donut"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblChartSeries" Text="{res:Loc prop.detail.chart.series}" Grid.Row="53" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="ChartSeriesBox" Grid.Row="53" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblChartLegend" Text="{res:Loc prop.detail.chart.legend}" Grid.Row="54" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="ChartLegendCheck" Grid.Row="54" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblChartValue" Text="{res:Loc prop.detail.chart.value}" Grid.Row="55" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="ChartValueCheck" Grid.Row="55" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblXyTagX" Text="{res:Loc prop.detail.xy.tagx}" Grid.Row="56" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="XyTagXBox" Grid.Row="56" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblXyTagY" Text="{res:Loc prop.detail.xy.tagy}" Grid.Row="57" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="XyTagYBox" Grid.Row="57" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblXyDot" Text="{res:Loc prop.detail.xy.dot}" Grid.Row="58" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="XyDotCheck" Grid.Row="58" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblXyLine" Text="{res:Loc prop.detail.xy.line}" Grid.Row="59" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="XyLineCheck" Grid.Row="59" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblHistColumns" Text="{res:Loc prop.detail.histtable.columns}" Grid.Row="60" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="HistColumnsBox" Grid.Row="60" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblHistGroup" Text="{res:Loc prop.detail.histtable.group}" Grid.Row="61" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="HistGroupBox" Grid.Row="61" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblHistRowHeight" Text="{res:Loc prop.detail.histtable.rowheight}" Grid.Row="62" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="HistRowHeightBox" Grid.Row="62" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="60"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblHistScrollbar" Text="{res:Loc prop.detail.histtable.scrollbar}" Grid.Row="63" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="HistScrollbarCheck" Grid.Row="63" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblRecipeColumns" Text="{res:Loc prop.detail.recipe.columns}" Grid.Row="64" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="RecipeColumnsBox" Grid.Row="64" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblRecipeGroup" Text="{res:Loc prop.detail.recipe.group}" Grid.Row="65" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="RecipeGroupBox" Grid.Row="65" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblRecipeUnit" Text="{res:Loc prop.detail.recipe.unit}" Grid.Row="66" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="RecipeUnitCheck" Grid.Row="66" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblAsciiEncoding" Text="{res:Loc prop.detail.ascii.encoding}" Grid.Row="67" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="AsciiEncodingCombo" Grid.Row="67" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.ascii.encoding.gbk}" Tag="gbk"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.ascii.encoding.utf8}" Tag="utf8"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblAsciiMaxLen" Text="{res:Loc prop.detail.ascii.maxlen}" Grid.Row="68" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="AsciiMaxLenBox" Grid.Row="68" Grid.Column="1"
+                                        Value="32" Minimum="1" Maximum="64"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
                 </Expander>
 

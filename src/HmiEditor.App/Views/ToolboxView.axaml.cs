@@ -138,6 +138,11 @@ public partial class ToolboxView : UserControl
         HmiControlType.StateImage => "M3,4 L21,4 L21,20 L3,20 Z M3,16 L9,10 L13,14 L17,8 L21,12",   // 值换图：图片框+山
         HmiControlType.FrameAnim => "M4,6 L8,6 L8,18 L4,18 Z M10,6 L14,6 L14,18 L10,18 Z M16,6 L20,6 L20,18 L16,18 Z",   // 帧动画：三格
         HmiControlType.Shape => "M12,3 L21,20 L3,20 Z",   // 通用图元：三角形
+        HmiControlType.Chart => "M4,20 L4,4 M4,20 L21,20 M7,20 L7,12 M11,20 L11,8 M15,20 L15,14 M19,20 L19,6",   // 图表：柱
+        HmiControlType.XyCurve => "M4,20 L4,4 M4,20 L21,20 M7,17 L11,9 L15,13 L20,5",   // XY：散点折线
+        HmiControlType.HistoryTable => "M3,5 L21,5 M3,10 L21,10 M3,15 L21,15 M3,20 L21,20 M9,5 L9,20",   // 历史表：表格
+        HmiControlType.RecipeTable => "M3,5 L21,5 M3,10 L21,10 M3,15 L21,15 M3,20 L21,20 M15,5 L15,20",   // 配方表
+        HmiControlType.AsciiDisplay => "M4,7 L8,16 L12,7 M6,13 L10,13 M14,7 L14,16 L18,16 M14,12 L17,12",   // ASCII：字母 A
         _ => "M4,4 L20,4 L20,20 L4,20 Z",
     };
 
@@ -184,6 +189,11 @@ public partial class ToolboxView : UserControl
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.StateImage)), Services.ControlTypeTextKeys.Describe(HmiControlType.StateImage), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.StateImage));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.FrameAnim)), Services.ControlTypeTextKeys.Describe(HmiControlType.FrameAnim), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.FrameAnim));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Shape)), Services.ControlTypeTextKeys.Describe(HmiControlType.Shape), AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Shape));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Chart)), Services.ControlTypeTextKeys.Describe(HmiControlType.Chart), AppLocalization.Service[Lang.TbCatChart], HmiControlType.Chart));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.XyCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.XyCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.XyCurve));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.HistoryTable)), Services.ControlTypeTextKeys.Describe(HmiControlType.HistoryTable), AppLocalization.Service[Lang.TbCatChart], HmiControlType.HistoryTable));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.RecipeTable)), Services.ControlTypeTextKeys.Describe(HmiControlType.RecipeTable), AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.RecipeTable));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AsciiDisplay)), Services.ControlTypeTextKeys.Describe(HmiControlType.AsciiDisplay), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.AsciiDisplay));
     }
 
     // ── 拖拽 ──
