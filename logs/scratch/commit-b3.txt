@@ -1,0 +1,18 @@
+批次 3：新增 6 种高频控件（qrcode / message / enum_text / roller / state_image / frame_anim，v2.9.0）
+
+运行时六种全部分派（W_QRCODE/W_MESSAGE/W_ENUM_TEXT/W_ROLLER/W_STATE_IMAGE/W_FRAME_ANIM），
+编辑器侧一个都没有 —— 这一批补的是"画不出常见界面"的那一层。
+
+- 二维码：静态内容 + 深/浅色；message：级别 info/warn/error、自动消失、滚动、对齐；
+- 枚举文本：初值文字 + 颜色/字号/对齐（映射走**绑定的 map**，不读 props.map —— 填了会告警）；
+- 滚轮：选项按行、可见行数强制奇数（契约 3..7，运行时会自己 ++）；
+- 值换图 / 帧动画：多行「值:资源Id」与帧列表，走 _assets.SrcFor 解析，坏行只告警跳过。
+- 四种带 requires=widgets_ext 的自动声明 features（漏了运行时整页拒绝）。
+- 工具箱图标/条目、画布占位、默认尺寸、中英文案、枚举显示名一并补齐。
+- 版本 2.8.0 → 2.9.0。
+
+验证：dotnet test 全绿（2763 例）；新增 Export_Batch3Widgets_ReachThePageJson（断言
+qrcode/message/enum_text/roller 的 props 与 widgets_ext 声明）；宿主建页通过。
+
+state_image / frame_anim 的夹具暂未加（导出测试的 assets 是 null，两者会正确地报
+"图片导不出来"而不是静默通过）—— 真实工程里有图片资产时按同一套 SrcFor 解析。

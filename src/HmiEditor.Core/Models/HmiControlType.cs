@@ -42,5 +42,11 @@ public enum HmiControlType
     AlarmList,   // 报警列表（数据来自 alarms.json，可确认）
     HistoryCurve,  // 历史曲线（数据来自 trends.json / savecfg.json 的存盘组）
     RealtimeCurve, // 实时曲线（数据来自 sim 采样，按 sample_ms 滚动）
-    AlarmBar,      // 报警条（单行滚动显示最新一条报警）
+    AlarmBar,      // 报警条（单行滚动显示最新一条报警）,
+    QrCode,        // 二维码（静态内容或绑字符串变量）
+    Message,       // 消息条（info/warn/error，可自动消失）,
+    EnumText,      // 枚举文本（值 → 文字/颜色，映射走绑定层）
+    Roller,        // 滚轮选择,
+    StateImage,    // 值 → 图片
+    FrameAnim,     // 帧动画
 }

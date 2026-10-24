@@ -298,6 +298,45 @@ public class ChengeExportTests : IDisposable
         Assert.False(props.TryGetProperty("kind", out _));   // 不再是 shape
     }
 
+    /// <summary>
+    /// 批次 3：二维码 / 消息条 / 枚举文本 / 滚轮的属性要落进 JSON，且取值合法。
+    /// </summary>
+    [Fact]
+    public void Export_Batch3Widgets_ReachThePageJson()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var byType = page.GetProperty("widgets").EnumerateArray()
+            .GroupBy(w => w.GetProperty("type").GetString()!)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var qr = byType["qrcode"][0].GetProperty("props");
+        Assert.Equal("https://example.com/hmi", qr.GetProperty("text").GetString());
+        Assert.Equal("#102030", qr.GetProperty("dark_color").GetString());
+        Assert.Equal("#F0F0F0", qr.GetProperty("light_color").GetString());
+
+        var msg = byType["message"][0].GetProperty("props");
+        Assert.Equal("温度偏高", msg.GetProperty("text").GetString());
+        Assert.Equal("warn", msg.GetProperty("level").GetString());
+        Assert.Equal(5000, msg.GetProperty("auto_hide_ms").GetInt32());
+        Assert.True(msg.GetProperty("marquee").GetBoolean());
+
+        var en = byType["enum_text"][0].GetProperty("props");
+        Assert.Equal("运行中", en.GetProperty("text").GetString());
+
+        var roller = byType["roller"][0].GetProperty("props");
+        Assert.Equal(3, roller.GetProperty("options").GetArrayLength());
+        Assert.Equal("中班", roller.GetProperty("options")[1].GetString());
+        // visible_rows 必须是奇数：填 4 → 5
+        Assert.Equal(5, roller.GetProperty("visible_rows").GetInt32());
+
+        // 三种控件都声明了 widgets_ext（运行时对它们有 requires 检查）
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "manifest.json"))).RootElement;
+        Assert.Contains("widgets_ext", manifest.GetProperty("features").EnumerateArray().Select(f => f.GetString()));
+    }
+
     [Fact]
     public void Export_AllPropsAreDeclaredInSchema()
     {

@@ -131,6 +131,12 @@ public partial class ToolboxView : UserControl
         HmiControlType.HistoryCurve => "M4,19 L4,5 M4,19 L21,19 M5,16 L9,10 L13,14 L19,7",    // 曲线：坐标轴+折线
         HmiControlType.RealtimeCurve => "M4,19 L4,5 M4,19 L21,19 M5,15 L9,9 L13,13 L19,6 M20,4 L20,8 M18,6 L22,6",  // 实时曲线：折线+时钟
         HmiControlType.AlarmBar => "M3,10 L21,10 M3,14 L17,14 M3,18 L20,18 M3,6 L8,6",   // 报警条：单行滚动
+        HmiControlType.QrCode => "M4,4 L9,4 L9,9 L4,9 Z M15,4 L20,4 L20,9 L15,9 Z M4,15 L9,15 L9,20 L4,20 Z M13,13 L20,13 L20,20 L13,20",  // 二维码
+        HmiControlType.Message => "M3,8 L21,8 L21,18 L14,18 L10,21 L10,18 L3,18 Z",   // 消息条
+        HmiControlType.EnumText => "M4,7 L20,7 M4,13 L16,13 M4,19 L12,19",   // 枚举文本：几行字
+        HmiControlType.Roller => "M5,5 L19,5 M5,12 L19,12 M5,19 L19,19 M8,8 L8,10 M8,15 L8,17",   // 滚轮：多条+选中线
+        HmiControlType.StateImage => "M3,4 L21,4 L21,20 L3,20 Z M3,16 L9,10 L13,14 L17,8 L21,12",   // 值换图：图片框+山
+        HmiControlType.FrameAnim => "M4,6 L8,6 L8,18 L4,18 Z M10,6 L14,6 L14,18 L10,18 Z M16,6 L20,6 L20,18 L16,18 Z",   // 帧动画：三格
         _ => "M4,4 L20,4 L20,20 L4,20 Z",
     };
 
@@ -170,6 +176,12 @@ public partial class ToolboxView : UserControl
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.HistoryCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.HistoryCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.HistoryCurve));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.RealtimeCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.RealtimeCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.RealtimeCurve));
         _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AlarmBar)), Services.ControlTypeTextKeys.Describe(HmiControlType.AlarmBar), AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.AlarmBar));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.QrCode)), Services.ControlTypeTextKeys.Describe(HmiControlType.QrCode), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.QrCode));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Message)), Services.ControlTypeTextKeys.Describe(HmiControlType.Message), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Message));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.EnumText)), Services.ControlTypeTextKeys.Describe(HmiControlType.EnumText), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.EnumText));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Roller)), Services.ControlTypeTextKeys.Describe(HmiControlType.Roller), AppLocalization.Service[Lang.TbCatInput], HmiControlType.Roller));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.StateImage)), Services.ControlTypeTextKeys.Describe(HmiControlType.StateImage), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.StateImage));
+        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.FrameAnim)), Services.ControlTypeTextKeys.Describe(HmiControlType.FrameAnim), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.FrameAnim));
     }
 
     // ── 拖拽 ──

@@ -222,6 +222,61 @@ public class HmiControl
     /// <summary>Pipe：通道底色（契约 channel_color，空 = 用流动色的浅色版）。</summary>
     public string? PipeChannelColor { get; set; }
 
+    // ── 批次 3：二维码 / 消息条 ──
+
+    /// <summary>QrCode：静态内容（绑字符串变量时可为空）。</summary>
+    public string? QrText { get; set; }
+
+    /// <summary>QrCode：深色模块颜色（空 = #000000）。</summary>
+    public string? QrDarkColor { get; set; }
+
+    /// <summary>QrCode：浅色底色（空 = #FFFFFF）。</summary>
+    public string? QrLightColor { get; set; }
+
+    /// <summary>Message：显示的文字（可绑字符串变量）。</summary>
+    public string? MessageText { get; set; }
+
+    /// <summary>Message：级别 info / warn / error（决定底色与图标）。</summary>
+    public string? MessageLevel { get; set; }
+
+    /// <summary>Message：到点自动清空的毫秒数（0 = 常驻）。</summary>
+    public int MessageAutoHideMs { get; set; }
+
+    /// <summary>Message：超宽时滚动。</summary>
+    public bool MessageMarquee { get; set; }
+
+    // ── 批次 3：枚举文本 / 滚轮 ──
+
+    /// <summary>EnumText：首次显示的文字（之后由绑定刷新）。</summary>
+    public string? EnumTextValue { get; set; }
+
+    /// <summary>
+    /// EnumText：值 → 文字/颜色的映射，每行 <c>值:文本[:颜色]</c>。
+    /// 注意：运行时从**绑定的 map** 读（<c>bind[].map</c>），不是 <c>props.map</c> ——
+    /// 所以这里填了只会导出成告警提示，真正生效要在绑定的 map 里配。
+    /// </summary>
+    public string? EnumTextMap { get; set; }
+
+    /// <summary>Roller：选项文字（每行一个，最多 32 项）。</summary>
+    public string? RollerOptions { get; set; }
+
+    /// <summary>Roller：可见行数（契约要求奇数 3..7）。</summary>
+    public int RollerVisibleRows { get; set; } = 3;
+
+    // ── 批次 3：值换图 / 帧动画 ──
+
+    /// <summary>StateImage：值 → 图片的映射，每行 <c>值:资源Id</c>（1..16 项，值不可重复）。</summary>
+    public string? StateImages { get; set; }
+
+    /// <summary>FrameAnim：帧图片资源 Id（每行一个，按顺序播放）。</summary>
+    public string? FrameImages { get; set; }
+
+    /// <summary>FrameAnim：每帧时长毫秒（契约默认 120）。</summary>
+    public int FrameIntervalMs { get; set; } = 120;
+
+    /// <summary>FrameAnim：循环播放。</summary>
+    public bool FrameLoop { get; set; } = true;
+
     /// <summary>阀门类型（Valve：Ball/Gate/Butterfly/Globe）。默认 Ball。</summary>
     public string? ValveType { get; set; }
 

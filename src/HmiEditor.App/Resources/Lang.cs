@@ -1296,6 +1296,12 @@ public static class Lang
     public const string TbHistoryCurve = "tb.historycurve";
     public const string TbRealtimeCurve = "tb.realtimecurve";
     public const string TbAlarmBar = "tb.alarmbar";
+    public const string TbQrCode = "tb.qrcode";
+    public const string TbMessage = "tb.message";
+    public const string TbEnumText = "tb.enumtext";
+    public const string TbRoller = "tb.roller";
+    public const string TbStateImage = "tb.stateimage";
+    public const string TbFrameAnim = "tb.frameanim";
     public const string LiveLibMissing = "live.lib_missing";
     public const string LiveCrashedGiveup = "live.crashed.giveup";
 

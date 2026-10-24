@@ -91,6 +91,12 @@ public partial class DesignCanvas : Control
         HmiControlType.HistoryCurve => (400.0, 180.0),
         HmiControlType.RealtimeCurve => (400.0, 180.0),
         HmiControlType.AlarmBar => (400.0, 32.0),
+        HmiControlType.QrCode => (120.0, 120.0),
+        HmiControlType.Message => (400.0, 44.0),
+        HmiControlType.EnumText => (160.0, 32.0),
+        HmiControlType.Roller => (160.0, 120.0),
+        HmiControlType.StateImage => (120.0, 120.0),
+        HmiControlType.FrameAnim => (120.0, 120.0),
         _ => (100.0, 40.0)
     };
 

@@ -320,6 +320,87 @@ internal sealed class ChengeWidgetMapper
                 MapAlarmBar(props, control, where);
                 break;
 
+            case HmiControlType.QrCode:
+                if (!string.IsNullOrWhiteSpace(control.QrText)) props["text"] = control.QrText!.Trim();
+                if (_colors.Resolve(control.QrDarkColor ?? "", where) is { } qd) props["dark_color"] = qd;
+                if (_colors.Resolve(control.QrLightColor ?? "", where) is { } ql) props["light_color"] = ql;
+                _features.Add("widgets_ext");
+                break;
+
+            case HmiControlType.EnumText:
+                props["text"] = control.EnumTextValue ?? control.Text ?? "";
+                SetFont(props, control, DefaultFont(16));
+                props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
+                props["align"] = Align(control.TextAlign);
+                props["valign"] = VAlign(control.TextVAlign);
+                // 契约里 props.map 存在，但运行时只读 **bind[].map**（ui_binding.c），
+                // 写了也不生效 —— 与其静默丢弃，不如在导出结果里点出来。
+                if (!string.IsNullOrWhiteSpace(control.EnumTextMap))
+                    _issues.Warn("enum_text.map", where,
+                        "枚举映射要配在**绑定的 map** 里：运行时不读 props.map（写了不生效）");
+                break;
+
+            case HmiControlType.Roller:
+                var opts = (control.RollerOptions ?? "").Replace("\r", "")
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim()).Where(t => t.Length > 0).Take(32).ToArray();
+                if (opts.Length == 0)
+                {
+                    _issues.Error("roller.options", where, "滚轮没有选项（契约要求 options 1..32 项）");
+                    return null;
+                }
+                var optArr = new JsonArray();
+                foreach (var t in opts) optArr.Add(t);
+                props["options"] = optArr;
+                props["visible_rows"] = Odd(Clamp(control.RollerVisibleRows, 3, 7));
+                SetFont(props, control, DefaultFont(16));
+                _features.Add("widgets_ext");
+                break;
+
+            case HmiControlType.StateImage:
+                var states = ParseAssetPairs(control.StateImages, where, "state_image");
+                if (states.Count == 0)
+                {
+                    _issues.Error("state_image.images", where, "值换图至少要有一项（契约 images 1..16 项）");
+                    return null;
+                }
+                props["images"] = states;
+                _features.Add("widgets_ext");
+                break;
+
+            case HmiControlType.FrameAnim:
+                var frames = new JsonArray();
+                foreach (var assetId in SplitLines(control.FrameImages).Take(60))
+                {
+                    var frameSrc = _assets.SrcFor(assetId, where);
+                    if (frameSrc == null)
+                    {
+                        _issues.Warn("frame_anim.frame", where, $"帧动画的图片 {assetId} 导不出来，已跳过这一帧");
+                        continue;
+                    }
+                    frames.Add(frameSrc);
+                }
+                if (frames.Count == 0)
+                {
+                    _issues.Error("frame_anim.frames", where, "帧动画没有可用的帧图片（先导入图片资产）");
+                    return null;
+                }
+                props["frames"] = frames;
+                props["interval_ms"] = Clamp(control.FrameIntervalMs, 20, 5000);
+                props["loop"] = control.FrameLoop;
+                _features.Add("widgets_ext");
+                break;
+
+            case HmiControlType.Message:
+                props["text"] = control.MessageText ?? "";
+                props["level"] = OneOf(control.MessageLevel, "info", "warn", "error", "info", where, "message.level");
+                props["align"] = Align(control.TextAlign);
+                props["marquee"] = control.MessageMarquee;
+                if (control.MessageAutoHideMs > 0)
+                    props["auto_hide_ms"] = Clamp(control.MessageAutoHideMs, 100, 600_000);
+                _features.Add("widgets_ext");
+                break;
+
             case HmiControlType.Screen:
                 _issues.Warn("screen.not_exported", where, "嵌套屏幕控件不导出（页面切换用 goto_page 动作）");
                 return null;
@@ -728,6 +809,52 @@ internal sealed class ChengeWidgetMapper
         return fallback;
     }
 
+    /// <summary>按行切分（去空行、trim）。</summary>
+    private static IEnumerable<string> SplitLines(string? text)
+        => (text ?? "").Replace("\r", "").Split('\n')
+            .Select(x => x.Trim()).Where(x => x.Length > 0);
+
+    /// <summary>
+    /// 解析 <c>值:资源Id</c> 多行 → <c>[{v, src}]</c>。
+    /// 值重复、资源导不出来都只告警跳过（一个错行不该让整页导不出去）。
+    /// </summary>
+    private JsonArray ParseAssetPairs(string? text, string where, string code)
+    {
+        var arr = new JsonArray();
+        var seen = new HashSet<double>();
+
+        foreach (var line in SplitLines(text).Take(16))
+        {
+            var idx = line.IndexOf(':');
+            if (idx <= 0)
+            {
+                _issues.Warn(code + ".pair", where, $"「{line}」不是 值:资源Id 的写法，已跳过");
+                continue;
+            }
+            if (!double.TryParse(line[..idx].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
+            {
+                _issues.Warn(code + ".value", where, $"「{line}」的值不是数字，已跳过");
+                continue;
+            }
+            if (!seen.Add(v))
+            {
+                _issues.Warn(code + ".dup", where, $"值 {v} 重复，已跳过后一项");
+                continue;
+            }
+            var assetSrc = _assets.SrcFor(line[(idx + 1)..].Trim(), where);
+            if (assetSrc == null)
+            {
+                _issues.Warn(code + ".asset", where, $"「{line}」的图片导不出来，已跳过");
+                continue;
+            }
+            arr.Add(new JsonObject { ["v"] = v, ["src"] = assetSrc });
+        }
+        return arr;
+    }
+
+    /// <summary>滚轮的可见行数必须是奇数（选中行才在正中）。</summary>
+    private static int Odd(int v) => (v & 1) == 1 ? v : v + 1;
+
     /// <summary>页签位置：编辑器存 Top/Bottom/Left/Right，契约要小写 top/bottom/left/right。</summary>
     private static string TabPosOf(string? pos) => (pos ?? "").Trim().ToLowerInvariant() switch
     {
@@ -1078,6 +1205,12 @@ internal sealed class ChengeWidgetMapper
             HmiControlType.HistoryCurve => "history_curve",
             HmiControlType.RealtimeCurve => "realtime_curve",
             HmiControlType.AlarmBar => "alarm_bar",
+            HmiControlType.QrCode => "qrcode",
+            HmiControlType.Message => "message",
+            HmiControlType.EnumText => "enum_text",
+            HmiControlType.Roller => "roller",
+            HmiControlType.StateImage => "state_image",
+            HmiControlType.FrameAnim => "frame_anim",
             HmiControlType.Screen => null,
             _ => null,
         };

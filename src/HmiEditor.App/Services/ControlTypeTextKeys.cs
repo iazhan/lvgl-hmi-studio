@@ -91,5 +91,11 @@ internal static class ControlTypeTextKeys
         HmiControlType.HistoryCurve => AppLocalization.Service[Lang.TbHistoryCurve],
         HmiControlType.RealtimeCurve => AppLocalization.Service[Lang.TbRealtimeCurve],
         HmiControlType.AlarmBar => AppLocalization.Service[Lang.TbAlarmBar],
+        HmiControlType.QrCode => AppLocalization.Service[Lang.TbQrCode],
+        HmiControlType.Message => AppLocalization.Service[Lang.TbMessage],
+        HmiControlType.EnumText => AppLocalization.Service[Lang.TbEnumText],
+        HmiControlType.Roller => AppLocalization.Service[Lang.TbRoller],
+        HmiControlType.StateImage => AppLocalization.Service[Lang.TbStateImage],
+        HmiControlType.FrameAnim => AppLocalization.Service[Lang.TbFrameAnim],
     };
 }

@@ -846,6 +846,27 @@ public partial class DesignCanvas : Control
                 RenderDataWidgetPlaceholder(context, control, rect, z,
                     $"{control.AlarmGroupFilter} · {control.AlarmOrder}");
                 return;
+            case HmiControlType.QrCode:
+                RenderDataWidgetPlaceholder(context, control, rect, z, "QR");
+                return;
+            case HmiControlType.Message:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    $"{control.MessageLevel} · {control.MessageText}");
+                return;
+            case HmiControlType.EnumText:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    control.EnumTextValue ?? control.Text ?? "enum");
+                return;
+            case HmiControlType.Roller:
+                RenderDataWidgetPlaceholder(context, control, rect, z,
+                    control.RollerOptions?.Split('\n').FirstOrDefault() ?? "roller");
+                return;
+            case HmiControlType.StateImage:
+                RenderDataWidgetPlaceholder(context, control, rect, z, "state");
+                return;
+            case HmiControlType.FrameAnim:
+                RenderDataWidgetPlaceholder(context, control, rect, z, $"frames · {control.FrameIntervalMs}ms");
+                return;
             case HmiControlType.Button:
                 RenderButton(context, control, rect, z);
                 return;

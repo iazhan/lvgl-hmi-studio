@@ -151,6 +151,26 @@ internal static class ExportFixture
         });
         screen.Controls.Add(new HmiControl
         {
+            Id = "c16", Type = HmiControlType.QrCode, Name = "Qr1", X = 640, Y = 300, Width = 120, Height = 120,
+            QrText = "https://example.com/hmi", QrDarkColor = "#102030", QrLightColor = "#F0F0F0",
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c17", Type = HmiControlType.Message, Name = "Msg1", X = 20, Y = 350, Width = 400, Height = 44,
+            MessageText = "温度偏高", MessageLevel = "warn", MessageAutoHideMs = 5000, MessageMarquee = true,
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c18", Type = HmiControlType.EnumText, Name = "Enum1", X = 440, Y = 350, Width = 160, Height = 32,
+            EnumTextValue = "运行中",
+        });
+        screen.Controls.Add(new HmiControl
+        {
+            Id = "c19", Type = HmiControlType.Roller, Name = "Roller1", X = 620, Y = 350, Width = 160, Height = 120,
+            RollerOptions = "白班\n中班\n夜班", RollerVisibleRows = 4,
+        });
+        screen.Controls.Add(new HmiControl
+        {
             Id = "c15", Type = HmiControlType.Pipe, Name = "Pipe1", X = 20, Y = 380, Width = 260, Height = 24,
             PipeDirection = "Vertical", PipeWall = 0.3, PipeFlowSpeed = 500,
             PipeChannelColor = "#223344", IndicatorColor = "#4EA1FF",
