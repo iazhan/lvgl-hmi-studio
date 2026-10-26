@@ -1473,31 +1473,13 @@ public partial class MainWindow : Window
         var selectedControls = CanvasPanel.Canvas.GetSelectedControls();
         if (selectedControls.Count == 0) return;
 
-        var controls = selectedControls
-            .Select(control => (Control: control, Index: _currentScreen.Controls.IndexOf(control)))
-            .Where(item => item.Index >= 0)
-            .OrderByDescending(item => item.Index)
-            .ToList();
-        if (controls.Count == 0) return;
+        // 层级感知删除（含容器子控件）：撤销/重做由画布命令栈负责
+        if (!CanvasPanel.Canvas.DeleteControlsWithHistory(selectedControls)) return;
 
-        _undoRedoManager.Execute(new SnapshotCommand(
-            controls.Count == 1 ? LocService[Lang.UndoDeleteControl] : LocService.Format(Lang.UndoDeleteControls, controls.Count),
-            () =>
-            {
-                foreach (var item in controls.OrderBy(item => item.Index))
-                    if (!_currentScreen.Controls.Contains(item.Control))
-                        _currentScreen.Controls.Insert(item.Index, item.Control);
-            },
-            () =>
-            {
-                foreach (var item in controls)
-                    _currentScreen.Controls.Remove(item.Control);
-            }));
-
-        CanvasPanel.Canvas.ClearSelection();
         PropertyPanel.BindControl(null);
-        CanvasPanel.Refresh();
         ProjectExplorerPanel.Refresh(_currentScreen);
+        LayerPanel.Refresh();
+        CanvasPanel.Refresh();
         BtnDeleteControl.IsVisible = false;
         SetAlignmentGroupVisible(false);
         SetUnsavedChanges(true);

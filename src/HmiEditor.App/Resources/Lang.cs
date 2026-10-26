@@ -1250,6 +1250,8 @@ public static class Lang
     public const string PropScreenSafeBottom  = "prop.screen.safe.bottom";
     public const string PropScreenInteraction = "prop.screen.interaction";
     public const string PropScreenBoot        = "prop.screen.boot";
+    /// <summary>属性面板信息行：容器图元的子控件数（{0} = 个数）。</summary>
+    public const string PropContainerChildren = "prop.container.children";
     public const string FontNoVisibleText    = "font.no.visible.text";
     public const string FontExportTitle      = "font.export.title";
     public const string FontFiletypeTxt      = "font.filetype.txt";
@@ -1847,7 +1849,6 @@ public static class Lang
     public const string UiOpApplySvg             = "ui.op.apply.svg";
     public const string StatusFileNotFound       = "status.file.not.found";
     public const string StatusThemeSwitched      = "status.theme.switched";
-    public const string UndoDeleteControl        = "undo.delete.control";
     public const string UndoDeleteControls       = "undo.delete.controls";
     public const string UndoRotate               = "undo.rotate";
     public const string UndoMirrorH              = "undo.mirror.h";
@@ -1860,6 +1861,7 @@ public static class Lang
     public const string UndoDeleteControlNamed     = "undo.delete.control.named";
     public const string UndoResizeControl          = "undo.resize.control";
     public const string UndoMoveControl            = "undo.move.control";
+    public const string UndoAttachContainer        = "undo.attach.container";
     public const string CommSlaveStation           = "comm.slave.station";
     public const string DefaultImagePlaceholder    = "default.image.placeholder";
     public const string ThemeDescDark              = "theme.desc.dark";

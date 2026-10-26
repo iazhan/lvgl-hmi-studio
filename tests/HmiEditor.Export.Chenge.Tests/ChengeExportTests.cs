@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using HmiEditor.Core;
 using HmiEditor.Core.Models;
 using Xunit;
 
@@ -409,12 +410,28 @@ public class ChengeExportTests : IDisposable
         var schema = ChengeSchema.Load();
         var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
         foreach (var widget in page.GetProperty("widgets").EnumerateArray())
+            AssertWidgetPropsDeclared(widget, schema);
+    }
+
+    /// <summary>
+    /// 递归断言 props 全在契约白名单里 —— 容器子控件与屏幕内控件同格式，一样要过
+    /// <see cref="ChengeSchema.AllowedProps"/>（运行时的 schema_check_props 按 kind 取表，
+    /// 非 container 的 shape 写 children 会直接拒绝整页）。
+    /// </summary>
+    private static void AssertWidgetPropsDeclared(JsonElement widget, ChengeSchema schema)
+    {
+        var type = widget.GetProperty("type").GetString()!;
+        var props = widget.GetProperty("props");
+        var kind = props.TryGetProperty("kind", out var k) ? k.GetString() : null;
+        var allowed = schema.AllowedProps(type, kind);
+        foreach (var prop in props.EnumerateObject())
+            Assert.True(allowed.Contains(prop.Name), $"{type} 写了契约外属性 {prop.Name}");
+
+        if (props.TryGetProperty("children", out var children) &&
+            children.ValueKind == JsonValueKind.Array)
         {
-            var type = widget.GetProperty("type").GetString()!;
-            var kind = widget.GetProperty("props").TryGetProperty("kind", out var k) ? k.GetString() : null;
-            var allowed = schema.AllowedProps(type, kind);
-            foreach (var prop in widget.GetProperty("props").EnumerateObject())
-                Assert.True(allowed.Contains(prop.Name), $"{type} 写了契约外属性 {prop.Name}");
+            foreach (var child in children.EnumerateArray())
+                AssertWidgetPropsDeclared(child, schema);
         }
     }
 
@@ -469,6 +486,171 @@ public class ChengeExportTests : IDisposable
         Assert.Equal(diskFiles, mem.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList());
         foreach (var rel in diskFiles)
             Assert.Equal(File.ReadAllBytes(Path.Combine(dir, rel)), mem[rel]);
+    }
+
+    /// <summary>
+    /// 容器子控件：放进容器的两个控件必须导成 <c>props.children</c>（坐标相对容器），
+    /// 且不写 <c>layout</c>（契约枚举只有 free，默认值不写）。
+    /// 这是编辑器侧"容器能放子控件"的唯一契约出口，坐标相对值是运行时的硬约定。
+    /// </summary>
+    [Fact]
+    public void Export_ContainerChildren_ReachThePageJsonWithRelativeCoordinates()
+    {
+        var project = ExportFixture.Build();
+        var screen = project.Screens[0];
+
+        var container = new HmiControl
+        {
+            Id = "c_cont", Name = "Container1", Type = HmiControlType.Shape, ShapeKind = "container",
+            X = 660, Y = 220, Width = 120, Height = 70,
+            BgColor = "#1F2937", BorderColor = "#4A5A6A", BorderWidth = 1,
+        };
+        // 模型不变量：子控件的 X/Y 就是相对容器的值（画布挂入时由 AttachAt 换算）
+        var label = new HmiControl
+        {
+            Id = "c_kid1", Name = "ChildLabel", Type = HmiControlType.Label,
+            X = 10, Y = 8, Width = 100, Height = 24, Text = "子控件", FontSize = 16, TextColor = "#FFFFFF",
+        };
+        var value = new HmiControl
+        {
+            Id = "c_kid2", Name = "ChildValue", Type = HmiControlType.Value,
+            X = 10, Y = 38, Width = 100, Height = 24, FontSize = 16, TextColor = "#00E676",
+        };
+        ContainerHierarchy.Attach(container, label);
+        ContainerHierarchy.Attach(container, value);
+        screen.Controls.Add(container);
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var page = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "pages", "home.json"))).RootElement;
+        var shape = page.GetProperty("widgets").EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "shape"
+                        && w.GetProperty("props").GetProperty("kind").GetString() == "container");
+
+        var props = shape.GetProperty("props");
+        var children = props.GetProperty("children");
+        Assert.Equal(2, children.GetArrayLength());
+
+        // 坐标是相对容器的值（Attach 换算后模型里存的就是相对值，导出原样写）
+        Assert.Equal(660, shape.GetProperty("x").GetInt32());
+        Assert.Equal(220, shape.GetProperty("y").GetInt32());
+        Assert.Equal(10, children[0].GetProperty("x").GetInt32());
+        Assert.Equal(8, children[0].GetProperty("y").GetInt32());
+        Assert.Equal(10, children[1].GetProperty("x").GetInt32());
+        Assert.Equal(38, children[1].GetProperty("y").GetInt32());
+
+        // 子控件节点与屏幕内控件同格式（id/type/x/y/w/h/props 一样不缺）
+        Assert.Equal("label", children[0].GetProperty("type").GetString());
+        Assert.Equal("子控件", children[0].GetProperty("props").GetProperty("text").GetString());
+        Assert.Equal("value", children[1].GetProperty("type").GetString());
+        Assert.True(children[0].TryGetProperty("id", out _));
+        Assert.True(children[0].TryGetProperty("w", out _));
+        Assert.True(children[0].TryGetProperty("h", out _));
+
+        // layout 不写：契约枚举只有 free 且是默认值（写了只是多一个键）
+        Assert.False(props.TryGetProperty("layout", out _));
+    }
+
+    /// <summary>
+    /// 容器 + 子控件真跑宿主运行时：需要 CHENGE_RUNTIME_DIR。
+    /// 判定"建页成功"用日志锚点 + 截图非黑（纯黑 = 页面根本没建出来）。
+    /// </summary>
+    [Fact]
+    public void ExportedProject_ContainerChildren_LoadInHostRuntime()
+    {
+        var runtimeDir = Environment.GetEnvironmentVariable("CHENGE_RUNTIME_DIR");
+        var binary = runtimeDir == null ? null : Path.Combine(runtimeDir, "chenge-runtime");
+        if (binary == null || !File.Exists(binary))
+            return; // 跳过：没有宿主二进制
+
+        var project = ExportFixture.Build();
+        var container = new HmiControl
+        {
+            Id = "c_cont", Name = "Container1", Type = HmiControlType.Shape, ShapeKind = "container",
+            X = 660, Y = 220, Width = 120, Height = 70,
+            BgColor = "#1F2937", BorderColor = "#4A5A6A", BorderWidth = 1,
+        };
+        // 模型不变量：子控件的 X/Y 就是相对容器的值
+        var label = new HmiControl
+        {
+            Id = "c_kid1", Name = "ChildLabel", Type = HmiControlType.Label,
+            X = 10, Y = 8, Width = 100, Height = 24, Text = "子控件", FontSize = 16, TextColor = "#FFFFFF",
+        };
+        var value = new HmiControl
+        {
+            Id = "c_kid2", Name = "ChildValue", Type = HmiControlType.Value,
+            X = 10, Y = 38, Width = 100, Height = 24, FontSize = 16, TextColor = "#00E676",
+        };
+        ContainerHierarchy.Attach(container, label);
+        ContainerHierarchy.Attach(container, value);
+        project.Screens[0].Controls.Add(container);
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var shot = Path.Combine(_dir, "shot.bmp");
+        var psi = new ProcessStartInfo(binary)
+        {
+            WorkingDirectory = runtimeDir!,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        psi.Environment["SDL_VIDEODRIVER"] = "dummy";
+        psi.Environment["HMI_PROJECT_DIR"] = _dir;
+        psi.Environment["HMI_DATA_DIR"] = Path.Combine(_dir, "data");
+        psi.Environment["HMI_SHOT"] = shot;
+        psi.Environment["HMI_RT_TRACE"] = "1";
+
+        using var process = Process.Start(psi)!;
+        var stdout = process.StandardOutput.ReadToEnd();
+        var stderr = process.StandardError.ReadToEnd();
+        Assert.True(process.WaitForExit(20000), "运行时 20s 未退出");
+
+        var log = stdout + stderr;
+        Assert.True(log.Contains("page: home 打开"), log);
+        Assert.True(File.Exists(shot), "没有产出截图：" + log);
+
+        // 截图非黑：整页黑 = 建页失败后SDL 出的一张空帧（页面背景 #101820 也不是纯黑）
+        Assert.True(NonBlackFraction(shot) > 0.5,
+            $"截图几乎全黑（非黑像素占比 {NonBlackFraction(shot):P1}）：{log}");
+    }
+
+    /// <summary>
+    /// SDL_SaveBMP 产出的 24/32bpp BMP 里"非纯黑"像素占比。
+    /// 行底向上、行宽 4 字节对齐；解析只用于判定"这张图不是全黑"，不做像素级比对。
+    /// </summary>
+    private static double NonBlackFraction(string bmpPath)
+    {
+        var bytes = File.ReadAllBytes(bmpPath);
+        if (bytes.Length < 54 || bytes[0] != (byte)'B' || bytes[1] != (byte)'M')
+            throw new InvalidOperationException("不是 BMP 文件");
+
+        var pixelOffset = BitConverter.ToInt32(bytes, 10);
+        var width = BitConverter.ToInt32(bytes, 18);
+        var height = Math.Abs(BitConverter.ToInt32(bytes, 22));
+        var bpp = BitConverter.ToInt16(bytes, 28);
+        var bytesPerPixel = bpp switch
+        {
+            24 => 3,
+            32 => 4,
+            _ => throw new InvalidOperationException($"意外的位深 {bpp}"),
+        };
+        var rowSize = (width * bytesPerPixel + 3) & ~3;
+
+        long nonBlack = 0;
+        long total = 0;
+        for (var y = 0; y < height; y++)
+        {
+            var row = pixelOffset + y * rowSize;
+            for (var x = 0; x < width; x++)
+            {
+                var p = row + x * bytesPerPixel;
+                total++;
+                if (bytes[p] != 0 || bytes[p + 1] != 0 || bytes[p + 2] != 0) nonBlack++;
+            }
+        }
+        return total == 0 ? 0 : (double)nonBlack / total;
     }
 
     /// <summary>

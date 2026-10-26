@@ -220,15 +220,16 @@ public class ControlDefaultNameTests
         (string File, int Count)[] surfaces =
         [
             ("Controls/DesignCanvas.cs", 1),                                  // Text 为空时的回落标签
+            ("Controls/DesignCanvas.Hierarchy.cs", 1),                        // 层级感知删除的撤销描述
             ("Controls/DesignCanvas.IndustrialRenderers.cs", 3),              // 过程图形位号文字
             ("Controls/DesignCanvas.Renderers.cs", 4),                        // 多处渲染支的回落标签
-            ("Controls/UndoRedoManager.cs", 4),                               // 移动/新增/删除/修改四条撤销描述
+            ("Controls/UndoRedoManager.cs", 5),                               // 移动/新增/删除/修改/放入容器五条撤销描述
             ("MainWindow.axaml.cs", 3),                                       // 撤销描述 ＋ 多选/单选两条状态栏
             ("Views/AnimationEditorView.axaml.cs", 1),                        // 动画「目标控件」下拉
             ("Views/ProjectExplorerView.axaml.cs", 3),                        // 树节点 ＋ 改名预填 ＋ 改名提示
             ("Views/PropertyPanelView.axaml.cs", 2),                          // 标题行 ＋ 名称输入框
             ("Views/ReferenceRow.cs", 1),                                     // 交叉引用「控件名」列
-            ("Wiring.DockAggregate.cs", 2),                                   // 删除快照描述 ＋ 预览状态栏
+            ("Wiring.DockAggregate.cs", 1),                                   // 预览状态栏（删除快照描述已移入画布层级命令）
         ];
 
         var problems = new List<string>();

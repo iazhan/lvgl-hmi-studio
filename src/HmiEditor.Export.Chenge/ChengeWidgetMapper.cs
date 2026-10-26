@@ -397,6 +397,9 @@ internal sealed class ChengeWidgetMapper
                 MapShapeCommon(props, control, where);
                 if (kind is "polygon" or "polyline")
                     props["points"] = PointsOf(control, where);
+                // 容器：子控件递归导进 props.children（坐标相对容器，运行时 flatten_widgets 展开）
+                if (string.Equals(kind, "container", StringComparison.Ordinal))
+                    MapContainerChildren(props, control, pageId, widgetId);
                 break;
 
             case HmiControlType.Chart:
@@ -815,6 +818,29 @@ internal sealed class ChengeWidgetMapper
         props["border_color"] = _colors.ResolveOr(control.BorderColor, _colors.Border, where);
         props["border_width"] = Math.Max(0, control.BorderWidth);
         if (control.Radius > 0) props["radius"] = control.Radius;
+    }
+
+    /// <summary>
+    /// 容器的子控件 → <c>props.children</c>（37 §6.4：数组，坐标<b>相对容器</b>）。
+    /// 子控件节点与屏幕内控件走同一个 <see cref="Map"/>（同格式、同绑定/事件），
+    /// 坐标直接用模型里的相对值，不叠加任何原点。
+    ///
+    /// <para><b>不写 <c>layout</c></b>：契约枚举只有 <c>free</c> 一个值且是默认值，
+    /// 写了只会多一个键（v1 没有自动布局，别引入）。</para>
+    /// </summary>
+    private void MapContainerChildren(JsonObject props, HmiControl control, string pageId, string widgetId)
+    {
+        if (control.Children.Count == 0) return;   // 空容器不写 children（契约默认 null）
+        var children = new JsonArray();
+        var seq = 0;
+        foreach (var child in control.Children)
+        {
+            seq++;
+            var childWidget = Map(child, pageId, $"{widgetId}_{seq}");
+            if (childWidget == null) continue;     // 跳过时 issues 里已有原因
+            children.Add(childWidget);
+        }
+        if (children.Count > 0) props["children"] = children;
     }
 
     private JsonArray PointsOf(HmiControl control, string where)

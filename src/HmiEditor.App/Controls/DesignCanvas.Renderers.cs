@@ -367,6 +367,44 @@ public partial class DesignCanvas : Control
         => DrawAlignedText(context, text, rect, fontSize, color, TextAlignMode.Center, TextVAlignMode.Middle);
 
     /// <summary>
+    /// 取文本对象；平台侧文本对象失效（渲染后端重建 / 字体服务重载 / headless 会话结束）时
+    /// 丢弃整批文本缓存重建一次。仍失败返回 <c>null</c>，调用方跳过这处文本 ——
+    /// 与 <see cref="DrawAlignedText"/> 同一条防线：绘制路径不能把异常抛回 UI 线程。
+    /// </summary>
+    private static FormattedText? TryText(string text, double fontSize, IBrush brush)
+    {
+        try
+        {
+            return RenderResourceCache.Text(text, fontSize, brush);
+        }
+        catch
+        {
+            RenderResourceCache.InvalidateTexts();
+            try
+            {
+                return RenderResourceCache.Text(text, fontSize, brush);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>绘制一处文本；失败只丢这一处，不让整块画布的渲染带上异常。</summary>
+    private static void TryDrawText(DrawingContext context, FormattedText text, Point origin)
+    {
+        try
+        {
+            context.DrawText(text, origin);
+        }
+        catch
+        {
+            RenderResourceCache.InvalidateTexts();
+        }
+    }
+
+    /// <summary>
     /// 9 宫格对齐绘制文本：按水平/垂直对齐计算文本锚点。
     /// 边缘对齐保留 4px 内边距，避免贴边。
     ///
@@ -834,14 +872,14 @@ public partial class DesignCanvas : Control
 
         var textColor = ParseColorHex(EffectiveVisualColor(control, nameof(HmiControl.TextColor), control.TextColor), DesignPalette.Text);
         var title = Services.ControlTypeTextKeys.Describe(control.Type);
-        var titleText = RenderResourceCache.Text(title, Math.Max(10, 12 * z), RenderResourceCache.Brush(textColor));
-        context.DrawText(titleText, new Point(rect.X + 8 * z, rect.Y + 6 * z));
+        var titleText = TryText(title, Math.Max(10, 12 * z), RenderResourceCache.Brush(textColor));
+        if (titleText == null) return;
+        TryDrawText(context, titleText, new Point(rect.X + 8 * z, rect.Y + 6 * z));
 
-        if (!string.IsNullOrWhiteSpace(subtitle))
-        {
-            var hint = RenderResourceCache.Text(subtitle, Math.Max(9, 10 * z), RenderResourceCache.Brush(DesignPalette.Border));
-            context.DrawText(hint, new Point(rect.X + 8 * z, rect.Y + 8 * z + titleText.Height));
-        }
+        if (string.IsNullOrWhiteSpace(subtitle)) return;
+        var hint = TryText(subtitle, Math.Max(9, 10 * z), RenderResourceCache.Brush(DesignPalette.Border));
+        if (hint != null)
+            TryDrawText(context, hint, new Point(rect.X + 8 * z, rect.Y + 8 * z + titleText.Height));
     }
 
     private static string ValueSubtitle(HmiControl control)

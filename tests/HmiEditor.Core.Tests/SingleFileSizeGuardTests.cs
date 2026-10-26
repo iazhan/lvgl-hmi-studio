@@ -45,8 +45,10 @@ public class SingleFileSizeGuardTests
         //   GetKinSealToolchainGcc / GetKinSealRuntimeDir，各一行委托赋值，无分支）。
         // → 2961（kinseal SDK 前置这两段逻辑析出到 `MainWindow.KinSealSdk.cs`：
         //   「编译转换」与「编译并运行」现在都要先备 SDK，属新职责，不该长在主文件里）。
+        // → 2847（容器子控件：删除改走画布的层级感知命令 `DeleteControlsWithHistory`，
+        //   主文件里那段"按下标删平铺列表"的快照命令整段让位给它）。
         // 本表纪律：变大要先想办法拆小，变小必须同步改小基线。
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2865 },
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2847 },
     };
 
     /// <summary>

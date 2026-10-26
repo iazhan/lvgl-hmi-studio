@@ -236,33 +236,30 @@ public sealed class ChengeExporter
     {
         seq++;
         var widgetId = idPrefix + seq;
-        if (control.Children.Count > 0)
+        /* 子控件只挂在容器图元（shape.kind=container）下，由 mapper 的 MapContainerChildren
+         * 递归导进 props.children。非容器控件带子控件只可能是手工改过的工程文件 ——
+         * 运行时对非 container 的 shape 会拒绝 children 键（schema_check_props 按 kind 取表），
+         * 所以这里要点出来，而不是静默丢掉。 */
+        if (control.Children.Count > 0 &&
+            !(control.Type == HmiControlType.Shape &&
+              string.Equals(control.ShapeKind, "container", StringComparison.OrdinalIgnoreCase)))
         {
-            var container = new JsonObject
-            {
-                ["id"] = widgetId,
-                ["type"] = "shape",
-                ["x"] = (int)Math.Round(control.X),
-                ["y"] = (int)Math.Round(control.Y),
-                ["w"] = (int)Math.Round(Math.Max(1, control.Width)),
-                ["h"] = (int)Math.Round(Math.Max(1, control.Height)),
-                ["props"] = new JsonObject { ["kind"] = "container" },
-            };
-            var children = new JsonArray();
-            var childSeq = 0;
-            foreach (var child in control.Children)
-                AppendWidget(children, child, pageId, widgetId + "_", ref childSeq, maps, mapper, features, fontSizes, issues, ref widgetCount);
-            container["props"]!["children"] = children;
-            target.Add(container);
-            widgetCount++;
-            return;
+            issues.Warn("container.children_on_non_container", $"pages/{pageId}.json#{widgetId}",
+                $"{control.Name} 不是容器图元却带了 {control.Children.Count} 个子控件：37 只允许 shape(kind=container) 有 children，子控件不会导出");
         }
 
         var widget = mapper.Map(control, pageId, widgetId);
         if (widget == null) return;
         target.Add(widget);
-        widgetCount++;
+        widgetCount += 1 + CountDescendants(control);
         fontsAdd(fontSizes, control);
+    }
+
+    private static int CountDescendants(HmiControl control)
+    {
+        var n = 0;
+        foreach (var child in control.Children) n += 1 + CountDescendants(child);
+        return n;
     }
 
     private static void fontsAdd(HashSet<int> fontSizes, HmiControl control)

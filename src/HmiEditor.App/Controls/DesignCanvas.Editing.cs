@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
 using Avalonia.Threading;
+using HmiEditor.Core;
 using HmiEditor.Core.Design;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Services;
@@ -121,8 +122,9 @@ public partial class DesignCanvas : Control
         // 工程文件、并进生成代码的符号（登记 #61r，阶段 159）。
         // ⚠ 名字的单一来源是 ControlNameDefaults；**显示**用的本地化别名也由它给
         //   （`Display(...)`）—— 面板/列表/画布看到的是「按钮1」，落盘的是 `Button1`。
+        // 唯一性按**整棵树**判：容器子控件不进平铺列表，只查 screen.Controls 会重名。
         var uniqueName = Services.ControlNameDefaults.UniqueName(
-            type, screen.Controls.Select(c => c.Name));
+            type, ContainerHierarchy.Flatten(screen).Select(c => c.Name));
 
         // 控件的默认**显示文案**仍按语言（`按钮` / `Button`）—— 那是给操作员看的 Text、
         // 用户可以改；「标识符」与「显示文案」在本阶段被明确分开（见 ControlNameDefaults 的类注释）。
@@ -381,23 +383,13 @@ public partial class DesignCanvas : Control
     }
 
     /// <summary>
-    /// 删除选中的控件。
+    /// 删除选中的控件（含容器子控件，带撤销）—— 层级感知版在
+    /// <see cref="DeleteControlsWithHistory"/>，这里保留单入口语义。
     /// </summary>
     public void DeleteSelectedControl()
     {
         if (_selectedControls.Count == 0 || Screen == null) return;
-
-        // 删除所有选中控件
-        foreach (var control in _selectedControls.ToList())
-        {
-            Screen.Controls.Remove(control);
-            ControlPropertyChanged?.Invoke(this, control);
-        }
-
-        _selectedControls.Clear();
-        FireSelectionChanged();
-        ClearSelectionVisuals();
-        InvalidateVisual();
+        DeleteControlsWithHistory(_selectedControls);
     }
 
     // ── JSON 深拷贝辅助（用于控件复制）──
@@ -436,7 +428,8 @@ public partial class DesignCanvas : Control
         var offset = PasteOffsetStep * _pasteCount;
 
         // 计算原选中集的包围盒，用于生成唯一名称（避免重名）
-        var existingNames = Screen.Controls.Select(c => c.Name).ToHashSet();
+        var existingNames = ContainerHierarchy.Flatten(Screen).Select(c => c.Name).ToHashSet();
+        var index = BuildIndex();
         var newControls = new List<HmiControl>();
 
         foreach (var src in _clipboardControls)
@@ -444,9 +437,22 @@ public partial class DesignCanvas : Control
             var clone = JsonClone(src);
             // 生成新的唯一 ID
             clone.Id = Guid.NewGuid().ToString("N")[..8];
-            // 位置偏移（整体粘贴偏移）
-            clone.X = SnapToGrid(src.X + offset);
-            clone.Y = SnapToGrid(src.Y + offset);
+            // 子孙的 ParentId 仍指着旧 Id，重指到克隆后的新父（否则层级断链）
+            ContainerHierarchy.RepointDescendants(clone);
+            if (!string.IsNullOrEmpty(src.ParentId))
+            {
+                // 单独复制的子控件：还原成顶层控件（相对坐标 → 绝对坐标）
+                var (ox, oy) = ContainerHierarchy.OriginOf(src, index);
+                clone.X = SnapToGrid(src.X + ox + offset);
+                clone.Y = SnapToGrid(src.Y + oy + offset);
+                clone.ParentId = null;
+            }
+            else
+            {
+                // 位置偏移（整体粘贴偏移）
+                clone.X = SnapToGrid(src.X + offset);
+                clone.Y = SnapToGrid(src.Y + offset);
+            }
             // 清除 GroupId（粘贴出来的控件默认不继承原组合，用户可重新组合）
             clone.GroupId = null;
             // 生成唯一名称（若重名则加序号后缀）
@@ -516,7 +522,8 @@ public partial class DesignCanvas : Control
         if (count < 1 || _selectedControls.Count == 0 || Screen == null)
             return null;
 
-        var existingNames = Screen.Controls.Select(c => c.Name).ToHashSet();
+        var existingNames = ContainerHierarchy.Flatten(Screen).Select(c => c.Name).ToHashSet();
+        var index = BuildIndex();
         var allNew = new List<HmiControl>();
 
         for (var i = 1; i <= count; i++)
@@ -528,8 +535,20 @@ public partial class DesignCanvas : Control
             {
                 var clone = JsonClone(src);
                 clone.Id = Guid.NewGuid().ToString("N")[..8];
-                clone.X = SnapToGrid(src.X + dx);
-                clone.Y = SnapToGrid(src.Y + dy);
+                ContainerHierarchy.RepointDescendants(clone);
+                if (!string.IsNullOrEmpty(src.ParentId))
+                {
+                    // 单独复制的子控件：还原成顶层控件（相对坐标 → 绝对坐标）
+                    var (ox, oy) = ContainerHierarchy.OriginOf(src, index);
+                    clone.X = SnapToGrid(src.X + ox + dx);
+                    clone.Y = SnapToGrid(src.Y + oy + dy);
+                    clone.ParentId = null;
+                }
+                else
+                {
+                    clone.X = SnapToGrid(src.X + dx);
+                    clone.Y = SnapToGrid(src.Y + dy);
+                }
                 clone.GroupId = null;
                 clone.Name = MakeUniqueName(existingNames, src.Name);
                 existingNames.Add(clone.Name);
@@ -848,7 +867,26 @@ public partial class DesignCanvas : Control
     /// <summary>对齐检测阈值（像素）。</summary>
     private const double GuideThreshold = 5;
 
-    /// <summary>检测并生成对齐参考线（视口坐标）。</summary>
+    /// <summary>
+    /// 整棵树的「绝对坐标 + 控件」展平清单（参考线比对用）。
+    /// 容器子控件不进平铺列表，只扫 <see cref="HmiScreen.Controls"/> 会漏掉它们。
+    /// </summary>
+    private List<(HmiControl Control, double X, double Y)> FlattenedAbsolute(
+        Dictionary<string, HmiControl> index)
+    {
+        var list = new List<(HmiControl, double, double)>();
+        var screen = Screen;
+        if (screen == null) return list;
+        void Walk(HmiControl control, double ox, double oy)
+        {
+            list.Add((control, control.X + ox, control.Y + oy));
+            foreach (var child in control.Children) Walk(child, control.X + ox, control.Y + oy);
+        }
+        foreach (var root in RootControls(screen)) Walk(root, 0, 0);
+        return list;
+    }
+
+    /// <summary>检测并生成对齐参考线（视口坐标）。位置一律用屏幕绝对坐标算。</summary>
     private List<AlignmentGuide> DetectAlignmentGuides(HmiControl dragged, Point currentPointerPos)
     {
         var screen = Screen;
@@ -856,29 +894,28 @@ public partial class DesignCanvas : Control
 
         var z = EffectiveZoom;
         var guides = new List<AlignmentGuide>();
-        var viewBounds = Bounds;
-        var screenW = screen.Width;
-        var screenH = screen.Height;
+        var index = BuildIndex();
+        var draggedAbs = AbsoluteRectOf(dragged, index);
 
         // 拖拽控件的 6 个关键位置（视图坐标，已缩放+平移）
-        var dl = dragged.X * z + PanOffsetX;           // left
-        var dr = (dragged.X + dragged.Width) * z + PanOffsetX;  // right
-        var dc = (dragged.X + dragged.Width / 2) * z + PanOffsetX; // center X
-        var dt = dragged.Y * z + PanOffsetY;           // top
-        var db = (dragged.Y + dragged.Height) * z + PanOffsetY; // bottom
-        var dcy = (dragged.Y + dragged.Height / 2) * z + PanOffsetY; // center Y
+        var dl = draggedAbs.X * z + PanOffsetX;           // left
+        var dr = (draggedAbs.X + draggedAbs.Width) * z + PanOffsetX;  // right
+        var dc = (draggedAbs.X + draggedAbs.Width / 2) * z + PanOffsetX; // center X
+        var dt = draggedAbs.Y * z + PanOffsetY;           // top
+        var db = (draggedAbs.Y + draggedAbs.Height) * z + PanOffsetY; // bottom
+        var dcy = (draggedAbs.Y + draggedAbs.Height / 2) * z + PanOffsetY; // center Y
 
-        // 检查与其他控件的对齐
-        foreach (var other in screen.Controls)
+        // 检查与其他控件的对齐（同一次拖拽选中的控件之间不互相吸）
+        foreach (var (other, ox, oy) in FlattenedAbsolute(index))
         {
-            if (other == dragged) continue;
+            if (_selectedControls.Contains(other)) continue;
 
-            var ol = other.X * z + PanOffsetX;
-            var or = (other.X + other.Width) * z + PanOffsetX;
-            var oc = (other.X + other.Width / 2) * z + PanOffsetX;
-            var ot = other.Y * z + PanOffsetY;
-            var ob = (other.Y + other.Height) * z + PanOffsetY;
-            var ocy = (other.Y + other.Height / 2) * z + PanOffsetY;
+            var ol = ox * z + PanOffsetX;
+            var or = (ox + other.Width) * z + PanOffsetX;
+            var oc = (ox + other.Width / 2) * z + PanOffsetX;
+            var ot = oy * z + PanOffsetY;
+            var ob = (oy + other.Height) * z + PanOffsetY;
+            var ocy = (oy + other.Height / 2) * z + PanOffsetY;
 
             // 垂直对齐检测（水平参考线）
             TryAddGuide(guides, dt, ot, dl, dr, true);
@@ -893,11 +930,11 @@ public partial class DesignCanvas : Control
 
         // 检查与屏幕边界的对齐
         var sLeft = 0.0 + PanOffsetX;
-        var sRight = screenW * z + PanOffsetX;
-        var sCenterX = screenW * z / 2 + PanOffsetX;
+        var sRight = screen.Width * z + PanOffsetX;
+        var sCenterX = screen.Width * z / 2 + PanOffsetX;
         var sTop = 0.0 + PanOffsetY;
-        var sBottom = screenH * z + PanOffsetY;
-        var sCenterY = screenH * z / 2 + PanOffsetY;
+        var sBottom = screen.Height * z + PanOffsetY;
+        var sCenterY = screen.Height * z / 2 + PanOffsetY;
 
         TryAddGuide(guides, dl, sLeft, dt, db, false);
         TryAddGuide(guides, dr, sRight, dt, db, false);
@@ -918,55 +955,49 @@ public partial class DesignCanvas : Control
         guides.Add(new AlignmentGuide(targetPos, isHorizontal, start, end));
     }
 
-    /// <summary>根据对齐参考线吸附当前拖拽的控件位置（模型坐标）。</summary>
-    private void SnapToGuides(HmiControl control)
+    /// <summary>
+    /// 按对齐参考线吸附拖拽控件的**新绝对位置**（屏幕绝对坐标里比，父子控件一视同仁）。
+    /// 只动 <paramref name="abs"/> 里主控件的条目，写回（绝对 → 相对）由调用方做。
+    /// </summary>
+    private void SnapToGuidesAbsolute(
+        Dictionary<HmiControl, (double X, double Y)> abs, HmiControl control,
+        Dictionary<string, HmiControl> index)
     {
         var screen = Screen;
-        if (screen == null) return;
+        if (screen == null || !abs.TryGetValue(control, out var pos)) return;
 
         var z = EffectiveZoom;
+        var tol = GuideThreshold / z;
+        var w = control.Width;
+        var h = control.Height;
 
-        // 检查所有控件的边缘
-        foreach (var other in screen.Controls)
+        // 与其他控件的边缘/中心对齐（绝对坐标）
+        foreach (var (other, ox, oy) in FlattenedAbsolute(index))
         {
-            if (other == control) continue;
+            if (_selectedControls.Contains(other)) continue;
 
             // 左边缘对齐
-            if (Math.Abs(control.X - other.X) < GuideThreshold / z)
-                control.X = other.X;
+            if (Math.Abs(pos.X - ox) < tol) pos.X = ox;
             // 右边缘对齐
-            if (Math.Abs(control.X + control.Width - other.X - other.Width) < GuideThreshold / z)
-                control.X = other.X + other.Width - control.Width;
+            if (Math.Abs(pos.X + w - ox - other.Width) < tol) pos.X = ox + other.Width - w;
             // 中心 X 对齐
-            if (Math.Abs(control.X + control.Width / 2 - other.X - other.Width / 2) < GuideThreshold / z)
-                control.X = other.X + (other.Width - control.Width) / 2;
+            if (Math.Abs(pos.X + w / 2 - ox - other.Width / 2) < tol) pos.X = ox + (other.Width - w) / 2;
             // 顶部对齐
-            if (Math.Abs(control.Y - other.Y) < GuideThreshold / z)
-                control.Y = other.Y;
+            if (Math.Abs(pos.Y - oy) < tol) pos.Y = oy;
             // 底部对齐
-            if (Math.Abs(control.Y + control.Height - other.Y - other.Height) < GuideThreshold / z)
-                control.Y = other.Y + other.Height - control.Height;
+            if (Math.Abs(pos.Y + h - oy - other.Height) < tol) pos.Y = oy + other.Height - h;
             // 中心 Y 对齐
-            if (Math.Abs(control.Y + control.Height / 2 - other.Y - other.Height / 2) < GuideThreshold / z)
-                control.Y = other.Y + (other.Height - control.Height) / 2;
+            if (Math.Abs(pos.Y + h / 2 - oy - other.Height / 2) < tol) pos.Y = oy + (other.Height - h) / 2;
         }
 
-        // 屏幕边界对齐
-        // 左
-        if (Math.Abs(control.X - 0) < GuideThreshold / z) control.X = 0;
-        // 右
-        if (Math.Abs(control.X + control.Width - screen.Width) < GuideThreshold / z)
-            control.X = screen.Width - control.Width;
-        // 水平居中
-        if (Math.Abs(control.X + control.Width / 2 - screen.Width / 2) < GuideThreshold / z)
-            control.X = (screen.Width - control.Width) / 2.0;
-        // 上
-        if (Math.Abs(control.Y - 0) < GuideThreshold / z) control.Y = 0;
-        // 下
-        if (Math.Abs(control.Y + control.Height - screen.Height) < GuideThreshold / z)
-            control.Y = screen.Height - control.Height;
-        // 垂直居中
-        if (Math.Abs(control.Y + control.Height / 2 - screen.Height / 2) < GuideThreshold / z)
-            control.Y = (screen.Height - control.Height) / 2.0;
+        // 屏幕边界对齐（绝对坐标）
+        if (Math.Abs(pos.X - 0) < tol) pos.X = 0;
+        if (Math.Abs(pos.X + w - screen.Width) < tol) pos.X = screen.Width - w;
+        if (Math.Abs(pos.X + w / 2 - screen.Width / 2) < tol) pos.X = (screen.Width - w) / 2.0;
+        if (Math.Abs(pos.Y - 0) < tol) pos.Y = 0;
+        if (Math.Abs(pos.Y + h - screen.Height) < tol) pos.Y = screen.Height - h;
+        if (Math.Abs(pos.Y + h / 2 - screen.Height / 2) < tol) pos.Y = (screen.Height - h) / 2.0;
+
+        abs[control] = pos;
     }
 }

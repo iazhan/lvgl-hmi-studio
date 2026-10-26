@@ -12,6 +12,7 @@ using HmiEditor.App.Resources;
 using HmiEditor.App.Services;
 using HmiEditor.App;
 using HmiEditor.App.Views.Editors;
+using HmiEditor.Core;
 using HmiEditor.Core.Design;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Services;
@@ -228,9 +229,13 @@ public partial class PropertyPanelView : UserControl
             // ⚠ 名字显示的是**本地化别名**（默认名 `Button1` → `按钮1`），落盘的仍是中性名 ——
             //   写回路径在 PropertyPanelView.Changes.cs 里做左逆（登记 #61r，阶段 159）。
             // ⚠ 类型也走单一来源（`ControlTypeTextKeys`）：阶段 160 之前这里直显英文枚举名。
-            InfoText.Text = string.IsNullOrEmpty(control.Name)
+            var info = string.IsNullOrEmpty(control.Name)
                     ? $"({AppLocalization.Service["general.untitled"]} {Services.ControlTypeTextKeys.Describe(control.Type)})"
                     : $"{Services.ControlNameDefaults.Display(control)} ({Services.ControlTypeTextKeys.Describe(control.Type)})";
+            // 容器图元：点出来放了几个子控件（否则用户无法从面板确认"东西进没进容器"）
+            if (ContainerHierarchy.IsContainer(control))
+                info += " · " + AppLocalization.Service.Format(Lang.PropContainerChildren, control.Children.Count);
+            InfoText.Text = info;
             PropX.Value = control.X;
             PropY.Value = control.Y;
             PropWidth.Value = control.Width;

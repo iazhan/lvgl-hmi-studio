@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
 using Avalonia.Threading;
+using HmiEditor.Core;
 using HmiEditor.Core.Design;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Services;
@@ -32,34 +33,56 @@ public partial class DesignCanvas : Control
         // 补偿平移偏移
         var adjustedPoint = new Point(point.X - PanOffsetX, point.Y - PanOffsetY);
         var z = EffectiveZoom;
-        // 倒序遍历（上层控件优先选中）
+        // 倒序遍历（上层控件优先选中）：根按 LayerIndex 降序 + 列表序降序，
+        // 每个根内部先问子控件（后加的更贴上），再问容器自身
         // R2-T1: 按 LayerIndex 降序排序后命中测试，跳过锁定/隐藏控件
         var sorted = screen.Controls
             .Select((c, idx) => new { Control = c, ListIndex = idx })
-            .Where(x => !x.Control.IsLocked && x.Control.IsVisible)
+            .Where(x => !x.Control.IsLocked && x.Control.IsVisible && string.IsNullOrEmpty(x.Control.ParentId))
             .OrderByDescending(x => x.Control.LayerIndex)
             .ThenByDescending(x => x.ListIndex);
 
         foreach (var item in sorted)
         {
-            var ctrl = item.Control;
-            var rect = new Rect(ctrl.X * z, ctrl.Y * z, ctrl.Width * z, ctrl.Height * z);
-            if (ctrl.HasTransform)
-            {
-                // 旋转/镜像后控件不再轴对齐：把点击点逆变换到控件局部坐标判断命中。
-                // 旋转 90/270 后局部区域仍为 [0,W]x[0,H]（内容映射对称、无偏移）。
-                var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
-                var m = BuildControlTransform(center, ctrl.EffectiveRotation(), ctrl.MirrorX, ctrl.MirrorY);
-                var inv = m.Invert();
-                var local = adjustedPoint.Transform(inv);
-                if (local.X >= rect.X && local.X <= rect.X + rect.Width &&
-                    local.Y >= rect.Y && local.Y <= rect.Y + rect.Height)
-                    return ctrl;
-            }
-            else if (rect.Contains(adjustedPoint))
-            {
-                return ctrl;
-            }
+            var hit = HitTestTree(item.Control, adjustedPoint, 0, 0, z);
+            if (hit != null) return hit;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 树内命中测试：子控件在上层（倒序问），最后问容器自身。
+    /// 矩形用**屏幕绝对坐标**（叠加父原点）算，与渲染同一套换算。
+    /// </summary>
+    private HmiControl? HitTestTree(HmiControl control, Point p, double originX, double originY, double z)
+    {
+        var childOriginX = originX + control.X;
+        var childOriginY = originY + control.Y;
+        for (var i = control.Children.Count - 1; i >= 0; i--)
+        {
+            var child = control.Children[i];
+            if (child.IsLocked || !child.IsVisible) continue;
+            var hit = HitTestTree(child, p, childOriginX, childOriginY, z);
+            if (hit != null) return hit;
+        }
+
+        var rect = new Rect((control.X + originX) * z, (control.Y + originY) * z,
+            control.Width * z, control.Height * z);
+        if (control.HasTransform)
+        {
+            // 旋转/镜像后控件不再轴对齐：把点击点逆变换到控件局部坐标判断命中。
+            // 旋转 90/270 后局部区域仍为 [0,W]x[0,H]（内容映射对称、无偏移）。
+            var center = new Point(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+            var m = BuildControlTransform(center, control.EffectiveRotation(), control.MirrorX, control.MirrorY);
+            var inv = m.Invert();
+            var local = p.Transform(inv);
+            if (local.X >= rect.X && local.X <= rect.X + rect.Width &&
+                local.Y >= rect.Y && local.Y <= rect.Y + rect.Height)
+                return control;
+        }
+        else if (rect.Contains(p))
+        {
+            return control;
         }
         return null;
     }
@@ -194,10 +217,18 @@ public partial class DesignCanvas : Control
             _dragControl = hit;
             _dragStartPoint = pos;
             _dragStartBounds = new Rect(hit.X, hit.Y, hit.Width, hit.Height);
-            // 记录所有选中控件的起始位置（多选整体移动）
+            // 记录所有选中控件的起始位置（多选整体移动）：
+            // _dragStartAllBounds 存**相对坐标**（撤销恢复直接写回），
+            // _dragStartAbsolute 存**屏幕绝对坐标**（拖拽换算用，容器子控件与顶层控件同一套）
             _dragStartAllBounds = new Dictionary<HmiControl, Rect>();
+            _dragStartAbsolute = new Dictionary<HmiControl, Rect>();
+            var pressIndex = BuildIndex();
             foreach (var sc in _selectedControls)
+            {
                 _dragStartAllBounds[sc] = new Rect(sc.X, sc.Y, sc.Width, sc.Height);
+                var abs = AbsoluteRectOf(sc, pressIndex);
+                _dragStartAbsolute[sc] = new Rect(abs.X, abs.Y, abs.Width, abs.Height);
+            }
 
             e.Handled = true;
             return;
@@ -355,28 +386,24 @@ public partial class DesignCanvas : Control
             var dx = (pos.X - _dragStartPoint.X) / z;
             var dy = (pos.Y - _dragStartPoint.Y) / z;
 
-            // 多选整体移动：所有选中控件按相同偏移量平移
-            if (_dragStartAllBounds != null && _dragStartAllBounds.Count > 1)
+            /* 拖拽一律在**屏幕绝对坐标**里算，再逆算回各自父容器的相对坐标：
+             * 容器子控件与顶层控件同一套换算；多选里混着父子时，
+             * 子的新相对位置 = 子的新绝对位置 − 父的新绝对位置（父也在动的话跟着动，不会二次叠加）。 */
+            var index = BuildIndex();
+            var newAbs = new Dictionary<HmiControl, (double X, double Y)>();
+            foreach (var kv in _dragStartAbsolute!)
+                newAbs[kv.Key] = (SnapToGrid(kv.Value.X + dx), SnapToGrid(kv.Value.Y + dy));
+
+            // 单选时保留对齐参考线吸附（绝对空间里比，父子控件一视同仁）
+            if (newAbs.Count == 1)
+                SnapToGuidesAbsolute(newAbs, ctrl, index);
+
+            foreach (var kv in newAbs)
             {
-                foreach (var kv in _dragStartAllBounds)
-                {
-                    var sc = kv.Key;
-                    var orig = kv.Value;
-                    sc.X = SnapToGrid(orig.X + dx);
-                    sc.Y = SnapToGrid(orig.Y + dy);
-                    ControlPropertyChanged?.Invoke(this, sc);
-                }
-                // 多选时仍以主控件为参考做吸附参考线检测
-                ctrl.X = SnapToGrid(_dragStartBounds.X + dx);
-                ctrl.Y = SnapToGrid(_dragStartBounds.Y + dy);
-            }
-            else
-            {
-                // 单选：标准移动逻辑（带吸附）
-                ctrl.X = SnapToGrid(_dragStartBounds.X + dx);
-                ctrl.Y = SnapToGrid(_dragStartBounds.Y + dy);
-                SnapToGuides(ctrl);
-                ControlPropertyChanged?.Invoke(this, ctrl);
+                var (parentX, parentY) = ParentAbsoluteOrigin(kv.Key, newAbs, index);
+                kv.Key.X = kv.Value.X - parentX;
+                kv.Key.Y = kv.Value.Y - parentY;
+                ControlPropertyChanged?.Invoke(this, kv.Key);
             }
 
             // 检测并更新参考线显示（以主拖拽控件为基准）
@@ -476,6 +503,7 @@ public partial class DesignCanvas : Control
         _dragControl = null;
         _activeHandleIndex = -1;
         _dragStartAllBounds = null; // 清除多选移动临时状态
+        _dragStartAbsolute = null;
         _currentGuides.Clear();
         if (Adorner != null)
         {
@@ -504,6 +532,7 @@ public partial class DesignCanvas : Control
             _dragMode = DragMode.None;
             _dragControl = null;
             _dragStartAllBounds = null;
+            _dragStartAbsolute = null;
             _activeHandleIndex = -1;
             _currentGuides.Clear();
             if (Adorner != null) Adorner.AlignmentGuides = Array.Empty<AlignmentGuide>();
@@ -516,28 +545,33 @@ public partial class DesignCanvas : Control
     {
         if (_historyReplaying || _dragStartAllBounds == null || _dragStartAllBounds.Count == 0) return;
 
-        var before = _dragStartAllBounds.ToDictionary(k => k.Key, v => v.Value);
-        var after = before.ToDictionary(pair => pair.Key, pair => new Rect(pair.Key.X, pair.Key.Y, pair.Key.Width, pair.Key.Height));
-        if (!before.Any(pair => pair.Value != after[pair.Key])) return;
-
-        void Restore(IReadOnlyDictionary<HmiControl, Rect> values)
+        var index = BuildIndex();
+        var moved = _dragStartAllBounds.Keys.ToList();
+        // before = **按下瞬间**的（父 + 相对几何）：_dragStartAllBounds 就是那时记的，
+        // 父关系在结构变更前不会动，所以现在查父链等于按下时的父
+        var before = moved.Select(c =>
         {
-            _historyReplaying = true;
-            try
-            {
-                foreach (var pair in values)
-                {
-                    pair.Key.X = pair.Value.X; pair.Key.Y = pair.Value.Y;
-                    pair.Key.Width = pair.Value.Width; pair.Key.Height = pair.Value.Height;
-                }
-                UpdateMultiAdorner();
-                InvalidateVisual();
-            }
-            finally { _historyReplaying = false; }
-        }
+            var r = _dragStartAllBounds[c];
+            return (Control: c, Parent: ContainerHierarchy.ParentOf(c, index),
+                X: r.X, Y: r.Y, Width: r.Width, Height: r.Height);
+        }).ToList();
 
-        var operation = _dragMode == DragMode.Resize ? AppLocalization.Service[Lang.UndoResizeControl] : AppLocalization.Service[Lang.UndoMoveControl];
-        UndoRedoManager.Execute(new SnapshotCommand(operation, () => Restore(before), () => Restore(after)));
+        // 拖进 / 拖出容器：只对移动手势生效（缩放不改变层级）。
+        // 位置已在移动过程中实时写进模型，这里只补结构变更，再一次性记撤销。
+        if (_dragMode == DragMode.Move)
+            ApplyContainerMembership(moved, index);
+
+        var after = moved.Select(c => SnapshotNode(c, index)).ToList();
+        if (!before.Where((b, i) => b.Parent != after[i].Parent
+                || b.X != after[i].X || b.Y != after[i].Y
+                || b.Width != after[i].Width || b.Height != after[i].Height).Any())
+            return;
+
+        var operation = _dragMode == DragMode.Resize
+            ? AppLocalization.Service[Lang.UndoResizeControl]
+            : AppLocalization.Service[Lang.UndoMoveControl];
+        UndoRedoManager.Execute(new SnapshotCommand(operation,
+            () => RestoreNodes(before, index), () => RestoreNodes(after, index)));
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -701,10 +735,7 @@ public partial class DesignCanvas : Control
 
         if (control != null)
         {
-            var z = EffectiveZoom;
-            adorner.SelectionBounds = new Rect(
-                control.X * z - 2 + PanOffsetX, control.Y * z - 2 + PanOffsetY,
-                control.Width * z + 4, control.Height * z + 4);
+            adorner.SelectionBounds = GetControlViewRect(control);
             adorner.IsSelectionVisible = true;
         }
         else
@@ -772,16 +803,17 @@ public partial class DesignCanvas : Control
         }
 
         // 多选 → 显示组合包围盒（无缩放手柄）
+        // 位置用屏幕绝对坐标算：选中的可能同时有顶层控件和容器子控件
         double minX = double.MaxValue, minY = double.MaxValue;
         double maxX = double.MinValue, maxY = double.MinValue;
-        var z = EffectiveZoom;
-
+        var index = BuildIndex();
         foreach (var ctrl in _selectedControls)
         {
-            var left = ctrl.X * z + PanOffsetX;
-            var top = ctrl.Y * z + PanOffsetY;
-            var right = left + ctrl.Width * z;
-            var bottom = top + ctrl.Height * z;
+            var abs = AbsoluteRectOf(ctrl, index);
+            var left = abs.X * EffectiveZoom + PanOffsetX;
+            var top = abs.Y * EffectiveZoom + PanOffsetY;
+            var right = left + abs.Width * EffectiveZoom;
+            var bottom = top + abs.Height * EffectiveZoom;
 
             if (left < minX) minX = left;
             if (top < minY) minY = top;
@@ -795,15 +827,16 @@ public partial class DesignCanvas : Control
         Adorner.InvalidateVisual();
     }
 
-    /// <summary>获取控件视口坐标矩形。</summary>
+    /// <summary>获取控件视口坐标矩形（屏幕绝对坐标 → 视口；容器子控件叠加父原点）。</summary>
     private Avalonia.Rect GetControlViewRect(HmiControl ctrl)
     {
         var z = EffectiveZoom;
+        var abs = AbsoluteRectOf(ctrl, BuildIndex());
         return new Avalonia.Rect(
-            ctrl.X * z - 2 + PanOffsetX,
-            ctrl.Y * z - 2 + PanOffsetY,
-            ctrl.Width * z + 4,
-            ctrl.Height * z + 4);
+            abs.X * z - 2 + PanOffsetX,
+            abs.Y * z - 2 + PanOffsetY,
+            abs.Width * z + 4,
+            abs.Height * z + 4);
     }
 
     /// <summary>清除选中视觉。</summary>
@@ -877,7 +910,9 @@ public partial class DesignCanvas : Control
                 var modelPoint = Coordinates.ScreenToModel(pos);
                 var modelX = modelPoint.X;
                 var modelY = modelPoint.Y;
-                ControlDropped?.Invoke(this, new ControlDroppedEventArgs(type, modelX, modelY));
+                // 落在容器图元里 → 作为该容器的子控件放入（坐标相对容器）
+                var container = TopmostContainerAt(modelPoint);
+                ControlDropped?.Invoke(this, new ControlDroppedEventArgs(type, modelX, modelY, container));
                 e.DragEffects = DragDropEffects.Copy;
                 e.Handled = true;
                 return;

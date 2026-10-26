@@ -258,7 +258,12 @@ public partial class DesignCanvas : Control
     private int _activeHandleIndex = -1;
 
     // ── 多选整体拖拽：记录拖拽起始时所有选中控件的原始位置 ──
+    /// <summary>相对坐标快照（撤销恢复直接写回模型）。</summary>
     private Dictionary<HmiControl, Rect>? _dragStartAllBounds;
+
+    /// <summary>屏幕绝对坐标快照（拖拽换算用：容器子控件与顶层控件同一套）。</summary>
+    private Dictionary<HmiControl, Rect>? _dragStartAbsolute;
+
     private bool _historyReplaying;
 
     // 工具箱拖放预览：仅保存视图态，不写入工程模型。
@@ -447,7 +452,8 @@ public partial class DesignCanvas : Control
             // 🩸 阶段 221（#98 的"接线"）：屏幕安全区**参考线**（虚线，只影响显示，不动几何）
             DrawSafeAreaGuides(context);
 
-            // 绘制所有控件（R2-T1: 跳过 IsVisible=false 的控件）
+            // 绘制所有控件（R2-T1: 跳过 IsVisible=false 控件）
+            // 容器子控件不进平铺列表，按树递归画出（子坐标叠加父原点）
             if (adaptive.HasValue)
             {
                 // 预览变换: 先缩放(设计→目标比例), 再平移(letterbox 居中)
@@ -457,19 +463,19 @@ public partial class DesignCanvas : Control
                         adaptive.Value.OffsetX * EffectiveZoom,
                         adaptive.Value.OffsetY * EffectiveZoom)))
                 {
-                    foreach (var control in screen.Controls)
+                    foreach (var control in RootControls(screen))
                     {
                         if (!EffectiveVisible(control)) continue;
-                        RenderControlWithOpacity(context, control);
+                        RenderTree(context, control, 0, 0);
                     }
                 }
             }
             else
             {
-                foreach (var control in screen.Controls)
+                foreach (var control in RootControls(screen))
                 {
                     if (!EffectiveVisible(control)) continue;
-                    RenderControlWithOpacity(context, control);
+                    RenderTree(context, control, 0, 0);
                 }
             }
         }
@@ -702,15 +708,32 @@ public partial class DesignCanvas : Control
     }
 
     /// <summary>按控件不透明度渲染（Opacity<100 时压入透明度层）。</summary>
-    private void RenderControlWithOpacity(DrawingContext context, HmiControl control)
+    private void RenderControlWithOpacity(DrawingContext context, HmiControl control,
+        double originX, double originY)
     {
         if (control.Opacity >= 99.5)
         {
-            RenderControl(context, control);
+            RenderControl(context, control, originX, originY);
             return;
         }
         using (context.PushOpacity(Math.Clamp(control.Opacity, 0, 100) / 100.0))
-            RenderControl(context, control);
+            RenderControl(context, control, originX, originY);
+    }
+
+    /// <summary>
+    /// 递归画一棵控件树：先画容器自身，再画子控件（叠加父原点，天然叠在父之上）。
+    /// 隐藏/锁定的子树整棵跳过 —— 容器藏了，里面的子控件没有"单独可见"的意义。
+    /// </summary>
+    private void RenderTree(DrawingContext context, HmiControl control, double originX, double originY)
+    {
+        RenderControlWithOpacity(context, control, originX, originY);
+        var childOriginX = originX + control.X;
+        var childOriginY = originY + control.Y;
+        foreach (var child in control.Children)
+        {
+            if (!EffectiveVisible(child)) continue;
+            RenderTree(context, child, childOriginX, childOriginY);
+        }
     }
 
     // ── 外部渲染器注册表（插件扩展点）──
@@ -727,10 +750,11 @@ public partial class DesignCanvas : Control
         _extraRenderers[type] = renderer;
     }
 
-    private void RenderControl(DrawingContext context, HmiControl control)
+    private void RenderControl(DrawingContext context, HmiControl control, double originX, double originY)
     {
         var z = EffectiveZoom;
-        var rect = new Rect(control.X * z, control.Y * z, control.Width * z, control.Height * z);
+        var rect = new Rect((control.X + originX) * z, (control.Y + originY) * z,
+            control.Width * z, control.Height * z);
 
         // 旋转/镜像：围绕控件中心应用变换（先镜像后旋转），内容随变换绘制、画布尺寸不变。
         // 无变换时零开销直接绘制（渲染热路径）。
@@ -1143,18 +1167,23 @@ public partial class DesignCanvas : Control
 
 /// <summary>
 /// 控件拖放事件参数 —— 携带控件类型和模型坐标。
+/// <paramref name="ParentContainer"/> 非空表示落点在容器图元里：新控件应作为该容器的
+/// 子控件（坐标相对容器），而不是屏幕上的顶层控件。
 /// </summary>
 public sealed class ControlDroppedEventArgs : EventArgs
 {
     public HmiControlType ControlType { get; }
     public double X { get; }
     public double Y { get; }
+    public HmiControl? ParentContainer { get; }
 
-    public ControlDroppedEventArgs(HmiControlType controlType, double x, double y)
+    public ControlDroppedEventArgs(HmiControlType controlType, double x, double y,
+        HmiControl? parentContainer = null)
     {
         ControlType = controlType;
         X = x;
         Y = y;
+        ParentContainer = parentContainer;
     }
 }
 

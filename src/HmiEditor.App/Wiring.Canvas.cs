@@ -76,8 +76,19 @@ public partial class MainWindow
             var screen = canvasView.Canvas.Screen;
             if (screen == null) return;
 
-            var control = canvasView.Canvas.AddControl(args.ControlType, args.X, args.Y);
-            var command = new AddControlCommand(screen.Controls, control);
+            // 落在容器图元里 → 作为子控件放入（坐标相对容器，不进平铺列表）
+            HmiControl control;
+            IUndoableCommand command;
+            if (args.ParentContainer is { } container)
+            {
+                control = canvasView.Canvas.AddControlTo(args.ControlType, args.X, args.Y, container);
+                command = new AttachControlCommand(screen, container, control);
+            }
+            else
+            {
+                control = canvasView.Canvas.AddControl(args.ControlType, args.X, args.Y);
+                command = new AddControlCommand(screen.Controls, control);
+            }
             _undoRedoManager.Execute(command);
 
             ProjectExplorerPanel.Refresh(screen);

@@ -1,3 +1,4 @@
+using HmiEditor.Core;
 using HmiEditor.Core.Models;
 using HmiEditor.App.Resources;
 
@@ -130,6 +131,41 @@ public class AddControlCommand : IUndoableCommand
             _collection.Add(_control);
     }
     public void Undo() => _collection.Remove(_control);
+}
+
+/// <summary>
+/// 把控件放入容器的可撤销命令（工具箱拖入容器时用）。
+/// Execute 幂等：控件已在容器里就不重复挂（坐标换算只在首次挂时做）。
+/// </summary>
+public class AttachControlCommand : IUndoableCommand
+{
+    private readonly HmiScreen _screen;
+    private readonly HmiControl _container;
+    private readonly HmiControl _control;
+
+    public string Description => AppLocalization.Service.Format(
+        Lang.UndoAttachContainer, Services.ControlNameDefaults.Display(_container));
+
+    public AttachControlCommand(HmiScreen screen, HmiControl container, HmiControl control)
+    {
+        _screen = screen;
+        _container = container;
+        _control = control;
+    }
+
+    public void Execute()
+    {
+        if (_container.Children.Contains(_control)) return;
+        ContainerHierarchy.AttachAt(_container, _control, ContainerHierarchy.Index(_screen));
+        _screen.Controls.Remove(_control);   // 子控件不进平铺列表（层级单一事实来源）
+    }
+
+    public void Undo()
+    {
+        if (!_container.Children.Contains(_control)) return;
+        ContainerHierarchy.DetachTo(_container, _control, ContainerHierarchy.Index(_screen));
+        if (!_screen.Controls.Contains(_control)) _screen.Controls.Add(_control);
+    }
 }
 
 /// <summary>删除控件的可撤销命令。</summary>

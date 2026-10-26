@@ -73,6 +73,13 @@ public static class UiTestHost
     private static readonly SemaphoreSlim Gate = new(1, 1);
     private static readonly TimeSpan GateTimeout = TimeSpan.FromMinutes(2);
 
+    /// <summary>
+    /// 单次派发的等待上限。xunit 本身没有超时，闸门超时是 <see cref="GateTimeout"/>（2 分钟）——
+    /// 会话被前一次渲染异常弄坏后，派发的 Task 永不完成，没有这道上限就是整轮测试静默两分钟以上。
+    /// 超时只负责快速失败，不负责恢复会话（会话坏了要重跑）。
+    /// </summary>
+    private static readonly TimeSpan RunTimeout = TimeSpan.FromSeconds(30);
+
     /// <summary>同线程重入深度。派发体里再调 <see cref="Run(Action)"/> 不该自锁。</summary>
     [ThreadStatic] private static int _gateDepth;
 
@@ -106,9 +113,14 @@ public static class UiTestHost
         EnterGate();
         try
         {
-            return Dispatch(() => Session.Value.Dispatch(
-                () => { Volatile.Write(ref _sessionThreadId, Environment.CurrentManagedThreadId); return body(); },
-                CancellationToken.None).GetAwaiter().GetResult());
+            return Dispatch(() =>
+            {
+                var task = Session.Value.Dispatch(
+                    () => { Volatile.Write(ref _sessionThreadId, Environment.CurrentManagedThreadId); return body(); },
+                    CancellationToken.None);
+                WaitForSession(task);
+                return task.GetAwaiter().GetResult();
+            });
         }
         finally { ExitGate(); }
     }
@@ -119,11 +131,33 @@ public static class UiTestHost
         EnterGate();
         try
         {
-            Dispatch(() => Session.Value.Dispatch(
-                () => { Volatile.Write(ref _sessionThreadId, Environment.CurrentManagedThreadId); body(); },
-                CancellationToken.None).GetAwaiter().GetResult());
+            Dispatch(() =>
+            {
+                var task = Session.Value.Dispatch(
+                    () => { Volatile.Write(ref _sessionThreadId, Environment.CurrentManagedThreadId); body(); },
+                    CancellationToken.None);
+                WaitForSession(task);
+                task.GetAwaiter().GetResult();
+            });
         }
         finally { ExitGate(); }
+    }
+
+    /// <summary>
+    /// 等会话线程上的派发完成，超过 <see cref="RunTimeout"/> 抛 <see cref="TimeoutException"/>。
+    /// 体里的异常保持原类型（不经 <c>AggregateException</c> 包装），否则 <c>Assert</c> 失败的判据会失真。
+    /// </summary>
+    private static void WaitForSession(Task task)
+    {
+        using var cts = new CancellationTokenSource();
+        if (Task.WhenAny(task, Task.Delay(RunTimeout, cts.Token)).GetAwaiter().GetResult() == task)
+        {
+            cts.Cancel();
+            return;
+        }
+        throw new TimeoutException(
+            $"headless 派发超过 {RunTimeout.TotalSeconds:0} 秒未返回（会话可能已被前一次异常弄坏）："
+            + DescribeSessionState());
     }
 
     /// <summary>

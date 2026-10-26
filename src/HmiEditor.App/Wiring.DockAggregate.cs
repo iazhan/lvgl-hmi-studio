@@ -121,17 +121,9 @@ public partial class MainWindow
         };
         DockLayoutState.ExplorerDeleteRequested += (_, control) =>
         {
-            var index = _currentScreen.Controls.IndexOf(control);
-            if (index < 0) return;
-            _undoRedoManager.Execute(new SnapshotCommand(
-                AppLocalization.Service.Format(Lang.UndoDeleteControlNamed,
-                    Services.ControlNameDefaults.Display(control)),
-                () =>
-                {
-                    if (!_currentScreen.Controls.Contains(control))
-                        _currentScreen.Controls.Insert(Math.Min(index, _currentScreen.Controls.Count), control);
-                },
-                () => _currentScreen.Controls.Remove(control)));
+            if (control == null) return;
+            // 层级感知删除：容器子控件从父的 Children 移除，顶层控件按原下标移除，都可撤销
+            if (!CanvasPanel.Canvas.DeleteControlsWithHistory(new[] { control })) return;
             PropertyPanel.BindControl(null);
             ProjectExplorerPanel.Refresh(_currentScreen);
             LayerPanel.Refresh();

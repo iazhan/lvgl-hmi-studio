@@ -50,6 +50,12 @@ public static class ProjectSerializer
 
     private static void MigrateLegacyControl(HmiControl control)
     {
+        // 容器子控件不在平铺列表里，递归迁移（否则旧工程里子控件的单一绑定/动作不会被搬过来）
+        foreach (var child in control.Children)
+        {
+            MigrateLegacyControl(child);
+        }
+
         // 迁移单一 VariableBindingId → VariableBindings 集合
         if (!string.IsNullOrEmpty(control.VariableBindingId) && control.VariableBindings.Count == 0)
         {
