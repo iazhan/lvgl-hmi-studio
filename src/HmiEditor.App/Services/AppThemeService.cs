@@ -81,6 +81,7 @@ public sealed class AppThemeService
             ["HmiBgElevated"]        = "#1e293b",
             ["HmiBgSelected"]        = "#1e3a5f",
             ["HmiInputBorder"]       = "#334155",
+            ["HmiCheckOff"]          = "#1e283c",   // 复选框未勾选框底（深色主题）
             ["HmiTextHint"]          = "#7c8aa0",
             ["HmiTextPrimarySoft"]   = "#cbd5e1",
             ["HmiLink"]              = "#38bdf8",
@@ -117,6 +118,7 @@ public sealed class AppThemeService
             ["HmiBgElevated"]        = "#f4f6f9",   // 侧边栏/悬浮层（浅灰区分，原 #e2e8f0 过深）
             ["HmiBgSelected"]        = "#e3edff",   // 选中项（柔和浅蓝，保证 Muted 文字 ≥4.5:1，原 #d7e6fb 仅 4.30:1）
             ["HmiInputBorder"]       = "#b7c1cc",   // 输入框边框（原 #94a3b8 过重）
+            ["HmiCheckOff"]          = "#f4f6f9",   // 复选框未勾选框底（浅底上不能再用深色块）
             ["HmiTextHint"]          = "#64748b",   // 占位/空态提示（原 #8492a3 仅 3.17:1，加深至 4.76:1）
             ["HmiTextPrimarySoft"]   = "#2d3a4c",   // 软正文
             ["HmiLink"]              = "#0369a1",   // 链接（加深保证浅底可读）

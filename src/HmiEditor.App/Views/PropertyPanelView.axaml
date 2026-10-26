@@ -370,8 +370,8 @@
                             <TextBox x:Name="PropName" Grid.Column="1"
                                      Text="" TextChanged="OnPropertyChanged"/>
                         </Grid>
-                        <Grid ColumnDefinitions="62,*">
-                            <TextBlock Text="{res:Loc prop.text}" Grid.Column="0"
+                        <Grid x:Name="RowText" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblPropText" Text="{res:Loc prop.text}" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
                             <TextBox x:Name="PropText" Grid.Column="1"
                                      Text="" TextChanged="OnPropertyChanged"/>
@@ -379,133 +379,150 @@
                     </StackPanel>
                 </Expander>
 
-                <!-- ═══ 外观样式（颜色 → 边框 → 文本 → 控件相关属性） ═══ -->
-                <Expander Header="{res:Loc prop.appearance}" IsExpanded="True"
+                <!-- ═══ 外观样式（颜色 → 边框 → 文本 → 控件相关属性） ═══
+                     一行一个 Grid + StackPanel：这些行按控件类型显隐，用固定行数的 Grid 会让
+                     隐藏行照样占 RowSpacing（顶部一大片空白），StackPanel 则整行塌掉。 -->
+                <Expander x:Name="AppearanceExpander" Header="{res:Loc prop.appearance}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                          ColumnDefinitions="62,*,28" RowSpacing="6" Margin="0,4,0,0">
-                        <!-- 0 · 背景色（含色板） -->
-                        <TextBlock Text="{res:Loc prop.bg.color}" Grid.Row="0" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <TextBox x:Name="PropBgColor" Grid.Row="0" Grid.Column="1"
-                                 Text="" TextChanged="OnPropertyChanged"
-                                 PlaceholderText="{res:Loc prop.color.hint}"/>
-                        <Border x:Name="SwatchBgColor" Grid.Row="0" Grid.Column="2"
-                                Width="22" Height="22" CornerRadius="4"
-                                Background="{StaticResource HmiAccentHoverBrush}"
-                                BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
-                                PointerPressed="OnColorSwatchClicked"
-                                Tag="PropBgColor" Cursor="Hand"/>
-                        <!-- 1 · 不透明度 -->
-                        <TextBlock x:Name="LblOpacity" Text="{res:Loc prop.opacity}" Grid.Row="1" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <fa:FANumberBox x:Name="OpacityBox" Grid.Row="1" Grid.Column="1"
-                                        Grid.ColumnSpan="2" Value="100" Minimum="0" Maximum="100"
-                                        SmallChange="5" LargeChange="10"
-                                        SpinButtonPlacementMode="Compact"/>
-                        <!-- 2 · 圆角 -->
-                        <TextBlock Text="{res:Loc prop.radius}" Grid.Row="2" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <fa:FANumberBox x:Name="PropRadius" Grid.Row="2" Grid.Column="1"
-                                        Grid.ColumnSpan="2" Value="0" Minimum="0" SmallChange="1" LargeChange="5"
-                                        SpinButtonPlacementMode="Compact"/>
-                        <!-- 3 · 边框宽度 -->
-                        <TextBlock Text="{res:Loc prop.border.width}" Grid.Row="3" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <fa:FANumberBox x:Name="PropBorderWidth" Grid.Row="3" Grid.Column="1"
-                                        Grid.ColumnSpan="2" Value="0" Minimum="0" SmallChange="1" LargeChange="5"
-                                        SpinButtonPlacementMode="Compact"/>
-                        <!-- 4 · 边框颜色 -->
-                        <TextBlock Text="{res:Loc prop.border.color}" Grid.Row="4" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <TextBox x:Name="PropBorderColor" Grid.Row="4" Grid.Column="1"
-                                 Text="" TextChanged="OnPropertyChanged"
-                                 PlaceholderText="{res:Loc prop.color.hint}"/>
-                        <Border x:Name="SwatchBorderColor" Grid.Row="4" Grid.Column="2"
-                                Width="22" Height="22" CornerRadius="4"
-                                Background="{StaticResource HmiInputBorderBrush}"
-                                BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
-                                PointerPressed="OnColorSwatchClicked"
-                                Tag="PropBorderColor" Cursor="Hand"/>
-                        <!-- 5 · 文本色 -->
-                        <TextBlock Text="{res:Loc prop.text.color}" Grid.Row="5" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <TextBox x:Name="PropTextColor" Grid.Row="5" Grid.Column="1"
-                                 Text="" TextChanged="OnPropertyChanged"
-                                 PlaceholderText="{res:Loc prop.color.hint}"/>
-                        <Border x:Name="SwatchTextColor" Grid.Row="5" Grid.Column="2"
-                                Width="22" Height="22" CornerRadius="4"
-                                Background="{StaticResource HmiTextPrimaryBrush}"
-                                BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
-                                PointerPressed="OnColorSwatchClicked"
-                                Tag="PropTextColor" Cursor="Hand"/>
-                        <!-- 6 · 字体（下拉选已有字体资源） -->
-                        <TextBlock x:Name="LblFontFamily" Text="{res:Loc prop.font.family}" Grid.Row="6" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="PropFontFamily" Grid.Row="6" Grid.Column="1"
-                                  Grid.ColumnSpan="2"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
-                                  HorizontalAlignment="Stretch"
-                                  SelectionChanged="OnPropertyChanged"/>
-                        <!-- 7 · 字号 -->
-                        <TextBlock x:Name="LblFontSize" Text="{res:Loc prop.font.size}" Grid.Row="7" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <fa:FANumberBox x:Name="PropFontSize" Grid.Row="7" Grid.Column="1"
-                                        Grid.ColumnSpan="2" Value="14" Minimum="6" Maximum="72"
-                                        ToolTip.Tip="{res:Loc prop.font.size.export.hint}"
-                                        SmallChange="1" LargeChange="4"
-                                        SpinButtonPlacementMode="Compact"/>
-                        <!-- 8 · 水平对齐 -->
-                        <TextBlock x:Name="LblTextAlign" Text="{res:Loc prop.text.align}" Grid.Row="8" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="PropTextAlign" Grid.Row="8" Grid.Column="1"
-                                  Grid.ColumnSpan="2"
-                                  ToolTip.Tip="{res:Loc prop.text.align.export.hint}"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
-                                  HorizontalAlignment="Stretch"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.align.left}" Tag="Left"/>
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.align.center}" Tag="Center"/>
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.align.right}" Tag="Right"/>
-                        </ComboBox>
-                        <!-- 9 · 垂直对齐 -->
-                        <TextBlock Text="{res:Loc prop.text.valign}" Grid.Row="9" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                        <ComboBox x:Name="PropTextVAlign" Grid.Row="9" Grid.Column="1"
-                                  Grid.ColumnSpan="2"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
-                                  HorizontalAlignment="Stretch"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.valign.top}" Tag="Top"/>
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.valign.middle}" Tag="Middle"/>
-                            <ComboBoxItem Content="{res:Loc prop.visual.state.valign.bottom}" Tag="Bottom"/>
-                        </ComboBox>
-                        <!-- 10 · 指示器颜色（仅 Slider/Bar/Switch/Gauge/Knob） -->
-                        <TextBlock x:Name="LblIndicatorColor" Text="{res:Loc prop.indicator.color}" Grid.Row="10" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"
-                                   IsVisible="False"/>
-                        <TextBox x:Name="IndicatorColorBox" Grid.Row="10" Grid.Column="1"
-                                 Text="" TextChanged="OnPropertyChanged"
-                                 PlaceholderText="{res:Loc prop.color.hint}"
-                                 IsVisible="False"/>
-                        <Border x:Name="SwatchIndicatorColor" Grid.Row="10" Grid.Column="2"
-                                Width="22" Height="22" CornerRadius="4"
-                                Background="{StaticResource HmiLinkBrush}"
-                                BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
-                                PointerPressed="OnColorSwatchClicked"
-                                Tag="IndicatorColor" Cursor="Hand" IsVisible="False"/>
-                        <!-- 11 · 选中状态（仅 CheckBox/Switch） -->
-                        <TextBlock x:Name="LblIsChecked" Text="{res:Loc prop.selected}" Grid.Row="11" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"
-                                   IsVisible="False"/>
-                        <CheckBox x:Name="PropIsChecked" Grid.Row="11" Grid.Column="1"
-                                  Grid.ColumnSpan="2"
-                                  IsVisible="False"
-                                  IsCheckedChanged="OnPropertyChanged"/>
-                    </Grid>
+                    <StackPanel Spacing="6" Margin="0,4,0,0" VerticalAlignment="Top">
+                        <!-- 背景色（含色板） -->
+                        <Grid x:Name="RowBgColor" ColumnDefinitions="62,*,28">
+                            <TextBlock x:Name="LblBgColor" Text="{res:Loc prop.bg.color}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="PropBgColor" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                            <Border x:Name="SwatchBgColor" Grid.Column="2"
+                                    Width="22" Height="22" CornerRadius="4"
+                                    Background="{StaticResource HmiAccentHoverBrush}"
+                                    BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                    PointerPressed="OnColorSwatchClicked"
+                                    Tag="PropBgColor" Cursor="Hand"/>
+                        </Grid>
+                        <!-- 不透明度 -->
+                        <Grid x:Name="RowOpacity" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblOpacity" Text="{res:Loc prop.opacity}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="OpacityBox" Grid.Column="1"
+                                            Value="100" Minimum="0" Maximum="100"
+                                            SmallChange="5" LargeChange="10"
+                                            SpinButtonPlacementMode="Compact"/>
+                        </Grid>
+                        <!-- 圆角 -->
+                        <Grid x:Name="RowRadius" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblRadius" Text="{res:Loc prop.radius}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="PropRadius" Grid.Column="1"
+                                            Value="0" Minimum="0" SmallChange="1" LargeChange="5"
+                                            SpinButtonPlacementMode="Compact"/>
+                        </Grid>
+                        <!-- 边框宽度 -->
+                        <Grid x:Name="RowBorderWidth" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblBorderWidth" Text="{res:Loc prop.border.width}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="PropBorderWidth" Grid.Column="1"
+                                            Value="0" Minimum="0" SmallChange="1" LargeChange="5"
+                                            SpinButtonPlacementMode="Compact"/>
+                        </Grid>
+                        <!-- 边框颜色 -->
+                        <Grid x:Name="RowBorderColor" ColumnDefinitions="62,*,28">
+                            <TextBlock x:Name="LblBorderColor" Text="{res:Loc prop.border.color}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="PropBorderColor" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                            <Border x:Name="SwatchBorderColor" Grid.Column="2"
+                                    Width="22" Height="22" CornerRadius="4"
+                                    Background="{StaticResource HmiInputBorderBrush}"
+                                    BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                    PointerPressed="OnColorSwatchClicked"
+                                    Tag="PropBorderColor" Cursor="Hand"/>
+                        </Grid>
+                        <!-- 文本色 -->
+                        <Grid x:Name="RowTextColor" ColumnDefinitions="62,*,28">
+                            <TextBlock x:Name="LblTextColor" Text="{res:Loc prop.text.color}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="PropTextColor" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                            <Border x:Name="SwatchTextColor" Grid.Column="2"
+                                    Width="22" Height="22" CornerRadius="4"
+                                    Background="{StaticResource HmiTextPrimaryBrush}"
+                                    BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                    PointerPressed="OnColorSwatchClicked"
+                                    Tag="PropTextColor" Cursor="Hand"/>
+                        </Grid>
+                        <!-- 字体（下拉选已有字体资源） -->
+                        <Grid x:Name="RowFontFamily" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblFontFamily" Text="{res:Loc prop.font.family}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="PropFontFamily" Grid.Column="1"
+                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="OnPropertyChanged"/>
+                        </Grid>
+                        <!-- 字号 -->
+                        <Grid x:Name="RowFontSize" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblFontSize" Text="{res:Loc prop.font.size}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="PropFontSize" Grid.Column="1"
+                                            Value="14" Minimum="6" Maximum="72"
+                                            ToolTip.Tip="{res:Loc prop.font.size.export.hint}"
+                                            SmallChange="1" LargeChange="4"
+                                            SpinButtonPlacementMode="Compact"/>
+                        </Grid>
+                        <!-- 水平对齐 -->
+                        <Grid x:Name="RowTextAlign" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblTextAlign" Text="{res:Loc prop.text.align}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="PropTextAlign" Grid.Column="1"
+                                      ToolTip.Tip="{res:Loc prop.text.align.export.hint}"
+                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="OnPropertyChanged">
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.align.left}" Tag="Left"/>
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.align.center}" Tag="Center"/>
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.align.right}" Tag="Right"/>
+                            </ComboBox>
+                        </Grid>
+                        <!-- 垂直对齐 -->
+                        <Grid x:Name="RowTextVAlign" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblTextVAlign" Text="{res:Loc prop.text.valign}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="PropTextVAlign" Grid.Column="1"
+                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="OnPropertyChanged">
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.valign.top}" Tag="Top"/>
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.valign.middle}" Tag="Middle"/>
+                                <ComboBoxItem Content="{res:Loc prop.visual.state.valign.bottom}" Tag="Bottom"/>
+                            </ComboBox>
+                        </Grid>
+                        <!-- 指示器颜色（仅 Slider/Bar/Switch/Gauge/Knob） -->
+                        <Grid x:Name="RowIndicatorColor" ColumnDefinitions="62,*,28" IsVisible="False">
+                            <TextBlock x:Name="LblIndicatorColor" Text="{res:Loc prop.indicator.color}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="IndicatorColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                            <Border x:Name="SwatchIndicatorColor" Grid.Column="2"
+                                    Width="22" Height="22" CornerRadius="4"
+                                    Background="{StaticResource HmiLinkBrush}"
+                                    BorderThickness="1" BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                    PointerPressed="OnColorSwatchClicked"
+                                    Tag="IndicatorColor" Cursor="Hand"/>
+                        </Grid>
+                        <!-- 选中状态（仅 CheckBox/Switch） -->
+                        <Grid x:Name="RowIsChecked" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblIsChecked" Text="{res:Loc prop.selected}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PropIsChecked" Grid.Column="1"
+                                      IsCheckedChanged="OnPropertyChanged"/>
+                        </Grid>
+                    </StackPanel>
                 </Expander>
 
                 <!-- ═══ 状态样式（仅 Button/Switch/CheckBox 显示）═══ -->
@@ -730,7 +747,11 @@
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                          ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
+                          ColumnDefinitions="70,*" RowSpacing="0" Margin="0,4,0,0">
+                        <!-- 必须显式 RowSpacing="0"：本表大部分行对某个控件类型是隐藏的，而
+                             RowSpacing 对 0 高度的隐藏行照样生效（88 行 × 4px ≈ 350px 空白）。
+                             `Expander Grid` 那条全局样式默认给 4，局部写 0 才能压住它。
+                             行间距由每个输入控件自带的 Margin="0,2" 提供。 -->
                         <TextBlock x:Name="LblMinValue" Text="{res:Loc prop.param.min}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <fa:FANumberBox x:Name="MinValueBox" Grid.Row="0" Grid.Column="1"
@@ -1040,6 +1061,94 @@
                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
                                  TextChanged="OnPropertyChanged"/>
+                        <!-- 图片族（值换图/帧动画/二维码）与内容型（消息条/枚举文本/滚轮）的专属行。
+                             这几类此前面板上一行都没有，等于不可配；值换图与帧动画还会因为缺必填项
+                             直接导出失败。 -->
+                        <TextBlock x:Name="LblStateImages" Text="{res:Loc prop.detail.stateimage.images}" Grid.Row="44" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="StateImagesBox" Grid.Row="44" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.stateimage.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblFrameImages" Text="{res:Loc prop.detail.frameanim.frames}" Grid.Row="45" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="FrameImagesBox" Grid.Row="45" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.frameanim.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblFrameInterval" Text="{res:Loc prop.detail.frameanim.interval}" Grid.Row="46" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="FrameIntervalBox" Grid.Row="46" Grid.Column="1"
+                                        Value="120" Minimum="20" Maximum="5000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblFrameLoop" Text="{res:Loc prop.detail.frameanim.loop}" Grid.Row="47" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="FrameLoopCheck" Grid.Row="47" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblQrText" Text="{res:Loc prop.detail.qr.text}" Grid.Row="48" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="QrTextBox" Grid.Row="48" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblQrDark" Text="{res:Loc prop.detail.qr.dark}" Grid.Row="49" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="QrDarkColorBox" Grid.Row="49" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblQrLight" Text="{res:Loc prop.detail.qr.light}" Grid.Row="50" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="QrLightColorBox" Grid.Row="50" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblMessageText" Text="{res:Loc prop.detail.message.text}" Grid.Row="51" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="MessageTextBox" Grid.Row="51" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblMessageLevel" Text="{res:Loc prop.detail.message.level}" Grid.Row="52" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="MessageLevelCombo" Grid.Row="52" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.detail.message.level.info}" Tag="info"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.message.level.warn}" Tag="warn"/>
+                            <ComboBoxItem Content="{res:Loc prop.detail.message.level.error}" Tag="error"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblMessageAutoHide" Text="{res:Loc prop.detail.message.autohide}" Grid.Row="53" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="MessageAutoHideBox" Grid.Row="53" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="600000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblMessageMarquee" Text="{res:Loc prop.detail.message.marquee}" Grid.Row="54" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="MessageMarqueeCheck" Grid.Row="54" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblEnumTextValue" Text="{res:Loc prop.detail.enumtext.value}" Grid.Row="55" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="EnumTextValueBox" Grid.Row="55" Grid.Column="1" FontSize="13" Margin="0,2"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblRollerOptions" Text="{res:Loc prop.detail.roller.options}" Grid.Row="56" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <TextBox x:Name="RollerOptionsBox" Grid.Row="56" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"
+                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
+                                 PlaceholderText="{res:Loc prop.detail.roller.hint}" TextChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblRollerRows" Text="{res:Loc prop.detail.roller.rows}" Grid.Row="57" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="RollerRowsBox" Grid.Row="57" Grid.Column="1"
+                                        Value="3" Minimum="3" Maximum="7"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
                 </Expander>
 
@@ -1048,8 +1157,10 @@
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
                     <!-- 行数 ≥ 下面最大 Grid.Row+1（当前 0..30） -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                          ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="70,*" RowSpacing="0" Margin="0,4,0,0">
+                        <!-- 同「控件功能参数」：必须显式 0，否则 `Expander Grid` 的全局 4px 让
+                             隐藏行也占位（69 行 → 276px 空白）。 -->
                         <TextBlock x:Name="LblGaugeArcWidth" Text="{res:Loc prop.detail.gauge.arcwidth}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <fa:FANumberBox x:Name="GaugeArcWidthBox" Grid.Row="0" Grid.Column="1"

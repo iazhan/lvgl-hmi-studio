@@ -65,6 +65,9 @@ public partial class PropertyPanelView : UserControl
         ShowHistTableRows(false);
         ShowRecipeRows(false);
         ShowAsciiRows(false);
+        // 图片族（值换图/帧动画/二维码）与内容型（消息条/枚举文本/滚轮）
+        ShowMediaRows(false);
+        ShowContentRows(false);
         SetParamRow(LblValveType, ValveTypeCombo, false);
         // chenge-runtime 数据控件参数
         SetParamRow(LblUnit, UnitBox, false);
@@ -300,6 +303,18 @@ public partial class PropertyPanelView : UserControl
                 LblMinValue.Text = AppLocalization.Service[Lang.ArcStartAngle];
                 LblMaxValue.Text = AppLocalization.Service[Lang.ArcEndAngle];
                 break;
+            // 图片族（值换图/帧动画/二维码）与内容型（消息条/枚举文本/滚轮）的专属行：
+            // 都在「控件功能参数」里（与 min/max/options 同区），没有「控件细节」行。
+            case HmiControlType.StateImage:
+            case HmiControlType.FrameAnim:
+            case HmiControlType.QrCode:
+                ShowMediaRowsFor(control.Type);
+                break;
+            case HmiControlType.Message:
+            case HmiControlType.EnumText:
+            case HmiControlType.Roller:
+                ShowContentRowsFor(control.Type);
+                break;
             default:
                 anyVisible = false;
                 break;
@@ -312,24 +327,18 @@ public partial class PropertyPanelView : UserControl
             LblMaxValue.Text = AppLocalization.Service[Lang.PropParamMax];
         }
 
-        // 🩸 阶段 220（#96 的"统一可见性"那半）：**字体族/字号/水平对齐三行只对文本类控件显示**。
-        //   此前它们对所有类型都显示 ⇒ 形状/Led/Slider 之类改了既不进导出、预览也看不出效果
-        //   （用户会以为"设置丢了"）。（removed：与 `CodeGenerator.Screen.cs` 保持一致的约束
-        //   随 C 导出路径删除，这里只按「用户在面板上看得见」定名单。）
-        //   Label / Button / CheckBox / TextArea（＋ Dropdown 在 `EmitDropdownParameters` 里发对齐）。
-        var textBearing = control.Type is HmiControlType.Label or HmiControlType.Button
-            or HmiControlType.CheckBox or HmiControlType.TextArea or HmiControlType.Dropdown;
-        SetParamRow(LblFontFamily, PropFontFamily, textBearing);
-        SetParamRow(LblFontSize, PropFontSize, textBearing);
-        SetParamRow(LblTextAlign, PropTextAlign, textBearing);
+        // 字体族 / 字号 / 对齐的显隐跟着「内容 + 外观样式」那张表走（见 AppearanceRows.cs），
+        // 免得两处各写一份名单后漂移。
 
-        // 旋转/镜像：所有控件通用（旋转角度 + 方向 + 水平/垂直镜像 + 重置）
-        SetParamRow(LblRotation, RotationBox, true);
-        SetParamRow(LblRotationDir, RotationDirCombo, true);
-        SetParamRow(LblMirrorH, MirrorHCheck, true);
-        SetParamRow(LblMirrorV, MirrorVCheck, true);
-        BtnResetRotation.IsVisible = true;
-        anyVisible = true;   // 保证参数区展开以显示变换设置
+        // 旋转/镜像：只有运行时 apply_transform 支持的档位才显示（图片 / 图元 / 文本类），
+        // 其余类型连行都不出现 —— 免得用户设了之后只在导出时撞 Error。
+        var hasTransform = HasTransform(control.Type);
+        SetParamRow(LblRotation, RotationBox, hasTransform);
+        SetParamRow(LblRotationDir, RotationDirCombo, hasTransform);
+        SetParamRow(LblMirrorH, MirrorHCheck, hasTransform);
+        SetParamRow(LblMirrorV, MirrorVCheck, hasTransform);
+        BtnResetRotation.IsVisible = hasTransform;
+        anyVisible |= hasTransform;
 
         ControlParamExpander.IsVisible = anyVisible;
         if (!anyVisible) return;
@@ -372,6 +381,8 @@ public partial class PropertyPanelView : UserControl
         PipeChannelColorBox.Text = control.PipeChannelColor ?? "";
         SelectComboByTag(ShapeKindCombo, control.ShapeKind, 0);
         FillBatch5Fields(control);
+        FillMediaFields(control);
+        FillContentFields(control);
 
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";

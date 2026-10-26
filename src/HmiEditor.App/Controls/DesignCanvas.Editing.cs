@@ -27,13 +27,18 @@ public partial class DesignCanvas : Control
     /// <summary>
     /// 从工具箱添加控件到画布中心区域。
     /// </summary>
-    public HmiControl AddControl(HmiControlType type, double centerX, double centerY)
+    /// <param name="shapeKind">
+    /// 图元的种类（<c>rect</c> / <c>circle</c> / <c>container</c> …）。工具箱里每个形状是一条
+    /// 独立条目，靠它区分；只有 <see cref="HmiControlType.Shape"/> 会消费这个值。
+    /// </param>
+    public HmiControl AddControl(HmiControlType type, double centerX, double centerY,
+        string? shapeKind = null)
     {
         var (defaultW, defaultH) = DefaultSize(type);
         return AddControlAt(type,
             SnapToGrid(centerX - defaultW / 2),
             SnapToGrid(centerY - defaultH / 2),
-            defaultW, defaultH);
+            defaultW, defaultH, null, shapeKind);
     }
 
     /// <summary>
@@ -41,13 +46,14 @@ public partial class DesignCanvas : Control
     /// 顶点列表（Polyline）可选，未传时按类型给出默认几何。
     /// </summary>
     public HmiControl AddControlAt(HmiControlType type, double x, double y,
-        double width, double height, IReadOnlyList<PointData>? points = null)
+        double width, double height, IReadOnlyList<PointData>? points = null,
+        string? shapeKind = null)
     {
         var screen = Screen;
         if (screen == null)
             throw new InvalidOperationException("Screen must be set before adding controls.");
 
-        var control = BuildControl(type, x, y, width, height, points);
+        var control = BuildControl(type, x, y, width, height, points, shapeKind);
 
         screen.Controls.Add(control);
         SelectControl(control);
@@ -112,7 +118,8 @@ public partial class DesignCanvas : Control
     /// 供 <see cref="AddControlAt"/> 与绘图提交共用，保证两路径默认外观一致。
     /// </summary>
     private HmiControl BuildControl(HmiControlType type, double x, double y,
-        double width, double height, IReadOnlyList<PointData>? points)
+        double width, double height, IReadOnlyList<PointData>? points,
+        string? shapeKind = null)
     {
         var screen = Screen;
         if (screen == null)
@@ -135,6 +142,8 @@ public partial class DesignCanvas : Control
         var control = new HmiControl
         {
             Type = type,
+            // 只有图元带种类：其余类型忽略（把 kind 写进别的控件会生成非法属性）
+            ShapeKind = type == HmiControlType.Shape ? shapeKind : null,
             Name = uniqueName,
             X = x,
             Y = y,
@@ -169,6 +178,20 @@ public partial class DesignCanvas : Control
                 _ => "#334155"
             }
         };
+
+        // 下拉框/滚轮的选项必须非空：运行时 build_combobox/build_roller 拿不到 options
+        // 会直接 return -1 ⇒ 整页建页失败 ⇒ 画布一片空白（不是"控件不显示"那么轻）。
+        if (type == HmiControlType.Dropdown && string.IsNullOrWhiteSpace(control.Options))
+            control.Options = HmiEditor.App.Resources.AppLocalization.Service[
+                HmiEditor.App.Resources.Lang.DefaultOptions];
+        if (type == HmiControlType.Roller && string.IsNullOrWhiteSpace(control.RollerOptions))
+            control.RollerOptions = HmiEditor.App.Resources.AppLocalization.Service[
+                HmiEditor.App.Resources.Lang.DefaultOptions];
+        // 页签同理：没有 tabs 的 tabview 会被导出器整块跳过（"页签控件没有页签名"），
+        // 新建出来就不可用。给两个默认页签，用户再改名。
+        if (type == HmiControlType.TabView && string.IsNullOrWhiteSpace(control.TabTitles))
+            control.TabTitles = HmiEditor.App.Resources.AppLocalization.Service[
+                HmiEditor.App.Resources.Lang.DefaultTabs];
 
         // I10: 图形默认几何 —— 边框/圆角/指示色/角度范围/顶点（仅在未显式配置时给出）
         switch (type)

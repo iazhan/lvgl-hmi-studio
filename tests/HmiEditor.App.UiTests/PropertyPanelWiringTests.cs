@@ -138,6 +138,22 @@ public class PropertyPanelWiringTests
         ["CurveYDigitsBox"] = "曲线左轴整数位：同上",
         ["CurveY2MinBox"] = "曲线右轴下限：同上",
         ["UnitBox"] = "数值显示单位：驱动脚本对它改值未产生差异（顺序相关）",
+        // 图片族（值换图/帧动画/二维码）与内容型（消息条/枚举文本/滚轮）：同批次 5，
+        // 夹具里还没有这几类，整块显隐；写回见 PropertyPanelView.Changes.Media/Content.cs。
+        ["StateImagesBox"] = "值换图专属行：夹具里还没有 StateImage 类型，整块显隐",
+        ["FrameImagesBox"] = "帧动画专属行：夹具里还没有 FrameAnim 类型，整块显隐",
+        ["FrameIntervalBox"] = "帧动画专属行：夹具里还没有 FrameAnim 类型，整块显隐",
+        ["FrameLoopCheck"] = "帧动画专属行：夹具里还没有 FrameAnim 类型，整块显隐",
+        ["QrTextBox"] = "二维码专属行：夹具里还没有 QrCode 类型，整块显隐",
+        ["QrDarkColorBox"] = "二维码专属行：夹具里还没有 QrCode 类型，整块显隐",
+        ["QrLightColorBox"] = "二维码专属行：夹具里还没有 QrCode 类型，整块显隐",
+        ["MessageTextBox"] = "消息条专属行：夹具里还没有 Message 类型，整块显隐",
+        ["MessageLevelCombo"] = "消息条专属行：夹具里还没有 Message 类型，整块显隐",
+        ["MessageAutoHideBox"] = "消息条专属行：夹具里还没有 Message 类型，整块显隐",
+        ["MessageMarqueeCheck"] = "消息条专属行：夹具里还没有 Message 类型，整块显隐",
+        ["EnumTextValueBox"] = "枚举文本专属行：夹具里还没有 EnumText 类型，整块显隐",
+        ["RollerOptionsBox"] = "滚轮专属行：夹具里还没有 Roller 类型，整块显隐",
+        ["RollerRowsBox"] = "滚轮专属行：夹具里还没有 Roller 类型，整块显隐",
         ["TxtActionValue"] = "动作参数值：同上",
         // 批次 1a：仪表 / 指示灯 / 按钮的细节行。夹具清单里还没有这三类（按控件类型枚举时
         // 它们不出现，所以这些行永远不可见），补夹具后应移出本表。

@@ -1292,6 +1292,34 @@ public static class Lang
     public const string TbPolyline     = "tb.polyline";
     public const string TbArc          = "tb.arc";
     public const string TbCatDraw      = "tb.cat.draw";
+
+    /// <summary>新建下拉框/滚轮时的默认选项（多行）。空选项会让导出报错、整页建不起来。</summary>
+    public const string DefaultOptions = "control.default.options";
+
+    /// <summary>新建选项卡时的默认页签名（逗号分隔）。没有页签名导出器会整块跳过该控件。</summary>
+    public const string DefaultTabs = "control.default.tabs";
+
+    // 图元的形状名（shape.kind）：工具箱按形状逐项列出，拖出来就是这个形状
+    public const string TbFigureContainer = "tb.figure.container";
+    public const string TbFigureRect      = "tb.figure.rect";
+    public const string TbFigureRoundRect = "tb.figure.round_rect";
+    public const string TbFigureCircle    = "tb.figure.circle";
+    public const string TbFigureEllipse   = "tb.figure.ellipse";
+    public const string TbFigureLine      = "tb.figure.line";
+    public const string TbFigurePolyline  = "tb.figure.polyline";
+    public const string TbFigurePolygon   = "tb.figure.polygon";
+    public const string TbFigureArc       = "tb.figure.arc";
+    public const string TbFigurePie       = "tb.figure.pie";
+    public const string TbFigureTriangle  = "tb.figure.triangle";
+    public const string TbFigureRightTriangle = "tb.figure.right_triangle";
+    public const string TbFigureDiamond   = "tb.figure.diamond";
+    public const string TbFigureParallelogram = "tb.figure.parallelogram";
+    public const string TbFigureTrapezoid = "tb.figure.trapezoid";
+    public const string TbFigureHexagon   = "tb.figure.hexagon";
+    public const string TbFigureOctagon   = "tb.figure.octagon";
+    public const string TbFigureStar5     = "tb.figure.star5";
+    public const string TbFigureStar      = "tb.figure.star";
+    public const string TbFigureCross     = "tb.figure.cross";
     // chenge-runtime 目标新增
     public const string TbValue        = "tb.value";
     public const string TbAlarmList    = "tb.alarmlist";

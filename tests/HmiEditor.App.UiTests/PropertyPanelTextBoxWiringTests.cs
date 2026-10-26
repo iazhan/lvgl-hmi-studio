@@ -112,6 +112,15 @@ public class PropertyPanelTextBoxWiringTests
         ["HistGroupBox"] = "历史表趋势组：同上",
         ["RecipeColumnsBox"] = "配方表列定义：同上",
         ["RecipeGroupBox"] = "配方表配方组：同上",
+        // 图片族与内容型控件
+        ["StateImagesBox"] = "值换图的 值:图片 映射：同上（**XAML 属性式接线**，不在本面）",
+        ["FrameImagesBox"] = "帧动画的帧图片列表：同上（**XAML 属性式接线**，不在本面）",
+        ["QrTextBox"] = "二维码内容：同上（**XAML 属性式接线**，不在本面）",
+        ["QrDarkColorBox"] = "二维码深色模块色：同上（**XAML 属性式接线**，不在本面）",
+        ["QrLightColorBox"] = "二维码浅色底色：同上（**XAML 属性式接线**，不在本面）",
+        ["MessageTextBox"] = "消息条文字：同上（**XAML 属性式接线**，不在本面）",
+        ["EnumTextValueBox"] = "枚举文本的显示文字：同上（**XAML 属性式接线**，不在本面）",
+        ["RollerOptionsBox"] = "滚轮的选项：同上（**XAML 属性式接线**，不在本面）",
     };
 
     /// <summary>把绑定面板切到「表达式」源（**走生产处理器**），并自检那个框真显示出来了。</summary>

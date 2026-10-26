@@ -207,16 +207,14 @@ public partial class PropertyPanelView : UserControl
             PropTextAlign.SelectedIndex = 1;  // Center
             PropTextVAlign.SelectedIndex = 1; // Middle
             PropIsChecked.IsChecked = false;
-            LblIsChecked.IsVisible = false;
-            PropIsChecked.IsVisible = false;
-            LblIndicatorColor.IsVisible = false;
-            IndicatorColorBox.IsVisible = false;
-            SwatchIndicatorColor.IsVisible = false;
+            RowIsChecked.IsVisible = false;
+            RowIndicatorColor.IsVisible = false;
             OpacityBox.Value = 100;
             FaceplateParamExpander.IsVisible = false;
             VisualStateExpander.IsVisible = false;
             ValueDisplayExpander.IsVisible = false;
             ControlParamExpander.IsVisible = false;
+            AppearanceExpander.IsVisible = false;   // 外观样式是控件级，屏幕模式下没有可改的对象
 
             // 参考 Figma/Sketch/XD：空白区域点击 → 属性栏切换到页面/屏幕属性
             if (CurrentScreen != null)
@@ -268,8 +266,7 @@ public partial class PropertyPanelView : UserControl
             bool supportsChecked = control.Type is HmiControlType.CheckBox
                 or HmiControlType.Switch;
             PropIsChecked.IsChecked = control.IsChecked;
-            LblIsChecked.IsVisible = supportsChecked;
-            PropIsChecked.IsVisible = supportsChecked;
+            RowIsChecked.IsVisible = supportsChecked;
 
             // 指示器颜色（LV_PART_INDICATOR）—— Slider/Bar/Switch/Gauge/Knob
             // 以及过程图形控件（Tank 液位填充色 / Pipe 流动段色 / Valve 开态色）
@@ -279,13 +276,15 @@ public partial class PropertyPanelView : UserControl
                 or HmiControlType.Gauge or HmiControlType.Knob
                 or HmiControlType.Tank or HmiControlType.Pipe or HmiControlType.Valve
                 or HmiControlType.Arc;
-            LblIndicatorColor.IsVisible = supportsIndicator;
-            IndicatorColorBox.IsVisible = supportsIndicator;
-            SwatchIndicatorColor.IsVisible = supportsIndicator;
+            RowIndicatorColor.IsVisible = supportsIndicator;
             IndicatorColorBox.Text = control.IndicatorColor ?? "";
 
             // 不透明度（通用）
             OpacityBox.Value = control.Opacity;
+
+            // 内容 / 背景色 / 边框 / 圆角 / 文字色 / 字号 / 对齐 / 不透明度：按类型显隐
+            // （运行时并不读全部键，见 AppearanceRows.cs 的名单）
+            ShowAppearanceRows(control.Type);
 
             IsEnabled = true;
 

@@ -9,38 +9,31 @@ using Xunit;
 namespace HmiEditor.App.UiTests;
 
 /// <summary>
-/// **面板的"文本样式"三行只对文本类控件显示**（阶段 220，登记 `#96` 的"**统一可见性**"那半）。
+/// **「字号 / 水平对齐 / 字体族」三行只对真正读这些键的控件类型显示**。
 ///
-/// <para><b>此前的问题</b>：`PropFontFamily` / `PropFontSize` / `PropTextAlign` 三行
-/// **对所有控件类型都显示**（`PropertyPanelView.Parameters.cs` 的类型分发表里根本没有它们）
-/// ⇒ 在形状/Led/Slider 这类**没有文本**的控件上改它们，既不进导出、预览也看不出效果，
-/// 用户会以为"设置丢了"。</para>
-///
-/// <para>这一面把名单钉住：**可见** ＝ Label / Button / CheckBox / TextArea / Dropdown
-/// （与 `CodeGenerator.Screen.cs` 的文本块 ＋ `EmitDropdownParameters` 一致）；其余类型**隐藏**。</para>
+/// <para>名单的单一来源是 <c>PropertyPanelView.AppearanceRows.cs</c>（它同时管「内容 / 背景色 /
+/// 边框 / 圆角 / 文字色 / 不透明度」）。判据按**运行时是否真的读**来定，不按"有没有文本"猜：</para>
+/// <list type="bullet">
+/// <item><c>font_size</c>：运行时按类型取 <c>ui_font(fs)</c>，combobox / message / tabview
+/// 等硬编码 16 ⇒ 这些类型不显示；</item>
+/// <item><c>align</c>：只有 <c>apply_text_style</c> / <c>apply_text_valign</c> 那几类读
+/// （input 与 combobox 导出器会写，但运行时不读 ⇒ 不显示）；</item>
+/// <item><c>font_family</c>：导出器只写 <c>font_size</c>（<c>SetFont</c>），**从不读字体族** ⇒
+/// 全类型隐藏（此前的名单把它算成"文本类可见"，那是按生成器文本块猜的，不是按消费端）。</item>
+/// </list>
 /// </summary>
 // DataRootSandbox 会改进程级数据根，必须与大队串行（见 LocalizationRefreshUiTests 的集合定义）
 [Collection("Language-global")]
 public class PropertyPanelTextRowsVisibilityTests
 {
-    private static readonly string[] Rows = { "PropFontFamily", "PropFontSize", "PropTextAlign" };
-    private static readonly string[] Labels = { "LblFontFamily", "LblFontSize", "LblTextAlign" };
+    // 判的是**整行**（外观组每行是一个具名 Grid）：行内输入框永远可见，由行承载显隐
+    private static readonly string[] Rows = { "RowFontFamily", "RowFontSize", "RowTextAlign" };
 
-    private static void AssertRows(PropertyPanelView panel, bool expected, string because)
+    private static void AssertRow(PropertyPanelView panel, string row, bool expected, string because)
     {
-        foreach (var name in Rows)
-        {
-            var control = ControlWiringFace.Find<Control>(panel, name);
-            Assert.True(control.IsVisible == expected,
-                $"{name} 的可见性应为 {expected}（{because}），实际 {control.IsVisible}");
-        }
-
-        foreach (var name in Labels)
-        {
-            var label = ControlWiringFace.Find<Control>(panel, name);
-            Assert.True(label.IsVisible == expected,
-                $"{name} 的可见性应与输入控件一致（{because}），实际 {label.IsVisible}");
-        }
+        var control = ControlWiringFace.Find<Control>(panel, row);
+        Assert.True(control.IsVisible == expected,
+            $"{row} 的可见性应为 {expected}（{because}），实际 {control.IsVisible}");
     }
 
     [Fact]
@@ -61,46 +54,69 @@ public class PropertyPanelTextRowsVisibilityTests
             panel.SetProject(project);
             UiTestHost.Pump(2);
 
+            void Bind(HmiControlType type)
+            {
+                var control = new HmiControl
+                {
+                    Id = "c_" + type, Name = "n_" + type, Type = type,
+                    X = 10, Y = 10, Width = 120, Height = 40, Text = "温度",
+                };
+                screen.Controls.Add(control);
+                panel.BindControl(control);
+                UiTestHost.Pump(3);
+            }
+
             try
             {
-                // 可见：文本类控件（名单与生成器的文本块一致）
+                // 字号：运行时真的按 font_size 取字体的类型
                 foreach (var type in new[]
                          {
                              HmiControlType.Label, HmiControlType.Button, HmiControlType.CheckBox,
+                             HmiControlType.TextArea, HmiControlType.Value, HmiControlType.EnumText,
+                             HmiControlType.AsciiDisplay, HmiControlType.Roller, HmiControlType.Table,
+                             HmiControlType.HistoryCurve,
+                         })
+                {
+                    Bind(type);
+                    AssertRow(panel, "RowFontSize", true, type.ToString());
+                }
+
+                // 水平对齐：只有 apply_text_style 那条链上的类型
+                foreach (var type in new[]
+                         {
+                             HmiControlType.Label, HmiControlType.Value,
+                             HmiControlType.EnumText, HmiControlType.AsciiDisplay, HmiControlType.Message,
+                         })
+                {
+                    Bind(type);
+                    AssertRow(panel, "RowTextAlign", true, type.ToString());
+                }
+
+                // 按钮文字居中固定、input/combobox 导出但运行时不读 ⇒ 对齐行不显示
+                foreach (var type in new[]
+                         {
+                             HmiControlType.Button, HmiControlType.CheckBox,
                              HmiControlType.TextArea, HmiControlType.Dropdown,
                          })
                 {
-                    var control = new HmiControl
-                    {
-                        Id = "c_" + type, Name = "n_" + type, Type = type,
-                        X = 10, Y = 10, Width = 120, Height = 40, Text = "温度",
-                    };
-                    screen.Controls.Add(control);
-
-                    panel.BindControl(control);
-                    UiTestHost.Pump(3);
-
-                    AssertRows(panel, true, type.ToString());
+                    Bind(type);
+                    AssertRow(panel, "RowTextAlign", false, type.ToString());
                 }
 
-                // 隐藏：没有文本的控件
+                // 字体族：导出器从不读 ⇒ 连 Label 都不显示
+                Bind(HmiControlType.Label);
+                AssertRow(panel, "RowFontFamily", false, "Label（导出器不读字体族）");
+
+                // 没有文本的控件：三行全隐藏
                 foreach (var type in new[]
                          {
                              HmiControlType.Rectangle, HmiControlType.Slider, HmiControlType.Led,
                              HmiControlType.Image, HmiControlType.Gauge,
                          })
                 {
-                    var control = new HmiControl
-                    {
-                        Id = "s_" + type, Name = "s_" + type, Type = type,
-                        X = 10, Y = 10, Width = 120, Height = 40,
-                    };
-                    screen.Controls.Add(control);
-
-                    panel.BindControl(control);
-                    UiTestHost.Pump(3);
-
-                    AssertRows(panel, false, type.ToString());
+                    Bind(type);
+                    for (var i = 0; i < Rows.Length; i++)
+                        AssertRow(panel, Rows[i], false, type.ToString());
                 }
             }
             finally
