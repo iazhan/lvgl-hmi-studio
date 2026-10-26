@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
@@ -21,6 +22,16 @@ public class SelectionAdorner : Control
 
     public static readonly StyledProperty<bool> ShowMultiSelectionProperty =
         AvaloniaProperty.Register<SelectionAdorner, bool>(nameof(ShowMultiSelection), false);
+
+    /// <summary>选中框的旋转角（度，顺时针为正）。控件设了旋转时框跟着转，否则框和位图对不上。</summary>
+    public static readonly StyledProperty<double> SelectionRotationProperty =
+        AvaloniaProperty.Register<SelectionAdorner, double>(nameof(SelectionRotation));
+
+    public double SelectionRotation
+    {
+        get => GetValue(SelectionRotationProperty);
+        set => SetValue(SelectionRotationProperty, value);
+    }
 
     public Rect SelectionBounds
     {
@@ -61,29 +72,23 @@ public class SelectionAdorner : Control
         base.Render(context);
         if (!IsSelectionVisible) return;
 
-        // 选择框虚线
+        // 选择框虚线（控件带旋转时，框绕自身中心一起转）
         var pen = new Pen(new SolidColorBrush(Color.FromRgb(56, 189, 248)), 1)
         {
             DashStyle = DashStyle.Dash
         };
-        context.DrawRectangle(null, pen, SelectionBounds);
 
-        // 多选模式 → 不绘制手柄
-        if (ShowMultiSelection) goto DrawGuides;
-
-        // 8 个缩放手柄（白底蓝框）
-        var handleBrush = Brushes.White;
-        var handlePen = new Pen(new SolidColorBrush(Color.FromRgb(56, 189, 248)), 1);
-        var hs = HandleSize;
-
-        var handles = GetHandlePositions();
-        foreach (var pt in handles)
+        var angle = SelectionRotation % 360;
+        if (angle == 0)
         {
-            var rect = new Rect(pt.X - hs / 2, pt.Y - hs / 2, hs, hs);
-            context.DrawRectangle(handleBrush, handlePen, rect);
+            DrawFrameAndHandles(context, pen);
         }
-
-        DrawGuides:
+        else
+        {
+            // 参考线是视口坐标，不能跟着转 —— 所以只在框与手柄这一小段里压入变换
+            using (context.PushTransform(RotationAround(SelectionBounds.Center, angle)))
+                DrawFrameAndHandles(context, pen);
+        }
 
         // 绘制对齐参考线（虚线红色）
         var guidePen = new Pen(new SolidColorBrush(Color.FromRgb(255, 80, 80)), 0.8)
@@ -110,6 +115,34 @@ public class SelectionAdorner : Control
                 }
             }
         }
+    }
+
+    /// <summary>画虚线框 + 8 个缩放手柄（调用方可能已经压入了旋转变换）。</summary>
+    private void DrawFrameAndHandles(DrawingContext context, Pen pen)
+    {
+        context.DrawRectangle(null, pen, SelectionBounds);
+
+        // 多选模式 → 不绘制手柄
+        if (ShowMultiSelection) return;
+
+        var handleBrush = Brushes.White;
+        var handlePen = new Pen(new SolidColorBrush(Color.FromRgb(56, 189, 248)), 1);
+        var hs = HandleSize;
+
+        foreach (var pt in GetHandlePositions())
+        {
+            var rect = new Rect(pt.X - hs / 2, pt.Y - hs / 2, hs, hs);
+            context.DrawRectangle(handleBrush, handlePen, rect);
+        }
+    }
+
+    /// <summary>绕 <paramref name="center"/> 旋转 <paramref name="degrees"/> 度的变换矩阵。</summary>
+    private static Matrix RotationAround(Point center, double degrees)
+    {
+        var rad = degrees * Math.PI / 180.0;
+        return Matrix.CreateTranslation(-center.X, -center.Y)
+               * Matrix.CreateRotation(rad)
+               * Matrix.CreateTranslation(center.X, center.Y);
     }
 
     /// <summary>

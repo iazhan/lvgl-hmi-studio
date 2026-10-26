@@ -736,16 +736,25 @@ public partial class DesignCanvas : Control
         if (control != null)
         {
             adorner.SelectionBounds = GetControlViewRect(control);
+            adorner.SelectionRotation = control.EffectiveRotation();   // 框跟着控件转
             adorner.IsSelectionVisible = true;
         }
         else
         {
             adorner.IsSelectionVisible = false;
+            adorner.SelectionRotation = 0;
         }
         adorner.InvalidateVisual();
     }
 
     public HmiControl? GetSelectedControl() => _selectedControl;
+
+    /// <summary>
+    /// 让选中框（位置 + 旋转角）跟着模型重算一次。
+    /// <para>属性面板改完几何/旋转只刷新了位图，框会停在旧值上 —— 表现为"位图转了、虚线框没转"，
+    /// 要等下次重新选中才对上。</para>
+    /// </summary>
+    public void SyncSelectionVisuals() => UpdateMultiAdorner();
 
     /// <summary>返回所有选中的控件。</summary>
     public IReadOnlyList<HmiControl> GetSelectedControls() => _selectedControls.AsReadOnly();
@@ -793,9 +802,10 @@ public partial class DesignCanvas : Control
 
         if (_selectedControls.Count == 1)
         {
-            // 单选 → 显示常规选择框+手柄
+            // 单选 → 显示常规选择框+手柄（框跟着控件转）
             var ctrl = _selectedControls[0];
             Adorner.SelectionBounds = GetControlViewRect(ctrl);
+            Adorner.SelectionRotation = ctrl.EffectiveRotation();
             Adorner.IsSelectionVisible = true;
             Adorner.ShowMultiSelection = false;
             Adorner.InvalidateVisual();
@@ -822,6 +832,7 @@ public partial class DesignCanvas : Control
         }
 
         Adorner.SelectionBounds = new Avalonia.Rect(minX - 2, minY - 2, maxX - minX + 4, maxY - minY + 4);
+        Adorner.SelectionRotation = 0;   // 多选包围盒是轴对齐的，不跟单个控件的旋转
         Adorner.IsSelectionVisible = true;
         Adorner.ShowMultiSelection = true;
         Adorner.InvalidateVisual();
@@ -866,7 +877,10 @@ public partial class DesignCanvas : Control
     private void HandleDragOver(DragEventArgs e)
     {
         var typeStr = GetDragData(e.DataTransfer);
-        if (typeStr != null && Enum.TryParse<HmiControlType>(typeStr, out var type) && Screen != null)
+        // 载荷是 `Type` 或 `Type|kind`（图元带种类）。这里必须和 HandleDrop 一样先切分：
+        // 拿整串去 TryParse 会失败 ⇒ DragEffects=None ⇒ 图元一律拖不进画布（只是看起来在拖）。
+        var parts = typeStr?.Split('|', 2);
+        if (parts is { Length: > 0 } && Enum.TryParse<HmiControlType>(parts[0], out var type) && Screen != null)
         {
             var pointer = e.GetPosition(this);
             var model = Coordinates.ScreenToModel(pointer);
@@ -904,15 +918,19 @@ public partial class DesignCanvas : Control
         var typeStr = GetDragData(e.DataTransfer);
         if (typeStr != null)
         {
-            if (Enum.TryParse<HmiControlType>(typeStr, out var type))
+            // 载荷：`Type` 或 `Type|kind`（图元带种类，工具箱里"圆"和"矩形"是两条独立条目）
+            var parts = typeStr.Split('|', 2);
+            if (Enum.TryParse<HmiControlType>(parts[0], out var type))
             {
+                var shapeKind = parts.Length > 1 && parts[1].Length > 0 ? parts[1] : null;
                 var pos = e.GetPosition(this);
                 var modelPoint = Coordinates.ScreenToModel(pos);
                 var modelX = modelPoint.X;
                 var modelY = modelPoint.Y;
                 // 落在容器图元里 → 作为该容器的子控件放入（坐标相对容器）
                 var container = TopmostContainerAt(modelPoint);
-                ControlDropped?.Invoke(this, new ControlDroppedEventArgs(type, modelX, modelY, container));
+                ControlDropped?.Invoke(this,
+                    new ControlDroppedEventArgs(type, modelX, modelY, container, shapeKind));
                 e.DragEffects = DragDropEffects.Copy;
                 e.Handled = true;
                 return;

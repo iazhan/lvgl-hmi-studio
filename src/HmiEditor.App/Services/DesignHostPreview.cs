@@ -274,6 +274,10 @@ public sealed class DesignHostPreview : IDisposable
     /// </summary>
     public void OnControlChanged(HmiControl control)
     {
+        // 选中框跟着模型走：旋转角改了而框不转的话，用户要"下次重新选中"才看到框对上，
+        // 中间这段时间位图与框是错开的（属性面板改角度 + 回车就踩这个）。
+        _canvas?.SyncSelectionVisuals();
+
         if (!IsRunning || control == null || string.IsNullOrEmpty(control.Id)) return;
         if (!_widgetIds.TryGetValue(control.Id, out var wid)) return;
 
