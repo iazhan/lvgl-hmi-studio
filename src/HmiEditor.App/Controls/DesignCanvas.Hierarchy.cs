@@ -93,7 +93,8 @@ public partial class DesignCanvas : Control
     /// 把新控件放进容器（坐标相对容器）。工具箱拖入容器时走这条：
     /// 子控件<b>不进</b> <see cref="HmiScreen.Controls"/> 平铺列表（层级单一事实来源在 Children）。
     /// </summary>
-    public HmiControl AddControlTo(HmiControlType type, double centerX, double centerY, HmiControl container)
+    public HmiControl AddControlTo(HmiControlType type, double centerX, double centerY, HmiControl container,
+        string? shapeKind = null)
     {
         var screen = Screen;
         if (screen == null)
@@ -103,7 +104,8 @@ public partial class DesignCanvas : Control
 
         var (defaultW, defaultH) = DefaultSize(type);
         var control = BuildControl(type,
-            SnapToGrid(centerX - defaultW / 2), SnapToGrid(centerY - defaultH / 2), defaultW, defaultH, null);
+            SnapToGrid(centerX - defaultW / 2), SnapToGrid(centerY - defaultH / 2), defaultW, defaultH, null,
+            shapeKind);
         ContainerHierarchy.AttachAt(container, control, BuildIndex());
         SelectControl(control);
         InvalidateVisual();

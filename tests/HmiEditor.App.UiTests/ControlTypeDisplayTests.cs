@@ -95,7 +95,7 @@ public class ControlTypeDisplayTests
             ("Views/FaceplateTemplateEditorView.axaml.cs", 1),                // 面单「控件摘要」的类型列表
             ("Views/ReferenceRow.cs", 1),                                     // 交叉引用「类型」列（阶段 96 就在了）
             ("MainWindow.axaml.cs", 2),                                       // 多选 / 单选两条状态栏
-            ("Views/ToolboxView.axaml.cs", 43),                               // 工具箱条目名（chenge 数据控件 3 类后：26 → 29）
+            ("Views/ToolboxView.axaml.cs", 1),                                // 只在 Add() 里取一次名（所有条目都走它）
         ];
 
         var problems = new List<string>();

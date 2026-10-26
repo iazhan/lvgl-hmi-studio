@@ -50,7 +50,8 @@ public static class DockLayoutState
     // ── 事件聚合 ──
 
     // ToolboxView 事件
-    public static event EventHandler<HmiControlType>? ToolItemSelected;
+    /// <summary>工具箱选中一个条目（带图元种类）；由 ToolboxView 转发。</summary>
+    public static event EventHandler<Views.ToolboxItem>? ToolItemSelected;
 
     // DesignCanvasView 事件
     public static event EventHandler<HmiControl?>? CanvasControlSelected;
@@ -123,8 +124,8 @@ public static class DockLayoutState
 
     // ── Raise 方法 ──
 
-    internal static void RaiseToolItemSelected(object sender, HmiControlType type)
-        => ToolItemSelected?.Invoke(sender, type);
+    internal static void RaiseToolItemSelected(object sender, Views.ToolboxItem item)
+        => ToolItemSelected?.Invoke(sender, item);
 
     internal static void RaiseCanvasControlSelected(object sender, HmiControl? control)
         => CanvasControlSelected?.Invoke(sender, control);

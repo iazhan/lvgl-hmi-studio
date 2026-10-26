@@ -24,7 +24,11 @@ namespace HmiEditor.App.Views;
 /// </summary>
 public partial class ToolboxView : UserControl
 {
-    public event EventHandler<HmiControlType>? ToolItemSelected;
+    /// <summary>
+    /// 选中并要添加一个控件。载荷是整条 <see cref="ToolboxItem"/> 而不是只带类型 ——
+    /// 图元要靠 <see cref="ToolboxItem.ShapeKind"/> 区分"圆"和"矩形"，只给类型会退化成默认形状。
+    /// </summary>
+    public event EventHandler<ToolboxItem>? ToolItemSelected;
 
     private readonly ObservableCollection<ToolboxItem> _allItems = new();
 
@@ -37,7 +41,7 @@ public partial class ToolboxView : UserControl
     public Dock.Model.Mvvm.Controls.Tool? HostTool { get; set; }
 
     // 持有转发委托以便在 Detached 时对称解绑（Dock 面板会被反复重建，避免事件累积）。
-    private EventHandler<HmiControlType>? _forwardToolSelected;
+    private EventHandler<ToolboxItem>? _forwardToolSelected;
 
     /// <summary>将焦点移入工具箱搜索框并选中现有筛选条件。</summary>
     public void FocusSearch()
@@ -52,7 +56,8 @@ public partial class ToolboxView : UserControl
         PopulateItems();
 
         ToolboxList.ItemsSource = _allItems;
-        ToolboxList.SelectedIndex = 0;
+        // 第一项是组头（不可添加），选中落到第一个真正的控件上
+        ToolboxList.SelectedIndex = Math.Max(0, _allItems.ToList().FindIndex(i => !i.IsHeader));
         ResultCountText.Text = AppLocalization.Service.Format("tb.search.count", _allItems.Count);
 
         AttachDragHandlers(ToolboxList);
@@ -66,7 +71,7 @@ public partial class ToolboxView : UserControl
         base.OnAttachedToVisualTree(e);
 
         // 将事件转发到 DockLayoutState 事件聚合器
-        _forwardToolSelected ??= (s, type) => DockLayoutState.RaiseToolItemSelected(this, type);
+        _forwardToolSelected ??= (s, item) => DockLayoutState.RaiseToolItemSelected(this, item);
         ToolItemSelected += _forwardToolSelected;
     }
 
@@ -146,54 +151,131 @@ public partial class ToolboxView : UserControl
         _ => "M4,4 L20,4 L20,20 L4,20 Z",
     };
 
+    /// <summary>图元的工具箱图标（viewBox 0 0 24 24，描边风格）。按 kind 区分形状。</summary>
+    private static string FigureIcon(string kind) => kind switch
+    {
+        "container"      => "M3,5 L21,5 L21,19 L3,19 Z M6,8 L18,8 L18,16 L6,16 Z",
+        "rect"           => "M4,5 L20,5 L20,19 L4,19 Z",
+        "round_rect"     => "M8,5 L16,5 A4,4 0 0 1 16,19 L8,19 A4,4 0 0 1 8,5 Z",
+        "circle"         => "M12,4 A8,8 0 1 0 12,20 A8,8 0 1 0 12,4 Z",
+        "ellipse"        => "M2,12 A10,6 0 1 0 22,12 A10,6 0 1 0 2,12 Z",
+        "line"           => "M4,18 L20,6",
+        "polyline"       => "M4,17 L9,9 L13,13 L20,5",
+        "polygon"        => "M12,3 L20,8 L17,19 L7,19 L4,8 Z",
+        "arc"            => "M4,17 A8,8 0 0 1 20,17",
+        "pie"            => "M12,12 L12,4 A8,8 0 0 1 19.5,16 Z",
+        "triangle"       => "M12,4 L21,20 L3,20 Z",
+        "right_triangle" => "M4,4 L4,20 L20,20 Z",
+        "diamond"        => "M12,3 L21,12 L12,21 L3,12 Z",
+        "parallelogram"  => "M7,5 L21,5 L17,19 L3,19 Z",
+        "trapezoid"      => "M6,5 L18,5 L21,19 L3,19 Z",
+        "hexagon"        => "M12,3 L19,7.5 L19,16.5 L12,21 L5,16.5 L5,7.5 Z",
+        "octagon"        => "M8,3 L16,3 L21,8 L21,16 L16,21 L8,21 L3,16 L3,8 Z",
+        "star5"          => "M12,3 L14.6,9.6 L21.5,10 L16.2,14.4 L17.9,21 L12,17.4 L6.1,21 L7.8,14.4 L2.5,10 L9.4,9.6 Z",
+        "star"           => "M12,2 L14.5,8 L21,8 L16,12.5 L18,19 L12,15.5 L6,19 L8,12.5 L3,8 L9.5,8 Z",
+        "cross"          => "M9,3 L15,3 L15,9 L21,9 L21,15 L15,15 L15,21 L9,21 L9,15 L3,15 L3,9 L9,9 Z",
+        _                => ControlIcon(HmiControlType.Shape),
+    };
+
     private void PopulateItems()
     {
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Screen)),     Services.ControlTypeTextKeys.Describe(HmiControlType.Screen),    AppLocalization.Service[Lang.TbCatContainer], HmiControlType.Screen));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Button)),     Services.ControlTypeTextKeys.Describe(HmiControlType.Button),    AppLocalization.Service[Lang.TbCatInput], HmiControlType.Button));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Slider)),     Services.ControlTypeTextKeys.Describe(HmiControlType.Slider),    AppLocalization.Service[Lang.TbCatInput], HmiControlType.Slider));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Switch)),     Services.ControlTypeTextKeys.Describe(HmiControlType.Switch),    AppLocalization.Service[Lang.TbCatInput], HmiControlType.Switch));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.CheckBox)),   Services.ControlTypeTextKeys.Describe(HmiControlType.CheckBox),  AppLocalization.Service[Lang.TbCatInput], HmiControlType.CheckBox));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Label)),      Services.ControlTypeTextKeys.Describe(HmiControlType.Label),     AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Label));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Image)),      Services.ControlTypeTextKeys.Describe(HmiControlType.Image),     AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Image));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Bar)),        Services.ControlTypeTextKeys.Describe(HmiControlType.Bar),       AppLocalization.Service[Lang.TbCatChart], HmiControlType.Bar));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Dropdown)),   Services.ControlTypeTextKeys.Describe(HmiControlType.Dropdown),  AppLocalization.Service[Lang.TbCatSelect], HmiControlType.Dropdown));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.TextArea)),   Services.ControlTypeTextKeys.Describe(HmiControlType.TextArea),  AppLocalization.Service[Lang.TbCatInput], HmiControlType.TextArea));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Gauge)),      Services.ControlTypeTextKeys.Describe(HmiControlType.Gauge),     AppLocalization.Service[Lang.TbCatChart], HmiControlType.Gauge));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Knob)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Knob),      AppLocalization.Service[Lang.TbCatInput], HmiControlType.Knob));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Keyboard)),   Services.ControlTypeTextKeys.Describe(HmiControlType.Keyboard),  AppLocalization.Service[Lang.TbCatInput], HmiControlType.Keyboard));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Led)),        Services.ControlTypeTextKeys.Describe(HmiControlType.Led),       AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Led));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Spinner)),    Services.ControlTypeTextKeys.Describe(HmiControlType.Spinner),   AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.Spinner));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.TabView)),    Services.ControlTypeTextKeys.Describe(HmiControlType.TabView),   AppLocalization.Service[Lang.TbCatContainer], HmiControlType.TabView));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Line)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Line),      AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Line));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Table)),      Services.ControlTypeTextKeys.Describe(HmiControlType.Table),     AppLocalization.Service[Lang.TbCatContainer], HmiControlType.Table));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Svg)),        Services.ControlTypeTextKeys.Describe(HmiControlType.Svg),       AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Svg));
-        // I7: 过程图形控件
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Tank)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Tank),      AppLocalization.Service[Lang.TbCatProcess], HmiControlType.Tank));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Pipe)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Pipe),      AppLocalization.Service[Lang.TbCatProcess], HmiControlType.Pipe));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Valve)),      Services.ControlTypeTextKeys.Describe(HmiControlType.Valve),     AppLocalization.Service[Lang.TbCatProcess], HmiControlType.Valve));
-        // I10: 基础绘图图形
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Rectangle)),  Services.ControlTypeTextKeys.Describe(HmiControlType.Rectangle), AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Rectangle));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Ellipse)),    Services.ControlTypeTextKeys.Describe(HmiControlType.Ellipse),   AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Ellipse));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Polyline)),   Services.ControlTypeTextKeys.Describe(HmiControlType.Polyline),  AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Polyline));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Arc)),        Services.ControlTypeTextKeys.Describe(HmiControlType.Arc),       AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Arc));
-        // chenge-runtime 目标新增：数值显示与两类数据控件
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Value)),       Services.ControlTypeTextKeys.Describe(HmiControlType.Value),      AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Value));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AlarmList)),   Services.ControlTypeTextKeys.Describe(HmiControlType.AlarmList),  AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.AlarmList));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.HistoryCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.HistoryCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.HistoryCurve));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.RealtimeCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.RealtimeCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.RealtimeCurve));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AlarmBar)), Services.ControlTypeTextKeys.Describe(HmiControlType.AlarmBar), AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.AlarmBar));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.QrCode)), Services.ControlTypeTextKeys.Describe(HmiControlType.QrCode), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.QrCode));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Message)), Services.ControlTypeTextKeys.Describe(HmiControlType.Message), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.Message));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.EnumText)), Services.ControlTypeTextKeys.Describe(HmiControlType.EnumText), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.EnumText));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Roller)), Services.ControlTypeTextKeys.Describe(HmiControlType.Roller), AppLocalization.Service[Lang.TbCatInput], HmiControlType.Roller));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.StateImage)), Services.ControlTypeTextKeys.Describe(HmiControlType.StateImage), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.StateImage));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.FrameAnim)), Services.ControlTypeTextKeys.Describe(HmiControlType.FrameAnim), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.FrameAnim));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Shape)), Services.ControlTypeTextKeys.Describe(HmiControlType.Shape), AppLocalization.Service[Lang.TbCatDraw], HmiControlType.Shape));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.Chart)), Services.ControlTypeTextKeys.Describe(HmiControlType.Chart), AppLocalization.Service[Lang.TbCatChart], HmiControlType.Chart));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.XyCurve)), Services.ControlTypeTextKeys.Describe(HmiControlType.XyCurve), AppLocalization.Service[Lang.TbCatChart], HmiControlType.XyCurve));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.HistoryTable)), Services.ControlTypeTextKeys.Describe(HmiControlType.HistoryTable), AppLocalization.Service[Lang.TbCatChart], HmiControlType.HistoryTable));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.RecipeTable)), Services.ControlTypeTextKeys.Describe(HmiControlType.RecipeTable), AppLocalization.Service[Lang.TbCatSpecial], HmiControlType.RecipeTable));
-        _allItems.Add(new(StreamGeometry.Parse(ControlIcon(HmiControlType.AsciiDisplay)), Services.ControlTypeTextKeys.Describe(HmiControlType.AsciiDisplay), AppLocalization.Service[Lang.TbCatDisplay], HmiControlType.AsciiDisplay));
+        // 组头只为把列表切开：之前 46 项平铺，"分类"只是每项下面那行小字，看着像没有分类。
+        // 组头不可拖、不可选、不进搜索匹配。
+        void Group(string title) => _allItems.Add(
+            new ToolboxItem(new StreamGeometry(), title, title, (HmiControlType)(-1), IsHeader: true));
+
+        void Add(HmiControlType type, string category) => _allItems.Add(
+            new ToolboxItem(StreamGeometry.Parse(ControlIcon(type)),
+                Services.ControlTypeTextKeys.Describe(type), category, type));
+
+        // 图元按形状逐项列出：拖出来就是这个形状，不必再去属性面板改「种类」。
+        // 图标按 kind 逐个画 —— 都用「图元」的三角形会让一列条目看起来一模一样。
+        void Figure(string kind, string displayKey, string category) => _allItems.Add(
+            new ToolboxItem(StreamGeometry.Parse(FigureIcon(kind)),
+                AppLocalization.Service[displayKey], category, HmiControlType.Shape, kind));
+
+        var input = AppLocalization.Service[Lang.TbCatInput];
+        var display = AppLocalization.Service[Lang.TbCatDisplay];
+        var chart = AppLocalization.Service[Lang.TbCatChart];
+        var special = AppLocalization.Service[Lang.TbCatSpecial];
+        var process = AppLocalization.Service[Lang.TbCatProcess];
+        var container = AppLocalization.Service[Lang.TbCatContainer];
+        var draw = AppLocalization.Service[Lang.TbCatDraw];
+        var select = AppLocalization.Service[Lang.TbCatSelect];
+
+        Group(input);
+        Add(HmiControlType.Button, input);
+        Add(HmiControlType.Slider, input);
+        Add(HmiControlType.Switch, input);
+        Add(HmiControlType.CheckBox, input);
+        Add(HmiControlType.TextArea, input);
+        Add(HmiControlType.Knob, input);
+        // 键盘不进工具箱：运行时没有独立键盘控件（只有 input 点击时弹出的模态键盘），
+        // 导出器对它直接 return null —— 拖出来只会在位图里消失，纯误导。
+        Add(HmiControlType.Spinner, special);
+
+        Group(select);
+        Add(HmiControlType.Dropdown, select);
+        Add(HmiControlType.Roller, select);
+
+        Group(display);
+        Add(HmiControlType.Label, display);
+        Add(HmiControlType.Image, display);
+        Add(HmiControlType.Led, display);
+        Add(HmiControlType.Value, display);
+        Add(HmiControlType.QrCode, display);
+        Add(HmiControlType.Message, display);
+        Add(HmiControlType.EnumText, display);
+        Add(HmiControlType.StateImage, display);
+        Add(HmiControlType.FrameAnim, display);
+        Add(HmiControlType.AsciiDisplay, display);
+        Add(HmiControlType.Svg, display);
+
+        Group(chart);
+        Add(HmiControlType.Bar, chart);
+        Add(HmiControlType.Gauge, chart);
+        Add(HmiControlType.RealtimeCurve, chart);
+        Add(HmiControlType.HistoryCurve, chart);
+        Add(HmiControlType.Chart, chart);
+        Add(HmiControlType.XyCurve, chart);
+        Add(HmiControlType.HistoryTable, chart);
+
+        Group(special);
+        Add(HmiControlType.AlarmList, special);
+        Add(HmiControlType.AlarmBar, special);
+        Add(HmiControlType.RecipeTable, special);
+
+        Group(process);
+        Add(HmiControlType.Tank, process);
+        Add(HmiControlType.Pipe, process);
+        Add(HmiControlType.Valve, process);
+
+        Group(container);
+        Add(HmiControlType.TabView, container);
+        Add(HmiControlType.Table, container);
+        // 容器图元：它才是「放子控件的容器」（Screen 是页面级的东西，不该进工具箱）
+        Figure("container", Lang.TbFigureContainer, container);
+
+        Group(draw);
+        Figure("rect", Lang.TbFigureRect, draw);
+        Figure("round_rect", Lang.TbFigureRoundRect, draw);
+        Figure("circle", Lang.TbFigureCircle, draw);
+        Figure("ellipse", Lang.TbFigureEllipse, draw);
+        Figure("line", Lang.TbFigureLine, draw);
+        Figure("polyline", Lang.TbFigurePolyline, draw);
+        Figure("polygon", Lang.TbFigurePolygon, draw);
+        Figure("arc", Lang.TbFigureArc, draw);
+        Figure("pie", Lang.TbFigurePie, draw);
+        Figure("triangle", Lang.TbFigureTriangle, draw);
+        Figure("right_triangle", Lang.TbFigureRightTriangle, draw);
+        Figure("diamond", Lang.TbFigureDiamond, draw);
+        Figure("parallelogram", Lang.TbFigureParallelogram, draw);
+        Figure("trapezoid", Lang.TbFigureTrapezoid, draw);
+        Figure("hexagon", Lang.TbFigureHexagon, draw);
+        Figure("octagon", Lang.TbFigureOctagon, draw);
+        Figure("star5", Lang.TbFigureStar5, draw);
+        Figure("star", Lang.TbFigureStar, draw);
+        Figure("cross", Lang.TbFigureCross, draw);
     }
 
     // ── 拖拽 ──
@@ -201,7 +283,7 @@ public partial class ToolboxView : UserControl
     private void OnToolboxListPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         var item = FindToolboxItem(e.Source);
-        if (item == null) return;
+        if (item == null || item.IsHeader) return;   // 组头不可拖、不可添加
         _dragItem = item;
         _dragStartPoint = e.GetPosition(this);
         _dragStarted = false;
@@ -218,7 +300,11 @@ public partial class ToolboxView : UserControl
             if (Math.Abs(pos.X - _dragStartPoint.X) <= DragThreshold && Math.Abs(pos.Y - _dragStartPoint.Y) <= DragThreshold)
                 return;
             _dragStarted = true;
-            var item = DataTransferItem.Create(DesignCanvas.DragDataFormat, _dragItem.ControlType.ToString());
+            // 载荷带种类：`Type|kind`（图元区分矩形/圆/容器…），接收侧按 '|' 切分
+            var payload = _dragItem.ShapeKind is { Length: > 0 } kind
+                ? $"{_dragItem.ControlType}|{kind}"
+                : _dragItem.ControlType.ToString();
+            var item = DataTransferItem.Create(DesignCanvas.DragDataFormat, payload);
             var data = new DataTransfer();
             data.Add(item);
             await DragDrop.DoDragDropAsync(_dragTriggerEvent!, data, DragDropEffects.Copy);
@@ -232,7 +318,7 @@ public partial class ToolboxView : UserControl
     private void OnToolboxListPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (_dragItem != null && !_dragStarted)
-            ToolItemSelected?.Invoke(this, _dragItem.ControlType);
+            ToolItemSelected?.Invoke(this, _dragItem);
         _dragItem = null;
         _dragStarted = false;
         _dragTriggerEvent = null;
@@ -257,12 +343,13 @@ public partial class ToolboxView : UserControl
         var filter = SearchBox.Text?.Trim() ?? "";
         var previousType = (ToolboxList.SelectedItem as ToolboxItem)?.ControlType;
         ClearSearchButton.IsVisible = filter.Length > 0;
+        // 搜索时不出组头：结果只放匹配项，混进组头会把一屏切得零碎
         var filtered = string.IsNullOrEmpty(filter)
             ? _allItems.ToList()
-            : _allItems.Where(i =>
+            : _allItems.Where(i => !i.IsHeader && (
                     i.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
                     i.Category.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                    i.ControlType.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase))
+                    i.ControlType.ToString().Contains(filter, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
         ToolboxList.ItemsSource = filtered;
@@ -316,8 +403,8 @@ public partial class ToolboxView : UserControl
         {
             if (ToolboxList.SelectedIndex < 0)
                 ToolboxList.SelectedIndex = 0;
-            if (ToolboxList.SelectedItem is ToolboxItem item)
-                ToolItemSelected?.Invoke(this, item.ControlType);
+            if (ToolboxList.SelectedItem is ToolboxItem { IsHeader: false } item)
+                ToolItemSelected?.Invoke(this, item);
             e.Handled = true;
         }
         else if (e.Key == Key.Escape)
@@ -332,9 +419,9 @@ public partial class ToolboxView : UserControl
 
     private void OnToolboxListKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && ToolboxList.SelectedItem is ToolboxItem item)
+        if (e.Key == Key.Enter && ToolboxList.SelectedItem is ToolboxItem { IsHeader: false } item)
         {
-            ToolItemSelected?.Invoke(this, item.ControlType);
+            ToolItemSelected?.Invoke(this, item);
             e.Handled = true;
         }
         else if (e.Key == Key.Escape)
@@ -378,5 +465,15 @@ public record ToolboxItem(
     Geometry Icon,      // 矢量图标（Path 数据解析后的几何，viewBox 0 0 24 24）
     string DisplayName,
     string Category,
-    HmiControlType ControlType
+    HmiControlType ControlType,
+    /// <summary>
+    /// 图元的具体种类（shape 的 kind）。非空时拖出来直接就是这个种类，
+    /// 用户不必再到属性面板里改 —— 20 个 kind 逐项列出，工具箱才真正可用。
+    /// </summary>
+    string? ShapeKind = null,
+    /// <summary>
+    /// 分组标题行：只为把列表切开（40 多项平铺时分类只是每项下面那行小字），
+    /// 不可拖、不可选、不参与搜索匹配。
+    /// </summary>
+    bool IsHeader = false
 );

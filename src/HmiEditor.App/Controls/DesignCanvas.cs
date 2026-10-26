@@ -948,10 +948,17 @@ public sealed class ControlDroppedEventArgs : EventArgs
     public double Y { get; }
     public HmiControl? ParentContainer { get; }
 
+    /// <summary>
+    /// 图元的种类（<c>rect</c> / <c>circle</c> / <c>container</c> …）。工具箱里每个形状是独立条目，
+    /// 拖放载荷编码成 <c>Type|kind</c>；只带类型会让"拖一个圆"退化成默认矩形。
+    /// </summary>
+    public string? ShapeKind { get; }
+
     public ControlDroppedEventArgs(HmiControlType controlType, double x, double y,
-        HmiControl? parentContainer = null)
+        HmiControl? parentContainer = null, string? shapeKind = null)
     {
         ControlType = controlType;
+        ShapeKind = shapeKind;
         X = x;
         Y = y;
         ParentContainer = parentContainer;

@@ -2250,15 +2250,16 @@ public partial class MainWindow : Window
     /// 工具栏控件快捷按钮同样走此路径。此前这里还兼作 <c>ToolboxPanel.ToolItemSelected</c>
     /// 实例事件的处理器（共享同一个方法），该直订已随 #46 删除。
     /// </remarks>
-    private void OnToolItemSelected(object? sender, HmiControlType type)
+    private void OnToolItemSelected(object? sender, Views.ToolboxItem item)
     {
         var canvas = CanvasPanel.Canvas;
         // 无当前屏幕（未打开项目 / 画布尚未注入 Screen）时不添加，避免抛异常
         if (canvas.Screen == null) return;
+        if (item.IsHeader) return;
 
         var (centerX, centerY) = CanvasCenter(canvas);
 
-        var control = canvas.AddControl(type, centerX, centerY);
+        var control = canvas.AddControl(item.ControlType, centerX, centerY, item.ShapeKind);
         var command = new AddControlCommand(_currentScreen.Controls, control);
         _undoRedoManager.Execute(command);
 
@@ -2623,7 +2624,8 @@ public partial class MainWindow : Window
     private void QuickAddControl(HmiControlType type)
     {
         SetDrawTool(null);
-        OnToolItemSelected(this, type);
+        // 工具栏快捷按钮只关心类型：图标/名称/分类对添加流程没用（null! 是给 Geometry 的占位）
+        OnToolItemSelected(this, new Views.ToolboxItem(null!, string.Empty, string.Empty, type));
     }
 
     /// <summary>同步绘图工具栏按钮高亮与提示文本（工具状态变化时调用）。</summary>

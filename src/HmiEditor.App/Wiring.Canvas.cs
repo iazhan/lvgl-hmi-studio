@@ -81,12 +81,13 @@ public partial class MainWindow
             IUndoableCommand command;
             if (args.ParentContainer is { } container)
             {
-                control = canvasView.Canvas.AddControlTo(args.ControlType, args.X, args.Y, container);
+                control = canvasView.Canvas.AddControlTo(args.ControlType, args.X, args.Y, container,
+                    args.ShapeKind);
                 command = new AttachControlCommand(screen, container, control);
             }
             else
             {
-                control = canvasView.Canvas.AddControl(args.ControlType, args.X, args.Y);
+                control = canvasView.Canvas.AddControl(args.ControlType, args.X, args.Y, args.ShapeKind);
                 command = new AddControlCommand(screen.Controls, control);
             }
             _undoRedoManager.Execute(command);

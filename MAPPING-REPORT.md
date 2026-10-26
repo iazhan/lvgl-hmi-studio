@@ -177,8 +177,12 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
   契约里它的枚举只有 `free` 一个值（v1 就只定义了这一种布局），运行时不需要读它；
   容器本身是**实现了**的（`ui_page.c` 的 `flatten_widgets` 递归展开 `props.children`，
   建对象时按 `s_wparents` 挂到父对象下，子控件坐标相对父）。
-  ⇒ **真正的缺口在编辑器**：导出器从不写 `props.children`（`grep '"children"'` 在 mapper 里
-  零命中），所以在编辑器里画的容器只是个空框，放不进子控件。
+  ⇒ 编辑器侧已补齐（v2.12.0）：`MapShape` 对 `kind=container` 递归导 `props.children`
+  （子控件节点与屏幕内控件同格式、坐标相对容器、不写 `layout`）；画布支持把控件
+  拖进/拖出容器、命中测试/选中框/拖动/参考线一律按父链叠加原点换算；属性面板
+  选中容器时显示「含 N 个子控件」。运行时侧约束：容器类图元不支持旋转/镜像
+  （ADR-0019，而编辑器本来就不导出旋转），`schema_check_props` 按 kind 取白名单
+  —— 非 container 的 shape 写 `children` 会被整页拒绝，导出器因此只对容器写它。
 
 - `gauge.props.label_pos` 在契约白名单里，但运行时（0.47.0）**没有任何解析代码**：
   `grep -rn label_pos chenge-runtime/src` 只命中 `widgets_schema.h` 的白名单。
@@ -193,7 +197,7 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 - `SettingsService` 的 `KinSeal.ToolchainGcc` / `KinSeal.RuntimeDir` / `T113*` 已经**没有消费者**
   （`.so` 编译那条链删了），设置界面仍显示，属于待清理项。
 
-## 8 批次 3/4/5 之后的覆盖面（v2.11.0）
+## 8 批次 3/4/5 之后的覆盖面（v2.12.0）
 
 | 维度 | 契约 | 编辑器 | 说明 |
 |---|---|---|---|
