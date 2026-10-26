@@ -168,6 +168,12 @@ public class ExportGuardTests : IDisposable
         curve.CurveDirection = "rl";
         curve.CurveXDiv = 12;
         curve.CurveYMinor = 7;
+        // 顺带把阀门也放进这一页：它是这次新接通的图元，要证明运行时真能建出来
+        project.Screens[0].Controls.Add(new HmiControl
+        {
+            Id = "v_e2e", Type = HmiControlType.Valve, Name = "Valve1",
+            X = 620, Y = 300, Width = 60, Height = 60, ValveType = "Butterfly",
+        });
 
         var result = ExportFixture.Export(project, _dir);
         Assert.True(result.Success, string.Join("\n", result.Issues.Items));
