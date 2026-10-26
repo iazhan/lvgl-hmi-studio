@@ -27,15 +27,20 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     private const string ExeLinux = "chenge-preview-host";
     private const string ExeWindows = "chenge-preview-host.exe";
     private const uint FrameMagic = 0x46474843;   // 'CHGF'
-    private const int HeaderSize = 40;
-    private const int SeqOffset = 24;
+    private const int SeqOffset = 24;             // 帧计数器：version 1/2 都在这个偏移
+    private const int HeaderBytesOffset = 20;     // version 2 起：像素起点由宿主播报
+    private const uint SupportedFrameVersion = 2;
 
     private readonly string _exePath;
     private readonly string _dataDir;
     private readonly string _shmName;
     private readonly string _shmPath;
+    private readonly bool _designMode;
     private readonly List<string> _log = new();
     private readonly Dictionary<string, string> _tags = new(StringComparer.Ordinal);
+
+    /// <summary>像素起点：由帧头的 header_bytes 决定，不再写死 40（写死过一次，与宿主差 8 字节）。</summary>
+    private int _pixelOffset = 40;
 
     private Process? _proc;
     private MemoryMappedFile? _mmf;
@@ -59,10 +64,15 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         get { lock (_log) return _log.ToArray(); }
     }
 
-    public ChengeProcessSession(string exePath, string dataDir)
+    /// <param name="designMode">
+    /// true = 设计画布：宿主不推进时间，只在收到 <c>R</c> 时重绘（静止的真图，可逐像素对拍）。
+    /// false = 仿真预览：照旧按 tick 驱动。
+    /// </param>
+    public ChengeProcessSession(string exePath, string dataDir, bool designMode = false)
     {
         _exePath = exePath;
         _dataDir = dataDir;
+        _designMode = designMode;
         _shmName = "/chenge-preview-" + Guid.NewGuid().ToString("N")[..12];
         _shmPath = Path.Combine("/dev/shm", _shmName.TrimStart('/'));
     }
@@ -140,6 +150,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             psi.ArgumentList.Add(_shmName);
             psi.ArgumentList.Add("--data");
             psi.ArgumentList.Add(_dataDir);
+            if (_designMode) psi.ArgumentList.Add("--design");
 
             _proc = Process.Start(psi);
             if (_proc == null)
@@ -173,17 +184,28 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 LastError = AppLocalization.Service.Format("live.err.host_exit", _proc.ExitCode.ToString(), LastLog());
                 return false;
             }
-            if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > HeaderSize)
+            if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > _pixelOffset)
             {
                 _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
                     MemoryMappedFileAccess.Read);
                 _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
                 if (_view.ReadUInt32(0) == FrameMagic)
                 {
+                    var version = _view.ReadUInt32(4);
                     Width = (int)_view.ReadUInt32(8);
                     Height = (int)_view.ReadUInt32(12);
                     Stride = (int)_view.ReadUInt32(16);
-                    if (Width > 0 && Height > 0 && Stride >= Width * 4) return true;
+                    if (version != SupportedFrameVersion)
+                    {
+                        // 不降级：version 1 的头没有 header_bytes，旧两侧各写一个常量正是错位来源。
+                        // 诊断串只用 ASCII —— 面向用户的文案走资源键，不要在这里拼中文。
+                        LastError = AppLocalization.Service.Format("live.err.shm_header",
+                            $"version {version} (need {SupportedFrameVersion})", Stride.ToString());
+                        return false;
+                    }
+                    _pixelOffset = (int)_view.ReadUInt32(HeaderBytesOffset);
+                    if (Width > 0 && Height > 0 && Stride >= Width * 4 &&
+                        _pixelOffset > 0 && _pixelOffset < 4096) return true;
                     LastError = AppLocalization.Service.Format("live.err.shm_header", $"{Width}x{Height}", Stride.ToString());
                     return false;
                 }
@@ -303,8 +325,26 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     public bool TryCopyFrame(byte[] dest)
     {
         if (_view == null || dest.Length < Stride * Height) return false;
-        _view.ReadArray(HeaderSize, dest, 0, Stride * Height);
+        _view.ReadArray(_pixelOffset, dest, 0, Stride * Height);
         return true;
+    }
+
+    /// <summary>
+    /// 设计模式：让宿主重绘一帧（不推进时间）。宿主收到后 render_once + seq++，
+    /// 客户端按 seq 变化判断位图是否已经包含这次改动。
+    /// </summary>
+    public bool RenderOnce()
+    {
+        if (_proc is not { HasExited: false }) return false;
+        try
+        {
+            WriteStdin(Encoding.UTF8.GetBytes("R\n"));
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
     }
 
     public bool SaveScreenshot(string path)

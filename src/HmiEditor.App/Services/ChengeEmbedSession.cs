@@ -244,6 +244,9 @@ public sealed class ChengeEmbedSession : IChengePreviewSession
         return _saveBmp(p.Ptr) == 0;
     }
 
+    /// <summary>进程内模式没有"命令驱动重绘"：帧由调用方的 tick 线程推进。</summary>
+    public bool RenderOnce() => false;
+
     public bool TryGetBool(string tagName, out bool value)
     {
         using var n = Utf8(tagName);
@@ -350,4 +353,10 @@ public interface IChengePreviewSession : IDisposable
     void Pointer(int x, int y, bool down);
     bool TryCopyFrame(byte[] dest);
     bool SaveScreenshot(string path);
+
+    /// <summary>
+    /// 设计模式请求重绘一帧（不推进时间）。隔离宿主走 <c>R</c> 命令；
+    /// 进程内模式由调用方 tick 驱动，没有这条通道 ⇒ 返回 false。
+    /// </summary>
+    bool RenderOnce();
 }

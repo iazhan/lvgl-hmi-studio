@@ -57,6 +57,20 @@ public partial class DesignCanvas : Control
     public static readonly StyledProperty<Thickness> SafePaddingProperty =
         AvaloniaProperty.Register<DesignCanvas, Thickness>(nameof(SafePadding));
 
+    /// <summary>
+    /// 底图来源：false = 现有 C# 自绘（默认，所见非所得的那些近似外观）；true = 画
+    /// <see cref="HostFrame"/> 里的真机位图。切到真机位图后控件不再自绘 —— 两层同时画会重影。
+    /// </summary>
+    public static readonly StyledProperty<bool> UseHostFrameProperty =
+        AvaloniaProperty.Register<DesignCanvas, bool>(nameof(UseHostFrame));
+
+    /// <summary>
+    /// 宿主渲染出的一帧（整屏、Bgra8888）。由预览客户端在后台线程换引用，
+    /// UI 线程只在下次 Render 时读一次。位置的唯一依据仍是编辑模型，不从位图回读。
+    /// </summary>
+    public static readonly StyledProperty<IImage?> HostFrameProperty =
+        AvaloniaProperty.Register<DesignCanvas, IImage?>(nameof(HostFrame));
+
     public static readonly StyledProperty<double> PanOffsetXProperty =
         AvaloniaProperty.Register<DesignCanvas, double>(nameof(PanOffsetX), 0.0);
 
@@ -138,6 +152,20 @@ public partial class DesignCanvas : Control
     {
         get => GetValue(ScreenProperty);
         set => SetValue(ScreenProperty, value);
+    }
+
+    /// <summary>是否用宿主位图当底图（见 <see cref="UseHostFrameProperty"/>）。</summary>
+    public bool UseHostFrame
+    {
+        get => GetValue(UseHostFrameProperty);
+        set => SetValue(UseHostFrameProperty, value);
+    }
+
+    /// <summary>宿主渲染的整屏帧（见 <see cref="HostFrameProperty"/>）。</summary>
+    public IImage? HostFrame
+    {
+        get => GetValue(HostFrameProperty);
+        set => SetValue(HostFrameProperty, value);
     }
 
     public double ZoomLevel
@@ -386,7 +414,7 @@ public partial class DesignCanvas : Control
     {
         AffectsRender<DesignCanvas>(ScreenProperty, ZoomLevelProperty, DpiScaleProperty, SafePaddingProperty, PanOffsetXProperty,
             PanOffsetYProperty, ThemeProperty, IsPreviewModeProperty, PreviewResolutionProperty,
-            DrawToolProperty);
+            DrawToolProperty, UseHostFrameProperty, HostFrameProperty);
         ClipToBoundsProperty.OverrideDefaultValue<DesignCanvas>(true);
 
         // 注册 DragDrop 类处理器 —— 画布作为拖放目标
@@ -406,6 +434,9 @@ public partial class DesignCanvas : Control
         // 画布可聚焦：保证点击画布后焦点从 TextBox 等控件转移到这里，
         // 窗口级 Delete/Ctrl+A 快捷键才能按预期生效
         Focusable = true;
+
+        // 宿主位图放大时不插值：1×/2× 下与设备像素一一对应，否则文字发虚、选中框看着偏
+        RenderOptions.SetBitmapInterpolationMode(this, BitmapInterpolationMode.None);
     }
 
     public override void Render(DrawingContext context)
@@ -452,9 +483,17 @@ public partial class DesignCanvas : Control
             // 🩸 阶段 221（#98 的"接线"）：屏幕安全区**参考线**（虚线，只影响显示，不动几何）
             DrawSafeAreaGuides(context);
 
+            // 底图：Host 模式直接画宿主渲染出的真机位图，控件不再自绘（两层同时画会重影）。
+            // 位图是整屏最终像素，所以它天然带着运行时的 padding/圆角/字体排版 ——
+            // 这正是"设计画布与实机一致"的唯一来源。
+            if (UseHostFrame && HostFrame is { } hostFrame)
+            {
+                context.DrawImage(hostFrame,
+                    new Rect(0, 0, screen.Width * EffectiveZoom, screen.Height * EffectiveZoom));
+            }
             // 绘制所有控件（R2-T1: 跳过 IsVisible=false 控件）
             // 容器子控件不进平铺列表，按树递归画出（子坐标叠加父原点）
-            if (adaptive.HasValue)
+            else if (adaptive.HasValue)
             {
                 // 预览变换: 先缩放(设计→目标比例), 再平移(letterbox 居中)
                 using (context.PushTransform(
