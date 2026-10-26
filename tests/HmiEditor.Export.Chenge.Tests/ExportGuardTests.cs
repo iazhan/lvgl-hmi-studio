@@ -128,6 +128,79 @@ public class ExportGuardTests : IDisposable
     }
 
     /// <summary>
+    /// 旋转 / 镜像：契约有这三个键、运行时 apply_transform 也实现了，导出器此前只告警
+    /// 丢弃 —— 用户在面板上转了控件，画布（宿主位图）和板子都不动。这里钉住"真的写出去"，
+    /// 以及"越档的组合在导出期就报 Error"（运行时越档是拒绝整页）。
+    /// </summary>
+    [Fact]
+    public void Export_RotationAndMirror_AreWrittenForSupportedTypes()
+    {
+        var project = ExportFixture.Build();
+        var label = project.Screens[0].Controls.First(c => c.Type == HmiControlType.Label);
+        label.Rotation = 90;
+        label.RotationDirection = "CW";
+
+        var shape = new HmiControl
+        {
+            Id = "s_rot", Type = HmiControlType.Shape, Name = "Shape1",
+            ShapeKind = "star5", X = 620, Y = 120, Width = 80, Height = 80,
+            Rotation = 30, MirrorX = true,
+        };
+        project.Screens[0].Controls.Add(shape);
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var labelProps = PageWidgets().EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "label").GetProperty("props");
+        Assert.Equal(90, labelProps.GetProperty("rotation").GetInt32());
+
+        var shapeProps = PageWidgets().EnumerateArray().Single(w =>
+            w.GetProperty("props").TryGetProperty("rotation", out var r) && r.GetInt32() == 30)
+            .GetProperty("props");
+        Assert.Equal("star5", shapeProps.GetProperty("kind").GetString());
+        Assert.Equal(30, shapeProps.GetProperty("rotation").GetInt32());
+        Assert.True(shapeProps.GetProperty("mirror_x").GetBoolean());
+    }
+
+    /// <summary>
+    /// 越档的变换必须在导出期报错（运行时是整页拒绝）：
+    /// 文本类不能镜像、不能转非 90° 倍数；rect/circle 没有顶点可翻，不能镜像。
+    /// </summary>
+    [Theory]
+    [InlineData("label-mirror")]
+    [InlineData("label-45deg")]
+    [InlineData("rect-mirror")]
+    public void Export_UnsupportedTransform_ReportsError(string scenario)
+    {
+        var project = ExportFixture.Build();
+        var label = project.Screens[0].Controls.First(c => c.Type == HmiControlType.Label);
+
+        switch (scenario)
+        {
+            case "label-mirror":
+                label.MirrorX = true;
+                break;
+            case "label-45deg":
+                label.Rotation = 45;
+                break;
+            case "rect-mirror":
+                project.Screens[0].Controls.Add(new HmiControl
+                {
+                    Id = "r1", Type = HmiControlType.Rectangle, Name = "Rect1",
+                    X = 620, Y = 200, Width = 80, Height = 60, MirrorY = true,
+                });
+                break;
+        }
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        var issue = Assert.Single(result.Issues.Items, i => i.Code == "widget.transform");
+        Assert.Equal(ChengeIssueSeverity.Error, issue.Severity);
+    }
+
+    /// <summary>
     /// 帧动画：运行时要求 2..32 帧，只有 1 帧会整页拒绝，所以导出期就要报错
     /// （早先只挡 0 帧）。这里用"导不出来的帧"构造 0 可用帧，命中同一条校验。
     /// </summary>

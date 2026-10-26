@@ -545,7 +545,7 @@ internal sealed class ChengeWidgetMapper
                 return null;
         }
 
-        AddCommon(props, control, where);
+        AddCommon(props, control, target, kind, where);
 
         var finalProps = FilterProps(target, kind, props, where);
         var widget = new JsonObject
@@ -890,7 +890,7 @@ internal sealed class ChengeWidgetMapper
         return arr;
     }
 
-    private void AddCommon(JsonObject props, HmiControl control, string where)
+    private void AddCommon(JsonObject props, HmiControl control, string target, string kind, string where)
     {
         var bg = _colors.Resolve(control.BgColor, where);
         if (bg != null) props["bg_color"] = bg;
@@ -900,12 +900,93 @@ internal sealed class ChengeWidgetMapper
         if (control.Radius > 0) props["radius"] = control.Radius;
         if (control.Opacity < 100)
             props["opacity"] = Clamp((int)Math.Round(control.Opacity * 255 / 100), 0, 255);
-        if (control.Rotation != 0)
-            _issues.Warn("widget.rotation", where,
-                $"控件的旋转 {control.Rotation}° 未导出：文本类只支持 0/90/180/270 且运行时对文本旋转有尺寸限制（37 未定义该属性），需要旋转请在目标里用图片");
-        if (control.MirrorX || control.MirrorY)
-            _issues.Warn("widget.mirror", where, "控件的镜像未导出（运行时没有 mirror_x/mirror_y 的实现）");
+        ApplyTransform(props, control, target, kind, where);
     }
+
+    /// <summary>
+    /// 旋转 / 镜像（ADR-0019）：写 <c>rotation</c> / <c>mirror_x</c> / <c>mirror_y</c>。
+    ///
+    /// <para>运行时按类型分三档（<c>widgets.c</c> 的 apply_transform），**越档直接
+    /// `return -1` ⇒ 整页建不起来**。所以这里先按同一张表挡一遍：能表达的照写，
+    /// 不能表达的报 Error 并让人去改，绝不把"看起来设了、板上没转"的工程发出去。</para>
+    /// </summary>
+    private void ApplyTransform(JsonObject props, HmiControl control, string target, string kind, string where)
+    {
+        var angle = NormalizeAngle(control.EffectiveRotation());
+        var mx = control.MirrorX;
+        var my = control.MirrorY;
+        if (angle == 0 && !mx && !my) return;
+
+        if (IsContainerTarget(target, kind))
+        {
+            _issues.Error("widget.transform", where,
+                $"{target}{(string.IsNullOrEmpty(kind) ? "" : "/" + kind)} 是容器类控件，不支持旋转/镜像（运行时建页会拒绝）");
+            return;
+        }
+
+        if (IsTextClass(target))
+        {
+            if (mx || my)
+            {
+                _issues.Error("widget.transform", where,
+                    $"{target} 是文本类控件，不支持镜像（LVGL 9.5 无负缩放），请改用图片或图元");
+                return;
+            }
+            if (angle % 90 != 0)
+            {
+                _issues.Error("widget.transform", where,
+                    $"{target} 是文本类控件，旋转只能是 0/90/180/270 度（当前 {angle}°）");
+                return;
+            }
+            if (control.Width > 256 || control.Height > 256)
+            {
+                _issues.Error("widget.transform", where,
+                    $"{target} 旋转需要离屏图层，控件不得超过 256×256（当前 {control.Width}×{control.Height}）");
+                return;
+            }
+        }
+        else if (target == "image")
+        {
+            /* 图片：任意角 + 镜像都支持（镜像直接翻像素） */
+        }
+        else if (target == "shape")
+        {
+            /* 多边形族把旋转/镜像烘进顶点；rect/round_rect/circle 只有样式变换，
+             * 没有顶点可翻 ⇒ 不支持镜像（与运行时同一条判据） */
+            if ((mx || my) && kind is "rect" or "round_rect" or "circle")
+            {
+                _issues.Error("widget.transform", where,
+                    $"图元 {kind} 没有顶点可翻，不支持镜像（改用 polygon / 星形等顶点图元）");
+                return;
+            }
+        }
+        else
+        {
+            _issues.Error("widget.transform", where,
+                $"{target} 不支持旋转/镜像（ADR-0019 只放开图片、图元与文本类）");
+            return;
+        }
+
+        props["rotation"] = angle;
+        if (mx) props["mirror_x"] = true;
+        if (my) props["mirror_y"] = true;
+    }
+
+    /// <summary>角度归一到 0..359（顺时针为正，逆时针由 RotationDirection 给负号）。</summary>
+    private static int NormalizeAngle(double angle)
+    {
+        var a = (int)Math.Round(angle) % 360;
+        return a < 0 ? a + 360 : a;
+    }
+
+    /// <summary>运行时 is_text_class 的镜像表：这些类型只允许 90° 倍数且禁镜像。</summary>
+    private static bool IsTextClass(string target) => target is
+        "label" or "value" or "enum_text" or "input" or "combobox" or "button"
+        or "checkbox" or "ascii_display" or "message" or "alarm_bar" or "roller";
+
+    /// <summary>容器类：tabview / keyboard / 带子控件的图元，运行时一律拒绝变换。</summary>
+    private static bool IsContainerTarget(string target, string kind)
+        => target is "tabview" or "keyboard" || (target == "shape" && kind == "container");
 
     private void AddCommonBox(JsonObject props, HmiControl control, string where)
     {
