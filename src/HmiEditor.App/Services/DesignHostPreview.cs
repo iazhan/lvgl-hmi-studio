@@ -68,7 +68,7 @@ public sealed class DesignHostPreview : IDisposable
 
     /// <summary>导出并起宿主；失败时 <see cref="LastError"/> 给原因，画布保持原样。</summary>
     public async Task<bool> StartAsync(HmiProject project, AssetLibrary? assets, string? projectDirectory,
-        ChengeExportOptions options, SettingsService? settings, DesignCanvas canvas)
+        ChengeExportOptions options, SettingsService? settings, string? currentScreenId, DesignCanvas canvas)
     {
         Stop();
         _canvas = canvas;
@@ -104,13 +104,23 @@ public sealed class DesignHostPreview : IDisposable
         _assets = assets;
         _projectDirectory = projectDirectory;
         _options = options;
+        // 当前屏导出成了哪个页 id：只有导出器知道（PageIds），不能按字母序猜 ——
+        // 猜错的话切屏后推给宿主的是别的页 JSON，画面会是另一页的内容。
         _pageId = options.StartPageId ?? "";
+        if (string.IsNullOrEmpty(_pageId) && !string.IsNullOrEmpty(currentScreenId)
+            && export.PageIds.TryGetValue(currentScreenId, out var mappedPageId))
+            _pageId = mappedPageId;
         if (string.IsNullOrEmpty(_pageId))
         {
             var key = blobs.Keys.Where(k => k.StartsWith("pages/", StringComparison.Ordinal))
                         .OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault();
             if (!string.IsNullOrEmpty(key)) _pageId = Path.GetFileNameWithoutExtension(key);
         }
+
+        Console.WriteLine($"[design] start screen={currentScreenId ?? "<null>"} " +
+                          $"startScreenId={options.StartScreenId ?? "<null>"} " +
+                          $"pageIds={string.Join("|", export.PageIds.Select(kv => kv.Key + "=" + kv.Value))} " +
+                          $"page={_pageId}");
 
         var proc = new ChengeProcessSession(hostExe, dataDir, designMode: true);
         if (!await Task.Run(() => proc.OpenWithBlob(blobs)))
@@ -200,13 +210,18 @@ public sealed class DesignHostPreview : IDisposable
             var options = _options;
             if (project == null || options == null || _session == null) return;
 
-            var (files, ok) = await Task.Run(() =>
+            var (export, files) = await Task.Run(() =>
             {
                 var mem = new ChengeExportService().ExportToMemory(project, assets, dir, options, out var res);
-                return (Files: mem, Ok: res.Success);
+                return (Result: res, Files: mem);
             });
-            if (!ok || _session == null) return;
+            if (!export.Success || _session == null) return;
             if (!files.TryGetValue($"pages/{_pageId}.json", out var bytes)) return;
+
+            // 映射必须跟着这次导出的结果走：新建的控件在上一份快照里不存在，
+            // 不更新的话它在宿主里永远寻不到址 —— 表现是"新建后拖动不跟手，
+            // 切屏重启一次（重新导出）才好"。
+            _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
 
             _epoch++;
             _session.ReloadPageJson(_epoch, bytes);
@@ -256,6 +271,21 @@ public sealed class DesignHostPreview : IDisposable
         _lastChangeMs = Environment.TickCount64;
         _changeStamp++;
         _needsReload = true;
+    }
+
+    /// <summary>
+    /// 结构变化（新增/删除控件）：几何补丁无法表达"多了一个控件"，必须整页重建。
+    /// 走与停手后刷新同一条路（重导出 → J），所以新控件会带着当前模型值出现。
+    /// </summary>
+    public void NotifyStructureChanged()
+    {
+        if (!IsRunning) return;
+        _changeStamp++;
+        // 结构变化不能等"停手 300ms"：新建的控件在宿主里还不存在，映射也要这次导出才补齐。
+        // 把时间戳拨到已过阈值，下一拍就重建，拖动跟手只差这一轮（几十毫秒）。
+        _lastChangeMs = Environment.TickCount64 - 400;
+        _needsReload = true;
+        Console.WriteLine("[design] 结构变化 → 立即整页重建");
     }
 
     /// <summary>让宿主重绘一帧（不推进时间）。属性补丁接上之前，改完属性用它。</summary>

@@ -279,6 +279,8 @@ public partial class DesignCanvas : Control
             ? AppLocalization.Service.Format(Lang.UndoDeleteControlNamed,
                 Services.ControlNameDefaults.Display(targets[0]))
             : AppLocalization.Service.Format(Lang.UndoDeleteControls, targets.Count);
+        // 位图重建由 UndoRedoManager.StateChanged 统一触发（本命令入栈即通知），
+        // 这里不再单独发事件 —— 三条删除入口都经过它，不会漏。
         UndoRedoManager.Execute(new SnapshotCommand(description, Undo, Redo));
         return true;
     }

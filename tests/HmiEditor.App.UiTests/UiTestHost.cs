@@ -43,6 +43,13 @@ public static class UiTestHost
 
     private static int _dispatchSeq;
 
+    static UiTestHost()
+    {
+        // 设计画布的默认帧源是宿主位图；测试进程里没有宿主、也不该起子进程，
+        // 关掉自动挂载让画布走 C# 自绘 —— 判据测的是编辑器逻辑，不是渲染来源。
+        HmiEditor.App.MainWindow.AutoStartDesignHost = false;
+    }
+
     /// <summary>
     /// 会话线程（每次派发时在派发线程上记一次）。用来把「`s_uiThread` 被**别的线程**持有」
     /// 与「被会话线程持有」区分开 —— 这是「有偷手」与「一切正常」的唯一分界（登记表 #47）。

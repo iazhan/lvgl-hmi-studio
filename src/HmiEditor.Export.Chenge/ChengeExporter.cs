@@ -87,7 +87,12 @@ public sealed class ChengeExporter
         files["devices.json"] = devices;
         files["tags.json"] = tags;
 
+        // 起始页优先用调用方给的页 id，其次用它给的屏 id（屏→页的映射只在导出器内部，
+        // 调用方一般不知道自己的屏导出成了哪个页 id）
         var startPage = options.StartPageId;
+        if (string.IsNullOrWhiteSpace(startPage) && !string.IsNullOrWhiteSpace(options.StartScreenId)
+            && maps.PageIdByScreenId.TryGetValue(options.StartScreenId, out var byScreen))
+            startPage = byScreen;
         if (string.IsNullOrWhiteSpace(startPage) || !maps.PageIdByScreenId.ContainsValue(startPage))
         {
             var first = screens.FirstOrDefault();
@@ -151,6 +156,7 @@ public sealed class ChengeExporter
             TagCount = tags.Count,
             DeviceCount = devices.Count,
             WidgetIds = widgetIds,
+            PageIds = maps.PageIdByScreenId,
         };
 
         if (issues.HasErrors) return result;
@@ -166,6 +172,7 @@ public sealed class ChengeExporter
             DeviceCount = devices.Count,
             WrittenFiles = written,
             WidgetIds = widgetIds,
+            PageIds = maps.PageIdByScreenId,
         };
     }
 

@@ -859,6 +859,8 @@ public partial class MainWindow : Window
     private void LoadProjectIntoPanels(bool syncAiChat = true)
     {
         CanvasPanel.SetScreen(_currentScreen, _currentProject);
+        // 真机渲染是默认帧源：工程/屏幕一就绪就对齐（同一屏不重启宿主）
+        SyncDesignHostScreen();
         ProjectExplorerPanel.Refresh(_currentScreen);
         LayerPanel.LoadScreen(_currentScreen);
         PropertyPanel.SetVariableManager(_currentProject.VariableManager);
@@ -1372,6 +1374,8 @@ public partial class MainWindow : Window
         {
             ScreenWidth = (int)Math.Round(screen?.Width ?? 800),
             ScreenHeight = (int)Math.Round(screen?.Height ?? 480),
+            // 起始页跟随当前屏：不传的话导出器退回第一屏，宿主永远打开第一页（切屏看不到变化）
+            StartScreenId = screen?.Id,
         };
     }
 
@@ -1775,6 +1779,9 @@ public partial class MainWindow : Window
     {
         _currentScreen = screen;
         CanvasPanel.SetScreen(screen, _currentProject);
+        // 这条路径不经过 LoadProjectIntoPanels（屏幕下拉/浏览器切屏走这里），
+        // 不单独通知的话宿主仍停在旧页，位图不会跟着换。
+        SyncDesignHostScreen();
         ProjectExplorerPanel.Refresh(screen);
         PropertyPanel.CurrentScreen = screen;
         PropertyPanel.BindControl(null);

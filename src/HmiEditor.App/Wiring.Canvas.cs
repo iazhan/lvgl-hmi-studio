@@ -160,6 +160,10 @@ public partial class MainWindow
             _suppressSelectionEvent = false;
         };
 
+        // 位图重建只有一个入口：撤销栈的每一次操作（拖动/属性/增删/粘贴/撤销/重做）。
+        // 不再另加"结构变化"事件 —— 它被这条完全覆盖，两处都发只会让每次编辑排两次重建。
+        _undoRedoManager.StateChanged += (_, _) => _designHost?.NotifyStructureChanged();
+
         // 只订总线（视图侧转发见 DesignCanvasView.axaml.cs:154-157）。
         // 开了真机渲染时转给预览服务：拖动中发几何补丁（跟手），停手 300ms 整页重载（精确）。
         // 总线事件不带控件（EventHandler），所以取当前选中集——拖动中的就是被拖的那些。
@@ -169,7 +173,14 @@ public partial class MainWindow
 
             // 拖动/对齐改的是模型：面板里的坐标框必须跟着走，否则用户紧接着改别的属性时
             // SaveProperties 会把陈旧的 X/Y 写回模型，位置被拉回拖动前。
-            PropertyPanel.RefreshGeometry();
+            // 但拖动中每 16ms 刷四个数字框会让 FANumberBox 反复排版（手感发滞），
+            // 100ms 一次足够看清坐标，也仍赶在"接着改属性"之前纠正旧值。
+            var nowMs = Environment.TickCount64;
+            if (nowMs - _lastGeometryRefreshMs >= 100)
+            {
+                _lastGeometryRefreshMs = nowMs;
+                PropertyPanel.RefreshGeometry();
+            }
 
             if (_designHost?.IsRunning != true) return;
             var canvasView = GetActiveView<DesignCanvasView>("Canvas") ?? CanvasPanel;

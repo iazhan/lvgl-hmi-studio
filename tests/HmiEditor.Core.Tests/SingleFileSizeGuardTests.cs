@@ -48,9 +48,9 @@ public class SingleFileSizeGuardTests
         // → 2847（容器子控件：删除改走画布的层级感知命令 `DeleteControlsWithHistory`，
         //   主文件里那段"按下标删平铺列表"的快照命令整段让位给它）。
         // 本表纪律：变大要先想办法拆小，变小必须同步改小基线。
-        // +2（真机渲染：属性面板改完要通知设计预览服务，逻辑本身在 MainWindow.CanvasHost.cs /
-        //      DesignHostPreview.cs，主文件只留一行调用）
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2849 },
+        // +4（真机渲染：属性面板改完要通知设计预览服务；工程就绪处自动挂载。逻辑都在
+        //      MainWindow.CanvasHost.cs / DesignHostPreview.cs，主文件只留调用）
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2856 },
     };
 
     /// <summary>

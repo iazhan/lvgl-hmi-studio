@@ -389,7 +389,7 @@ public partial class DesignCanvas : Control
     public void DeleteSelectedControl()
     {
         if (_selectedControls.Count == 0 || Screen == null) return;
-        DeleteControlsWithHistory(_selectedControls);
+        DeleteControlsWithHistory(_selectedControls);   // 结构通知在方法内部统一触发
     }
 
     // ── JSON 深拷贝辅助（用于控件复制）──

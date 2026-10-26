@@ -62,7 +62,7 @@ public partial class DesignCanvas : Control
     /// <see cref="HostFrame"/> 里的真机位图。切到真机位图后控件不再自绘 —— 两层同时画会重影。
     /// </summary>
     public static readonly StyledProperty<bool> UseHostFrameProperty =
-        AvaloniaProperty.Register<DesignCanvas, bool>(nameof(UseHostFrame));
+        AvaloniaProperty.Register<DesignCanvas, bool>(nameof(UseHostFrame), defaultValue: true);
 
     /// <summary>
     /// 宿主渲染出的一帧（整屏、Bgra8888）。由预览客户端在后台线程换引用，
