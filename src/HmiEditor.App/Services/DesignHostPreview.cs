@@ -61,6 +61,7 @@ public sealed class DesignHostPreview : IDisposable
     private string? _projectDirectory;
     private ChengeExportOptions? _options;
     private string _pageId = "";
+    private string _screenId = "";
 
     public bool IsRunning => _session?.IsOpen == true;
 
@@ -100,6 +101,7 @@ public sealed class DesignHostPreview : IDisposable
         _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
 
         // 停手后要重导出页面 JSON（宿主里那份是此刻的快照）
+        _screenId = currentScreenId ?? "";
         _project = project;
         _assets = assets;
         _projectDirectory = projectDirectory;
@@ -210,13 +212,22 @@ public sealed class DesignHostPreview : IDisposable
             var options = _options;
             if (project == null || options == null || _session == null) return;
 
-            var (export, files) = await Task.Run(() =>
+            // 只导出当前页：整包导出会把所有页面 BuildPage 一遍、还要转换图片资产，
+            // 而重建单页只需要这一页的 JSON（资产在会话启动时已推给宿过）。
+            var screenId = _screenId;
+            var (export, json) = await Task.Run(() =>
             {
-                var mem = new ChengeExportService().ExportToMemory(project, assets, dir, options, out var res);
-                return (Result: res, Files: mem);
+                var pageJson = new ChengeExporter().ExportPageOnly(project, assets, options, dir, screenId,
+                    out var res, out _);
+                return (Result: res, Json: pageJson);
             });
-            if (!export.Success || _session == null) return;
-            if (!files.TryGetValue($"pages/{_pageId}.json", out var bytes)) return;
+            if (json == null || _session == null)
+            {
+                LastError = ChengeExportService.DescribeIssues(export);
+                Console.WriteLine($"[design] 单页导出失败：{LastError}");
+                return;
+            }
+            var bytes = json;
 
             // 映射必须跟着这次导出的结果走：新建的控件在上一份快照里不存在，
             // 不更新的话它在宿主里永远寻不到址 —— 表现是"新建后拖动不跟手，

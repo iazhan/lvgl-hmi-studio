@@ -48,6 +48,70 @@ public sealed class ChengeExporter
         return sink.Files;
     }
 
+    /// <summary>
+    /// 只生成某一页的页面 JSON（设计画布重建用）。
+    ///
+    /// <para>不走整包路径：那里会把所有页面都 BuildPage 一遍，还要 WriteAll 转换图片资产。
+    /// 重建单页不需要这些 —— 资产在会话启动时已经推给宿主。但页 id 映射、变量与设备映射
+    /// 仍要先建，因为控件的 bind/tag 引用依赖它们。</para>
+    ///
+    /// <para>失败（页面不存在 / 有 error 级问题）返回 null，原因在 <paramref name="result"/>。</para>
+    /// </summary>
+    public byte[]? ExportPageOnly(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
+        string? projectDirectory, string screenId,
+        out ChengeExportResult result, out Dictionary<string, string> widgetIds)
+    {
+        var issues = new ChengeIssueBag();
+        var colors = new ChengeColors(project.Theme, issues);
+        var assetStore = new ChengeAssets(assets, projectDirectory, issues);
+        var maps = new ChengeMaps();
+        var features = new HashSet<string>(StringComparer.Ordinal);
+        var fontSizes = new HashSet<int>();
+
+        foreach (var script in project.Scripts) maps.ScriptById[script.Id] = script;
+
+        var screens = project.Screens.ToList();
+        var (screenWidth, screenHeight) = ResolveScreen(screens, options);
+        BuildPages(maps, screens, issues);
+        BuildDevices(project, maps, new JsonArray(), new JsonArray(), features, issues);
+        _ = BuildTags(project, maps, issues);   // 建好 tag 映射，mapper 解析 bind 要用
+
+        widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        result = new ChengeExportResult
+        {
+            Issues = issues,
+            OutputDirectory = "",
+            PageIds = maps.PageIdByScreenId,
+            WidgetIds = widgetIds,
+        };
+
+        var screen = screens.FirstOrDefault(s => s.Id == screenId);
+        if (screen == null)
+        {
+            issues.Error("page.not_found", "pages", $"找不到屏 {screenId}（可能已被删除）");
+            return null;
+        }
+
+        var pageId = maps.PageIdByScreenId[screen.Id];
+        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features,
+            screenWidth, screenHeight, widgetIds);
+        var widgetCount = 0;
+        var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features,
+            fontSizes, issues, ref widgetCount);
+        if (issues.HasErrors) return null;
+
+        result = new ChengeExportResult
+        {
+            Issues = issues,
+            OutputDirectory = "",
+            PageCount = 1,
+            WidgetCount = widgetCount,
+            PageIds = maps.PageIdByScreenId,
+            WidgetIds = widgetIds,
+        };
+        return System.Text.Encoding.UTF8.GetBytes(doc.ToJsonString(WriteOptions));
+    }
+
     private ChengeExportResult ExportCore(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
         string? projectDirectory, IChengeExportSink sink)
     {
