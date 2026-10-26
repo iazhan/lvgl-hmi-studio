@@ -681,9 +681,10 @@ public class ChengeExportTests : IDisposable
         psi.Environment["HMI_SHOT"] = shot;
         psi.Environment["HMI_RT_TRACE"] = "1";
         // 按钮中心：启动。delay 从**起始页建好**起算（runtime_boot 末尾的 arm）。
-        // 不能给 0：命中要走 LVGL 布局，布局在首帧渲染时才定下来（实测 delay=0 必挂）。
-        // 3s 是留足并行跑时"首帧渲染 + 布局"的余量 —— 这条测试的固定成本就这几秒。
-        psi.Environment["HMI_HOST_CLICK"] = "110,108,3000";
+        // 命中要走 LVGL 布局，布局在首帧渲染时才定 —— 不能给 0。
+        // 6s：整组并行跑时"首帧渲染 + 布局"被拖慢过 3s（实测 3000ms 偶发落空），
+        // 这条测试的固定成本就是这几秒，换稳定。
+        psi.Environment["HMI_HOST_CLICK"] = "110,108,6000";
 
         using var process = Process.Start(psi)!;
         var stdout = process.StandardOutput.ReadToEnd();

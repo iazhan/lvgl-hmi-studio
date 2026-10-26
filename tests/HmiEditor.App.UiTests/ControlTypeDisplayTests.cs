@@ -86,8 +86,8 @@ public class ControlTypeDisplayTests
     {
         (string File, int Count)[] surfaces =
         [
-            ("Controls/DesignCanvas.cs", 1),                                  // Text 为空时的回落标签
-            ("Controls/DesignCanvas.Renderers.cs", 2),                        // 缺 Text 回落 ＋ 数据控件占位标题
+
+
             ("Controls/DesignCanvas.Editing.cs", 1),                          // 新建控件的默认**显示文案**
             ("Views/PropertyPanelView.axaml.cs", 2),                          // 标题行（已命名 / 未命名两档）
             ("Views/ProjectExplorerView.axaml.cs", 1),                        // 工程树节点

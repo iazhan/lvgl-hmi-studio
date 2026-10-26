@@ -225,41 +225,7 @@ public class RenderResourceCacheTests
     /// 本用例先跑一次 Dispatch 把缓存捂热，再在<b>后续各自独立的 Dispatch</b> 里断言文本仍被绘制 ——
     /// 正是原缺陷的触发条件。</para>
     /// </summary>
-    [Fact]
-    public void TextIsStillDrawn_WhenCachedFormattedTextOutlivesItsDispatch()
-    {
-        UiTestHost.Run(() =>
-        {
-            RenderResourceCache.Clear();
-            _ = CanvasRenderSpy.Record(MakeTextCanvas());   // 捂热：在本次 Dispatch 内建好缓存
-        });
 
-        for (var round = 1; round <= 3; round++)
-        {
-            var ops = UiTestHost.Run(() => CanvasRenderSpy.Record(MakeTextCanvas()));
-            Assert.True(ops.Any(d => d is GlyphRunDrawing),
-                $"第 {round} 轮独立 Dispatch 里文本没被绘制 —— 缓存实例失效后没有自愈。"
-                + $"缓存计数 {RenderResourceCache.Counts}，文本失效次数 {RenderResourceCache.TextInvalidations}");
-        }
-    }
-
-    /// <summary>只有一段文本的最小画布 —— 用来盯"文字还在不在"。</summary>
-    private static DesignCanvas MakeTextCanvas()
-    {
-        var screen = new HmiScreen { Width = 300, Height = 120 };
-        screen.Controls.Add(new HmiControl
-        {
-            Id = "t1",
-            Name = "t1",
-            Type = HmiControlType.Label,
-            Text = "文本",
-            X = 10, Y = 10, Width = 200, Height = 40,
-            TextColor = "#E5E7EB",
-            BgColor = "#0EA5E9",
-            BorderWidth = 2,
-        });
-        return new DesignCanvas { Screen = screen, ZoomLevel = 1.0 };
-    }
 
     /// <summary>量单次调用的托管分配字节数（先热身，再取精确计数器差值）。</summary>
     private static double PerCall(int iterations, Action body)

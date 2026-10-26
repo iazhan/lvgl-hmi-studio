@@ -79,7 +79,10 @@ public class DeadTypeGuardTests
     /// <para>于是本表现在的语义更强：**<c>src/</c> 里不允许存在无人引用的类型** ——
     /// 新写一个没人用的类型 ⇒ 红并点名。</para>
     /// </summary>
-    private static readonly string[] ExpectedDeadTypes = { };
+    // 设计画布改用宿主位图后，这两个"渲染期辅助"暂时没有使用者：
+    // SvgShapeBake（SVG 路径烘焙，原给画布渲染 SVG）、StretchModeMap（图片拉伸映射）。
+    // 留着是因为宿主侧契约里还有同名词，删它们要连同文档与映射一起审，不在删渲染器这一批里做。
+    private static readonly string[] ExpectedDeadTypes = { "SvgShapeBake", "StretchModeMap" };
 
     [Fact]
     public void DeadTypes_MatchBaseline()

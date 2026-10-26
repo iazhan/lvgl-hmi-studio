@@ -827,6 +827,13 @@ public partial class DesignCanvas : Control
         return m;
     }
 
+    /// <summary>
+    /// 控件外形的唯一来源是宿主渲染出的位图（<see cref="UseHostFrame"/> + <see cref="HostFrame"/>）。
+    ///
+    /// <para>这里只画一个可选中、可拖动的裸框。C# 侧不再手写任何控件的近似外观：手写版要追
+    /// LVGL 主题（渐变/阴影/padding/行高/刻度算法），追不上就是所见非所得，而"差一点"比
+    /// "明显是占位"更难发现。也不画文字 —— 每帧一次文本布局就顶破渲染分配预算。</para>
+    /// </summary>
     private void RenderControlCore(DrawingContext context, HmiControl control, Rect rect, double z)
     {
         // 外部注册的渲染器优先（插件扩展点，可覆盖内置实现或为新控件类型提供渲染）
@@ -836,323 +843,44 @@ public partial class DesignCanvas : Control
             return;
         }
 
-        // Wave 2 控件使用专用渲染器
-        switch (control.Type)
-        {
-            case HmiControlType.Gauge:
-                RenderGauge(context, control, rect, z);
-                return;
-            case HmiControlType.Knob:
-                RenderKnob(context, control, rect, z);
-                return;
-            case HmiControlType.Led:
-                RenderLed(context, control, rect, z);
-                return;
-            case HmiControlType.Spinner:
-                RenderSpinner(context, control, rect, z);
-                return;
-            case HmiControlType.Line:
-                RenderLineShape(context, control, rect, z);
-                return;
-            // 这三个原本各有一套"看起来像运行时"的手绘（键盘键位、页签条、表格网格）。
-            // 一律降级为占位框：手绘版本与 LVGL 主题必然漂移，而默认帧源已经是宿主位图，
-            // 它们只影响"宿主不可用"时的那一眼 —— 不值得继续维护三份近似。
-            case HmiControlType.Keyboard:
-            case HmiControlType.TabView:
-            case HmiControlType.Table:
-                // 裸占位框：连标题都不画 —— 每帧一次文本布局就会顶破渲染分配预算
-                // （实测 4.4KB/帧 > 4KB 上限）。真实外观来自宿主位图；宿主不可用时
-                // 这只是一个可选中、可拖动的空框，比画一个不像的假外观诚实。
-                context.FillRectangle(RenderResourceCache.Brush(DesignPalette.Slate800), rect, (float)(4 * z));
-                context.DrawRectangle(RenderResourceCache.Pen(DesignPalette.Border, Math.Max(1, 1 * z)),
-                    rect, (float)(4 * z));
-                return;
-            case HmiControlType.Svg:
-                RenderSvg(context, control, rect, z);
-                return;
-            // I7: 过程图形控件
-            case HmiControlType.Tank:
-                RenderTank(context, control, rect, z);
-                return;
-            case HmiControlType.Pipe:
-                RenderPipe(context, control, rect, z);
-                return;
-            case HmiControlType.Valve:
-                RenderValve(context, control, rect, z);
-                return;
-            // I10: 基础绘图图形
-            case HmiControlType.Rectangle:
-                RenderRectangleShape(context, control, rect, z);
-                return;
-            case HmiControlType.Ellipse:
-                RenderEllipseShape(context, control, rect, z);
-                return;
-            case HmiControlType.Polyline:
-                RenderPolylineShape(context, control, rect, z);
-                return;
-            case HmiControlType.Arc:
-                RenderArcShape(context, control, rect, z);
-                return;
-            // chenge-runtime 目标新增：设计期只画数据形状占位（真渲染由宿主运行时负责）
-            case HmiControlType.Value:
-                RenderDataWidgetPlaceholder(context, control, rect, z, ValueSubtitle(control));
-                return;
-            case HmiControlType.AlarmList:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.AlarmGroupFilter} · {control.AlarmMode} · {control.AlarmMaxRows}");
-                return;
-            case HmiControlType.HistoryCurve:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.TrendGroup} · {control.SpanMin}min");
-                return;
-            case HmiControlType.RealtimeCurve:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.SampleMs}ms · {control.SpanMin}min");
-                return;
-            case HmiControlType.AlarmBar:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.AlarmGroupFilter} · {control.AlarmOrder}");
-                return;
-            case HmiControlType.QrCode:
-                RenderDataWidgetPlaceholder(context, control, rect, z, "QR");
-                return;
-            case HmiControlType.Message:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.MessageLevel} · {control.MessageText}");
-                return;
-            case HmiControlType.EnumText:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    control.EnumTextValue ?? control.Text ?? "enum");
-                return;
-            case HmiControlType.Roller:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    control.RollerOptions?.Split('\n').FirstOrDefault() ?? "roller");
-                return;
-            case HmiControlType.StateImage:
-                RenderDataWidgetPlaceholder(context, control, rect, z, "state");
-                return;
-            case HmiControlType.FrameAnim:
-                RenderDataWidgetPlaceholder(context, control, rect, z, $"frames · {control.FrameIntervalMs}ms");
-                return;
-            case HmiControlType.Shape:
-                RenderDataWidgetPlaceholder(context, control, rect, z, control.ShapeKind ?? "rect");
-                return;
-            case HmiControlType.Chart:
-                RenderDataWidgetPlaceholder(context, control, rect, z, control.ChartKind ?? "bar");
-                return;
-            case HmiControlType.XyCurve:
-                RenderDataWidgetPlaceholder(context, control, rect, z,
-                    $"{control.XyTagX} / {control.XyTagY}");
-                return;
-            case HmiControlType.HistoryTable:
-                RenderDataWidgetPlaceholder(context, control, rect, z, control.HistTableGroup ?? "history");
-                return;
-            case HmiControlType.RecipeTable:
-                RenderDataWidgetPlaceholder(context, control, rect, z, control.RecipeGroup ?? "recipe");
-                return;
-            case HmiControlType.AsciiDisplay:
-                RenderDataWidgetPlaceholder(context, control, rect, z, control.AsciiEncoding ?? "gbk");
-                return;
-            case HmiControlType.Button:
-                RenderButton(context, control, rect, z);
-                return;
-            case HmiControlType.Switch:
-                RenderSwitch(context, control, rect, z);
-                return;
-            case HmiControlType.CheckBox:
-                RenderCheckBox(context, control, rect, z);
-                return;
-            case HmiControlType.Image:
-                RenderImage(context, control, rect, z);
-                return;
-            case HmiControlType.Dropdown:
-                RenderDropdown(context, control, rect, z);
-                return;
-        }
+        context.FillRectangle(RenderResourceCache.Brush(DesignPalette.Slate800), rect, (float)(2 * z));
+        context.DrawRectangle(RenderResourceCache.Pen(DesignPalette.Border, Math.Max(1, 1 * z)),
+            rect, (float)(2 * z));
+    }
 
-        // 背景色：仅配置了 BgColor 时填充；未配置保持透明（只显示边框/文字/进度），
-        // 避免深灰控件叠在深色画布上"看起来没有颜色"。
-        // Dropdown/TextArea 例外：LVGL 默认（未设 BgColor）有主题背景色，设计器用中性深色近似，
-        // 否则下拉框/输入框在设计器里透明不可见，与模拟器不一致。
-        var defaultBg = control.Type is HmiControlType.Dropdown or HmiControlType.TextArea
-            ? ThemeFallback(Theme?.SurfaceColor, DesignPalette.Slate800)
-            : (Color?)null;
-        // 预览模式下 BgColor 可能由绑定表达式驱动 —— 取值必须走同一个接缝，
-        // 否则「没配静态 BgColor 但绑了 BgColor」的控件在预览里仍然透明。
-        var bgHex = EffectiveVisualColor(control, nameof(HmiControl.BgColor), control.BgColor);
-        var effectiveBg = string.IsNullOrEmpty(bgHex) ? defaultBg : (Color?)null;
-        if (effectiveBg.HasValue)
-        {
-            var bgBrush = RenderResourceCache.Brush(effectiveBg.Value);
-            // Slider/Bar 未显式设 Radius 时默认胶囊圆角（高度一半），与生成器 LV_PART_MAIN 一致
-            var bgRadius = control.Type is HmiControlType.Slider or HmiControlType.Bar
-                && control.Radius <= 0 ? control.Height / 2 : control.Radius;
-            context.FillRectangle(bgBrush, rect, (float)(bgRadius * z));
-        }
-        else if (!string.IsNullOrEmpty(bgHex))
-        {
-            var bgBrush = ParseColor(bgHex, DesignPalette.Surface);
-            // Slider/Bar 未显式设 Radius 时默认胶囊圆角（高度一半），与生成器 LV_PART_MAIN 一致
-            var bgRadius = control.Type is HmiControlType.Slider or HmiControlType.Bar
-                && control.Radius <= 0 ? control.Height / 2 : control.Radius;
-            context.FillRectangle(bgBrush, rect, (float)(bgRadius * z));
-        }
+    /// <summary>把圆弧画成折线（拖放幽灵与安全区用；真实渲染走宿主位图）。</summary>
+    private static void DrawArcPolyline(DrawingContext context, IPen? pen, Rect rect,
+        double startAngle, double sweepAngle)
+    {
+        context.DrawGeometry(null, pen, RenderResourceCache.Arc(rect, startAngle, sweepAngle, asPolyline: true));
+    }
 
-        // 边框
-        if (control.BorderWidth > 0)
-        {
-            var borderBrush = ParseColor(control.BorderColor, DesignPalette.Border);
-            context.DrawRectangle(
-                RenderResourceCache.Pen(borderBrush, control.BorderWidth * z),
-                rect,
-                (float)(control.Radius * z));
-        }
+    /// <summary>按 AssetItem.Id 解析位图（带缓存）。加载失败返回 null。</summary>
+    private Bitmap? ResolveBitmap(string assetId)
+    {
+        if (_imageCache.TryGetValue(assetId, out var cached)) return cached;
 
-        // Slider/Bar 进度填充：预览态用绑定模拟值，编辑态用控件当前 Value
-        if (control.Type is HmiControlType.Slider or HmiControlType.Bar)
+        Bitmap? result = null;
+        try
         {
-            double? progress = null;
-            if (IsPreviewMode)
-                progress = PreviewValueResolver.ResolveProgress(control, PreviewValueProvider,
-                    control.MinValue, control.MaxValue);
-            else if (control.MaxValue > control.MinValue)
-                progress = Math.Clamp(
-                    (control.Value - control.MinValue) / (control.MaxValue - control.MinValue), 0, 1);
-
-            if (progress.HasValue)
+            var library = DockLayoutState.AssetLibrary;
+            var item = library?.Assets.FirstOrDefault(a => a.Id == assetId);
+            if (item != null && !string.IsNullOrEmpty(item.FilePath))
             {
-                // 指示器兜底：主题 PrimaryColor（与生成器 Gauge 指示器兜底同源，收敛主题主色）
-                var fillBrush = RenderResourceCache.Brush(
-                    ParseColorHex(control.IndicatorColor ?? EffectiveVisualColor(control, nameof(HmiControl.TextColor), control.TextColor),
-                        ThemeFallback(Theme?.PrimaryColor, DesignPalette.Primary)));
-                // 圆角：用户显式设置 Radius 时尊重；Slider/Bar 未设置时默认胶囊（高度一半），
-                // 与生成器 LV_PART_MAIN/INDICATOR 圆角语义一致（此前 Radius=0 时设计器直角、模拟器胶囊，显示不同）。
-                var fillRadius = control.Type is HmiControlType.Slider or HmiControlType.Bar
-                    && control.Radius <= 0 ? control.Height / 2 : control.Radius;
-                context.FillRectangle(fillBrush,
-                    new Rect(rect.X, rect.Y, Math.Max(2 * z, rect.Width * progress.Value), rect.Height),
-                    (float)(fillRadius * z));
-            }
-
-            // 刻度线 + 数值标签：ShowTicks 时沿轨道均布（数量按步长档位计算，上限 21 条含两端）。
-            // 刻度画在轨道上边缘外侧（图形/指针圆形之外，像尺子刻度），数值标签在刻度线之上，
-            // 与模拟器生成代码（lv_obj 刻度 + lv_label 数值）语义一致。
-            if (control.ShowTicks && control.MaxValue > control.MinValue && control.StepValue > 0)
-            {
-                var stepCount = (int)((control.MaxValue - control.MinValue) / control.StepValue);
-                var tickCount = Math.Clamp(stepCount + 1, 2, 21);
-                var tickColor = ParseColorHex(EffectiveVisualColor(control, nameof(HmiControl.TextColor), control.TextColor),
-                    ThemeFallback(Theme?.TextSecondaryColor, DesignPalette.Slate400));
-                var tickPen = RenderResourceCache.Pen(tickColor, 1 * z);
-                var tickLen = 5 * z;
-                // 数值标签字号与模拟器内置 lv_font_montserrat_12 一致（设计器-模拟器对齐）
-                var labelFontSz = 12 * z;
-                for (var i = 0; i < tickCount; i++)
-                {
-                    var ratio = (double)i / (tickCount - 1);
-                    var tx = rect.X + rect.Width * ratio;
-                    // 刻度线（轨道上方外侧）
-                    context.DrawLine(tickPen,
-                        new Point(tx, rect.Y),
-                        new Point(tx, rect.Y - tickLen));
-                    // 刻度数值标签（刻度线上方，水平居中于刻度）
-                    var tickValue = control.MinValue + i * control.StepValue;
-                    var tickLabel = BindingFormat.FormatTick(tickValue);
-                    try
-                    {
-                        var ft = RenderResourceCache.Text(tickLabel, labelFontSz, RenderResourceCache.Brush(tickColor));
-                        context.DrawText(ft, new Point(
-                            tx - ft.Width / 2,
-                            rect.Y - tickLen - ft.Height - 2 * z));
-                    }
-                    catch { }
-                }
-            }
-
-            // 指针/滑块：Slider 显示圆形 knob；Bar 显示指示器末端游标。
-            // 显隐由 EffectiveShowPointer 控制（null=类型默认：Slider 显示 / Bar 隐藏）。
-            if (control.EffectiveShowPointer() && progress.HasValue)
-            {
-                var knobD = Math.Min(rect.Width, rect.Height) * z;
-                var knobFillColor = ParseColorHex(control.IndicatorColor ?? EffectiveVisualColor(control, nameof(HmiControl.TextColor), control.TextColor),
-                    ThemeFallback(Theme?.PrimaryColor, DesignPalette.Primary));
-                if (control.Type == HmiControlType.Slider && knobD >= 4 * z)
-                {
-                    var knobCenterX = rect.X + rect.Width * progress.Value;
-                    var knobRect = new Rect(
-                        knobCenterX - knobD / 2,
-                        rect.Y + (rect.Height - knobD) / 2,
-                        knobD, knobD);
-                    // knob 背景：IndicatorColor 兜底 TextColor，再兜底主题主色；外圈描边增强可见性
-                    context.DrawEllipse(RenderResourceCache.Brush(knobFillColor),
-                        RenderResourceCache.Pen(DesignPalette.Slate900, 1.5 * z),
-                        knobRect);
-                    // 指向刻度位置的小三角形（尖端朝下指向圆心 = 轨道刻度线），与圆形高对比
-                    DrawPointerTriangle(context, new Point(knobCenterX, knobRect.Center.Y),
-                        knobD / 2, knobFillColor, z);
-                }
-                else if (control.Type == HmiControlType.Bar && knobD >= 4 * z)
-                {
-                    // Bar 末端游标：位于填充终点，直径 = 控件高度 × 0.7
-                    var curD = knobD * 0.7;
-                    var curX = rect.X + rect.Width * progress.Value;
-                    var curRect = new Rect(
-                        curX - curD / 2,
-                        rect.Y + (rect.Height - curD) / 2,
-                        curD, curD);
-                    context.DrawEllipse(RenderResourceCache.Brush(knobFillColor),
-                        RenderResourceCache.Pen(DesignPalette.Slate900, 1 * z),
-                        curRect);
-                    // 指向刻度位置的小三角形（尖端朝下指向圆心 = 轨道刻度线），与圆形高对比
-                    DrawPointerTriangle(context, new Point(curX, curRect.Center.Y),
-                        curD / 2, knobFillColor, z);
-                }
+                var path = item.FilePath;
+                if (!Path.IsPathRooted(path) && !string.IsNullOrEmpty(DockLayoutState.ProjectDirectory))
+                    path = Path.Combine(DockLayoutState.ProjectDirectory, path);
+                if (File.Exists(path))
+                    result = new Bitmap(path);
             }
         }
-
-        // 绘制控件文本（优先 Text，回退到**显示名**；预览模式下显示型控件渲染模拟值）
-        var label = control.Text ?? Services.ControlNameDefaults.Display(control);
-        if (string.IsNullOrEmpty(label)) label = Services.ControlTypeTextKeys.Describe(control.Type);
-
-        if (IsPreviewMode && PreviewValueResolver.IsDisplayControl(control.Type))
+        catch
         {
-            var previewText = PreviewValueResolver.ResolveDisplayText(
-                control, PreviewValueProvider, PreviewValueTypeProvider, PreviewValueUnitProvider);
-            if (!string.IsNullOrEmpty(previewText))
-                label = previewText;
+            result = null;
         }
 
-        // Dropdown：显示选中项文本（选项列表优先于静态文本）
-        if (control.Type == HmiControlType.Dropdown && !string.IsNullOrEmpty(control.Options))
-        {
-            var opts = control.Options.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            if (opts.Length > 0)
-                label = opts[Math.Clamp(control.SelectedIndex, 0, opts.Length - 1)];
-        }
-
-        // TextArea：无文本时显示占位文本
-        if (control.Type == HmiControlType.TextArea &&
-            string.IsNullOrEmpty(control.Text) && !string.IsNullOrEmpty(control.PlaceholderText))
-        {
-            label = control.PlaceholderText;
-        }
-
-        // 文本颜色：状态样式覆盖优先（Checked 预览态），回退到控件 TextColor，最后主题文本色兜底。
-        // 与 RenderButton 分支语义一致 —— 此前硬编码纯白导致设计器内设置文本色不生效。
-        var previewState = control.IsChecked ? VisualState.Checked : VisualState.Normal;
-        var stateStyle = control.GetStateStyle(previewState);
-        // 文本颜色/对齐：规则抽到 ControlTextStyleResolver（状态样式优先 → 控件默认 → 主题/调色板兜底），
-        // 由行为测试覆盖，不再依赖对渲染源码的 grep 断言。
-        // 绑定表达式驱动的文本色优先级最高（表达式就是要覆盖设计值）；
-        // 其后才是 状态样式 → 控件默认 → 主题/调色板兜底。
-        var textColor = EffectiveVisualColor(control, nameof(HmiControl.TextColor), null)
-            ?? ControlTextStyleResolver.PreferHex(stateStyle, control, Theme?.TextColor);
-        var hAlign = ControlTextStyleResolver.HorizontalAlign(stateStyle, control, previewState);
-        var vAlign = ControlTextStyleResolver.VerticalAlign(stateStyle, control, previewState);
-
-        var fontSz = (control.FontSize > 0 ? control.FontSize : HmiControl.DefaultFontSize) * z;
-        DrawAlignedText(context, label, rect, fontSz,
-            ParseColorHex(textColor, ThemeFallback(Theme?.TextColor, DesignPalette.Text)), hAlign, vAlign);
+        _imageCache[assetId] = result;
+        return result;
     }
 
     // ── 表达式驱动的视觉属性（P1-1）──

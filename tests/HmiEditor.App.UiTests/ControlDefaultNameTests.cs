@@ -219,10 +219,9 @@ public class ControlDefaultNameTests
     {
         (string File, int Count)[] surfaces =
         [
-            ("Controls/DesignCanvas.cs", 1),                                  // Text 为空时的回落标签
+
             ("Controls/DesignCanvas.Hierarchy.cs", 1),                        // 层级感知删除的撤销描述
-            ("Controls/DesignCanvas.IndustrialRenderers.cs", 3),              // 过程图形位号文字
-            ("Controls/DesignCanvas.Renderers.cs", 4),                        // 多处渲染支的回落标签
+
             ("Controls/UndoRedoManager.cs", 5),                               // 移动/新增/删除/修改/放入容器五条撤销描述
             ("MainWindow.axaml.cs", 3),                                       // 撤销描述 ＋ 多选/单选两条状态栏
             ("Views/AnimationEditorView.axaml.cs", 1),                        // 动画「目标控件」下拉
