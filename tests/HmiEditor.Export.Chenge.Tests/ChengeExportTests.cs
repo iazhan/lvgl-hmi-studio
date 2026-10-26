@@ -680,10 +680,9 @@ public class ChengeExportTests : IDisposable
         psi.Environment["HMI_DATA_DIR"] = Path.Combine(_dir, "data");
         psi.Environment["HMI_SHOT"] = shot;
         psi.Environment["HMI_RT_TRACE"] = "1";
-        // 按钮中心：启动。delay 要盖住"宿主启动 + 建页"的整段：整组测试并行跑时
-        // 字体加载与磁盘争抢更凶，1.5s 仍会在建页完成前注入、点击落空
-        // （实测单跑必绿、全量必挂，落在 1500ms 这条线上）。
-        psi.Environment["HMI_HOST_CLICK"] = "110,108,3000";
+        // 按钮中心：启动。delay 从**首帧**起算（hmi_ui_host.c 在首帧把注入时间轴后移），
+        // 所以这里只需盖住"页面可见后多久点"，不必再盖宿主启动与建页。
+        psi.Environment["HMI_HOST_CLICK"] = "110,108,800";
 
         using var process = Process.Start(psi)!;
         var stdout = process.StandardOutput.ReadToEnd();

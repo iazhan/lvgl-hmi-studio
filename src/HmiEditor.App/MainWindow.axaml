@@ -79,6 +79,8 @@
                     <MenuItem x:Name="MenuPanelAiChat" Header="{res:Loc dock.title.aichat}" />
                 </MenuItem>
                 <Separator />
+                <MenuItem x:Name="MenuCanvasHost" Header="{res:Loc menu.canvas.host}" />
+                <Separator />
                 <MenuItem x:Name="MenuReloadPanels" Header="{res:Loc menu.reload.panels}" InputGesture="F5" />
             </MenuItem>
             <MenuItem Header="{res:Loc menu.tools}" Foreground="{StaticResource HmiTextPrimaryBrush}">

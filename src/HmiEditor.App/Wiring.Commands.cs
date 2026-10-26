@@ -61,6 +61,7 @@ public partial class MainWindow
         MenuExportChenge.Click += (_, _) => ExportChengeProject();
         BtnExportChenge.Click += (_, _) => ExportChengeProject();
         MenuLivePreview.Click += (_, _) => ShowLivePreview();
+        MenuCanvasHost.Click += (_, _) => ToggleCanvasHostFrame();
         MenuExportPreview.Click += (_, _) => ExportAndPreview();
         BtnExportPreview.Click += (_, _) => ExportAndPreview();
         MenuExit.Click += (_, _) => Close();

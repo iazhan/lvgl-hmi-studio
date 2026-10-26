@@ -347,6 +347,25 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         }
     }
 
+    /// <summary>
+    /// 整页重载：<paramref name="pageId"/> 为空 = 重建当前页（改绑定/权限的慢路径）。
+    /// epoch 由客户端递增，宿主据此把更旧的补丁丢掉（补丁接上后才有消费者）。
+    /// </summary>
+    public bool ReloadPage(uint epoch, string? pageId)
+    {
+        if (_proc is not { HasExited: false }) return false;
+        try
+        {
+            var cmd = string.IsNullOrEmpty(pageId) ? $"L {epoch}\n" : $"L {epoch} {pageId}\n";
+            WriteStdin(Encoding.UTF8.GetBytes(cmd));
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
     public bool SaveScreenshot(string path)
     {
         if (_proc is not { HasExited: false }) return false;

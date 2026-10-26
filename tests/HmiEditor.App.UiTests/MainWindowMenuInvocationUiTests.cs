@@ -79,6 +79,7 @@ public class MainWindowMenuInvocationUiTests
         ["MenuAlarmConfig"] = Popup(typeof(AlarmConfigView), "报警组配置"),
         ["MenuAlarmList"] = Popup(typeof(AlarmListView), "实时报警列表"),
         ["MenuAnimationEditor"] = Popup(typeof(AnimationEditorView), "动画编辑器"),
+        ["MenuCanvasHost"] = Silent("切画布底图来源：导出工程并起 --design 宿主；没有工程或找不到宿主时只更新状态栏"),
         ["MenuCommConfig"] = Popup(typeof(CommunicationConfigView), "通讯配置"),
         ["MenuExportChenge"] = Silent("导出 chenge 工程：打开目录选择器；headless 桩返回空 ⇒ 提前 return，不弹窗"),
         ["MenuExportPreview"] = Skipped("导出并预览会启动宿主 chenge-runtime 进程并等它截图，属外部进程动作，本层不点"),
