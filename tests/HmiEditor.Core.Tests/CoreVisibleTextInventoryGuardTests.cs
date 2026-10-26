@@ -337,7 +337,7 @@ public class CoreVisibleTextInventoryGuardTests
         // 由交叉引用面板直出。gen.loc.* 键族随 C 导出路径移除后它们不再有字典键，
         // 所以在这里按「不翻译」登记，而不是留在 VisibleChannels 里假装有出口。
         ["Services/DanglingRefLocation.cs"] = 3,
-        ["Models/TableLayoutHelper.cs"] = 1,           // 布局模式名 "自适应"
+
 
         // 只进 Debug / 无订阅点（DEV）：看起来像界面提示，实测到不了。
         ["Design/DefaultPropertyValidator.cs"] = 10,   // PropertyPanelView.Changes.cs:61 —— 只 Debug.WriteLine 后 return

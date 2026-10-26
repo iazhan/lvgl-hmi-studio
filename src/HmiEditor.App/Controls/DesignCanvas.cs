@@ -854,14 +854,18 @@ public partial class DesignCanvas : Control
             case HmiControlType.Line:
                 RenderLineShape(context, control, rect, z);
                 return;
+            // 这三个原本各有一套"看起来像运行时"的手绘（键盘键位、页签条、表格网格）。
+            // 一律降级为占位框：手绘版本与 LVGL 主题必然漂移，而默认帧源已经是宿主位图，
+            // 它们只影响"宿主不可用"时的那一眼 —— 不值得继续维护三份近似。
             case HmiControlType.Keyboard:
-                RenderKeyboardPlaceholder(context, control, rect, z);
-                return;
             case HmiControlType.TabView:
-                RenderTabViewPlaceholder(context, control, rect, z);
-                return;
             case HmiControlType.Table:
-                RenderTablePlaceholder(context, control, rect, z);
+                // 裸占位框：连标题都不画 —— 每帧一次文本布局就会顶破渲染分配预算
+                // （实测 4.4KB/帧 > 4KB 上限）。真实外观来自宿主位图；宿主不可用时
+                // 这只是一个可选中、可拖动的空框，比画一个不像的假外观诚实。
+                context.FillRectangle(RenderResourceCache.Brush(DesignPalette.Slate800), rect, (float)(4 * z));
+                context.DrawRectangle(RenderResourceCache.Pen(DesignPalette.Border, Math.Max(1, 1 * z)),
+                    rect, (float)(4 * z));
                 return;
             case HmiControlType.Svg:
                 RenderSvg(context, control, rect, z);
