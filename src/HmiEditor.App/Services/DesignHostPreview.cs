@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia;
@@ -40,6 +41,27 @@ public sealed class DesignHostPreview : IDisposable
     private uint _epoch;
     private bool _disposed;
 
+    /// <summary>编辑器控件 Id → 导出后的 widget id（补丁按后者寻址）。</summary>
+    private Dictionary<string, string> _widgetIds = new(StringComparer.Ordinal);
+
+    /// <summary>待发送的几何：widget id → 最新矩形。同一控件拖 16ms 内的多次变化只留最后一条。</summary>
+    private readonly Dictionary<string, (int X, int Y, int W, int H)> _pending =
+        new(StringComparer.Ordinal);
+
+    private long _lastSendMs;
+    private long _lastChangeMs;
+    private long _changeStamp;
+    private uint _patchSeq;
+    private bool _needsReload;
+    private bool _reloading;
+
+    // 停手后要重新导出页面 JSON：宿主里那份是启动时的快照，不含拖动后的新坐标
+    private HmiProject? _project;
+    private AssetLibrary? _assets;
+    private string? _projectDirectory;
+    private ChengeExportOptions? _options;
+    private string _pageId = "";
+
     public bool IsRunning => _session?.IsOpen == true;
 
     public string LastError { get; private set; } = "";
@@ -75,6 +97,20 @@ public sealed class DesignHostPreview : IDisposable
             LastError = ChengeExportService.DescribeIssues(export);
             return false;
         }
+        _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
+
+        // 停手后要重导出页面 JSON（宿主里那份是此刻的快照）
+        _project = project;
+        _assets = assets;
+        _projectDirectory = projectDirectory;
+        _options = options;
+        _pageId = options.StartPageId ?? "";
+        if (string.IsNullOrEmpty(_pageId))
+        {
+            var key = blobs.Keys.Where(k => k.StartsWith("pages/", StringComparison.Ordinal))
+                        .OrderBy(k => k, StringComparer.Ordinal).FirstOrDefault();
+            if (!string.IsNullOrEmpty(key)) _pageId = Path.GetFileNameWithoutExtension(key);
+        }
 
         var proc = new ChengeProcessSession(hostExe, dataDir, designMode: true);
         if (!await Task.Run(() => proc.OpenWithBlob(blobs)))
@@ -99,6 +135,10 @@ public sealed class DesignHostPreview : IDisposable
         canvas.HostFrame = _bitmap;
         canvas.UseHostFrame = true;
 
+        // 建立页面代：宿主用 applied_epoch 丢弃"旧页面的补丁"
+        _epoch = 1;
+        proc.ReloadPage(_epoch, null);
+
         _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
         _timer.Tick += (_, _) => Pump();
         _timer.Start();
@@ -106,8 +146,87 @@ public sealed class DesignHostPreview : IDisposable
         return true;
     }
 
-    /// <summary>UI 线程：有新帧才拷进位图并让画布重绘（没有就什么都不做）。</summary>
+    /// <summary>UI 线程一拍：先补丁（可能让宿主重绘），再取帧。</summary>
     private void Pump()
+    {
+        if (_session == null || _bitmap == null || _canvas == null) return;
+
+        FlushPatches();
+        PullFrame();
+    }
+
+    /// <summary>把积压的几何补丁发出去；静置一会儿再整页重载一次。</summary>
+    private void FlushPatches()
+    {
+        if (_session == null) return;
+        var now = Environment.TickCount64;
+
+        if (_pending.Count > 0)
+        {
+            if (now - _lastSendMs < 16) return;   // 拖动再快也只按 60Hz 发
+            _lastSendMs = now;
+            foreach (var (wid, r) in _pending)
+            {
+                _patchSeq++;
+                _session.PatchRect(_epoch, _patchSeq, wid, r.X, r.Y, r.W, r.H);
+            }
+            // 一行一批：定位"拖动时改到了哪个控件"要靠它（不打就只剩猜）
+            var first = _pending.First();
+            Console.WriteLine($"[design] W epoch={_epoch} n={_pending.Count} " +
+                              $"first={first.Key} {first.Value.X},{first.Value.Y} {first.Value.W}x{first.Value.H}");
+            _pending.Clear();
+            return;
+        }
+
+        // 几何快路径只改 lv_obj 的位置尺寸，不重算控件内部布局（仪表刻度、曲线留白、
+        // 表格列宽都是建页时算的）。停手后重导出页面 JSON 再整页重建，画面才精确。
+        // 注意必须是**重导出**：宿主里的快照不含拖动后的新坐标，直接 L 会把控件拉回原位。
+        if (_needsReload && !_reloading && now - _lastChangeMs >= 300)
+        {
+            _reloading = true;
+            _ = ReloadWithFreshJsonAsync();
+        }
+    }
+
+    /// <summary>重新导出工程、取当前页 JSON、推给宿主重建（后台线程导出，UI 线程发送）。</summary>
+    private async Task ReloadWithFreshJsonAsync()
+    {
+        var stamp = _changeStamp;   // 这一轮用哪个时刻的模型
+        try
+        {
+            var project = _project;
+            var assets = _assets;
+            var dir = _projectDirectory;
+            var options = _options;
+            if (project == null || options == null || _session == null) return;
+
+            var (files, ok) = await Task.Run(() =>
+            {
+                var mem = new ChengeExportService().ExportToMemory(project, assets, dir, options, out var res);
+                return (Files: mem, Ok: res.Success);
+            });
+            if (!ok || _session == null) return;
+            if (!files.TryGetValue($"pages/{_pageId}.json", out var bytes)) return;
+
+            _epoch++;
+            _session.ReloadPageJson(_epoch, bytes);
+            Console.WriteLine($"[design] J epoch={_epoch} bytes={bytes.Length} stamp={stamp}");
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+            Console.WriteLine($"[design] J 失败：{ex.Message}");
+        }
+        finally
+        {
+            _reloading = false;
+            // 只有"这一轮用的模型仍然是最新的"才算刷完；期间又改过就留着标志，
+            // 下一拍（16ms 后）会用新模型再来一轮 —— 否则那次改动要等用户再动一下才生效。
+            if (_changeStamp == stamp) _needsReload = false;
+        }
+    }
+
+    private void PullFrame()
     {
         if (_session == null || _bitmap == null || _canvas == null) return;
 
@@ -121,6 +240,22 @@ public sealed class DesignHostPreview : IDisposable
         _lastVersion = version;
         // HostFrame 引用没变，StyledProperty 不会触发 AffectsRender —— 手动点一次
         _canvas.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// 画布上某个控件变了（拖动时每次移动都会来一条）。只发几何；属性改动会在
+    /// 停手 300ms 后由整页重载生效 —— 重建单个控件会丢事件（见 ui_page.h 的说明）。
+    /// </summary>
+    public void OnControlChanged(HmiControl control)
+    {
+        if (!IsRunning || control == null || string.IsNullOrEmpty(control.Id)) return;
+        if (!_widgetIds.TryGetValue(control.Id, out var wid)) return;
+
+        _pending[wid] = ((int)Math.Round(control.X), (int)Math.Round(control.Y),
+                         (int)Math.Round(control.Width), (int)Math.Round(control.Height));
+        _lastChangeMs = Environment.TickCount64;
+        _changeStamp++;
+        _needsReload = true;
     }
 
     /// <summary>让宿主重绘一帧（不推进时间）。属性补丁接上之前，改完属性用它。</summary>
@@ -151,6 +286,13 @@ public sealed class DesignHostPreview : IDisposable
         _bitmap = null;
         _frame = Array.Empty<byte>();
         _lastVersion = -1;
+        _pending.Clear();
+        _widgetIds.Clear();
+        _needsReload = false;
+        _reloading = false;
+        _patchSeq = 0;
+        _project = null;
+        _options = null;
     }
 
     public void Dispose()

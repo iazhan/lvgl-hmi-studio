@@ -161,7 +161,21 @@ public partial class MainWindow
         };
 
         // 只订总线（视图侧转发见 DesignCanvasView.axaml.cs:154-157）。
-        DockLayoutState.CanvasControlPropertyChanged += (_, _) => SetUnsavedChanges(true);
+        // 开了真机渲染时转给预览服务：拖动中发几何补丁（跟手），停手 300ms 整页重载（精确）。
+        // 总线事件不带控件（EventHandler），所以取当前选中集——拖动中的就是被拖的那些。
+        DockLayoutState.CanvasControlPropertyChanged += (_, _) =>
+        {
+            SetUnsavedChanges(true);
+
+            // 拖动/对齐改的是模型：面板里的坐标框必须跟着走，否则用户紧接着改别的属性时
+            // SaveProperties 会把陈旧的 X/Y 写回模型，位置被拉回拖动前。
+            PropertyPanel.RefreshGeometry();
+
+            if (_designHost?.IsRunning != true) return;
+            var canvasView = GetActiveView<DesignCanvasView>("Canvas") ?? CanvasPanel;
+            foreach (var control in canvasView.Canvas.SelectedControls)
+                _designHost.OnControlChanged(control);
+        };
 
         // ── 画布右键菜单操作路由 ──
         DockLayoutState.CanvasContextActionRequested += (_, action) => HandleCanvasContextAction(action);

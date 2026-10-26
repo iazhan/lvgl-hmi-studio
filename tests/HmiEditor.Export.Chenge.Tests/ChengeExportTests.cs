@@ -680,9 +680,10 @@ public class ChengeExportTests : IDisposable
         psi.Environment["HMI_DATA_DIR"] = Path.Combine(_dir, "data");
         psi.Environment["HMI_SHOT"] = shot;
         psi.Environment["HMI_RT_TRACE"] = "1";
-        // 按钮中心：启动。delay 从**首帧**起算（hmi_ui_host.c 在首帧把注入时间轴后移），
-        // 所以这里只需盖住"页面可见后多久点"，不必再盖宿主启动与建页。
-        psi.Environment["HMI_HOST_CLICK"] = "110,108,800";
+        // 按钮中心：启动。delay 从**起始页建好**起算（runtime_boot 末尾的 arm），
+        // 所以这里只需盖住"页面可点后多久点"。1.5s：并行跑时 LVGL 还要做首轮布局，
+        // 800ms 在小概率下仍会点在布局完成前。
+        psi.Environment["HMI_HOST_CLICK"] = "110,108,1500";
 
         using var process = Process.Start(psi)!;
         var stdout = process.StandardOutput.ReadToEnd();

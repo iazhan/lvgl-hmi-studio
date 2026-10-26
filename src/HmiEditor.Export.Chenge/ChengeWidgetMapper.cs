@@ -22,9 +22,11 @@ internal sealed class ChengeWidgetMapper
     private readonly HashSet<string> _features;
     private readonly int _screenWidth;
     private readonly int _screenHeight;
+    private readonly Dictionary<string, string> _widgetIds;
 
     public ChengeWidgetMapper(ChengeSchema schema, ChengeIssueBag issues, ChengeColors colors,
-        ChengeAssets assets, ChengeMaps maps, HashSet<string> features, int screenWidth, int screenHeight)
+        ChengeAssets assets, ChengeMaps maps, HashSet<string> features, int screenWidth, int screenHeight,
+        Dictionary<string, string> widgetIds)
     {
         _schema = schema;
         _issues = issues;
@@ -34,11 +36,14 @@ internal sealed class ChengeWidgetMapper
         _features = features;
         _screenWidth = screenWidth;
         _screenHeight = screenHeight;
+        _widgetIds = widgetIds;
     }
 
     public JsonObject? Map(HmiControl control, string pageId, string widgetId)
     {
         var where = $"pages/{pageId}.json#{widgetId}";
+        // 设计画布的几何补丁按导出后的 widget id 寻址（顶层与子控件都从这里过）
+        if (!string.IsNullOrEmpty(control.Id)) _widgetIds[control.Id] = widgetId;
         var target = TargetType(control.Type, where);
         if (target == null) return null;
 

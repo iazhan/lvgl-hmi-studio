@@ -2159,6 +2159,8 @@ public partial class MainWindow : Window
         CanvasPanel.Refresh();
         ProjectExplorerPanel.Refresh(_currentScreen);
         SetUnsavedChanges(true);
+        // 属性面板走这条事件（不是画布那条）：不通知，真机画面永远不刷内容改动
+        _designHost?.OnControlChanged(control);
     }
 
     private static string SerializeControl(HmiControl control) =>

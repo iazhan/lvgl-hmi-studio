@@ -348,6 +348,52 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     }
 
     /// <summary>
+    /// 几何补丁：<c>W &lt;epoch&gt; &lt;seq&gt; &lt;widgetId&gt; &lt;x&gt; &lt;y&gt; &lt;w&gt; &lt;h&gt;</c>。
+    /// 宿主只改位置尺寸、不重建控件（重建会丢事件与绑定）；x/y 是相对父容器的坐标，
+    /// 与模型里的 X/Y 语义一致。
+    /// </summary>
+    public bool PatchRect(uint epoch, uint seq, string widgetId, int x, int y, int w, int h)
+    {
+        if (_proc is not { HasExited: false }) return false;
+        try
+        {
+            WriteStdin(Encoding.UTF8.GetBytes($"W {epoch} {seq} {widgetId} {x} {y} {w} {h}\n"));
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 用**最新页面 JSON** 重建当前页（设计画布停手后的精确刷新）。
+    ///
+    /// 不能用 <see cref="ReloadPage"/>：那条从宿主里的工程快照重读，而拖动只改了编辑器
+    /// 模型，快照还是旧坐标 —— 会把刚拖走的控件拉回原位（实测踩过）。
+    /// </summary>
+    public bool ReloadPageJson(uint epoch, byte[] json)
+    {
+        if (_proc is not { HasExited: false } || json.Length == 0) return false;
+        try
+        {
+            lock (_stdinLock)
+            {
+                var head = Encoding.UTF8.GetBytes($"J {epoch} {json.Length}\n");
+                _stdin!.Write(head, 0, head.Length);
+                _stdin.Write(json, 0, json.Length);
+                _stdin.WriteByte((byte)'\n');
+                _stdin.Flush();
+            }
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// 整页重载：<paramref name="pageId"/> 为空 = 重建当前页（改绑定/权限的慢路径）。
     /// epoch 由客户端递增，宿主据此把更旧的补丁丢掉（补丁接上后才有消费者）。
     /// </summary>

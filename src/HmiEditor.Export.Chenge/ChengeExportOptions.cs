@@ -34,6 +34,13 @@ public sealed class ChengeExportResult
     public int DeviceCount { get; init; }
     public IReadOnlyList<string> WrittenFiles { get; init; } = Array.Empty<string>();
 
+    /// <summary>
+    /// 编辑器控件 Id → 导出后的 widget id（`w3` / `w3_1`）。两种 id 不是一回事：
+    /// 导出器按遍历序号生成 widget id，所以设计画布的几何补丁必须查这张表才能寻址。
+    /// </summary>
+    public IReadOnlyDictionary<string, string> WidgetIds { get; init; } =
+        new Dictionary<string, string>();
+
     public string Summary =>
         $"页面 {PageCount} / 控件 {WidgetCount} / 变量 {TagCount} / 设备 {DeviceCount}" +
         $"；错误 {Issues.ErrorCount}，警告 {Issues.WarningCount}";

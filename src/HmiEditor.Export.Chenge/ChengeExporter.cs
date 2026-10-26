@@ -71,7 +71,9 @@ public sealed class ChengeExporter
 
         var tags = BuildTags(project, maps, issues);
 
-        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, screenWidth, screenHeight);
+        // 控件 Id → 导出 widget id：设计画布的几何补丁要靠它寻址（两种 id 不是一回事）
+        var widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
+        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, screenWidth, screenHeight, widgetIds);
         var pageDocs = new List<(string Path, JsonNode Node)>();
         var widgetCount = 0;
         foreach (var screen in screens)
@@ -148,6 +150,7 @@ public sealed class ChengeExporter
             WidgetCount = widgetCount,
             TagCount = tags.Count,
             DeviceCount = devices.Count,
+            WidgetIds = widgetIds,
         };
 
         if (issues.HasErrors) return result;
@@ -162,6 +165,7 @@ public sealed class ChengeExporter
             TagCount = tags.Count,
             DeviceCount = devices.Count,
             WrittenFiles = written,
+            WidgetIds = widgetIds,
         };
     }
 

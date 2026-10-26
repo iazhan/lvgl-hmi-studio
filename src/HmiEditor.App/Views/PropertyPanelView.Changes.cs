@@ -65,6 +65,30 @@ public partial class PropertyPanelView : UserControl
         writeAction(value);
     }
 
+    /// <summary>
+    /// 外部改了几何（画布拖动/对齐/撤销）后，把坐标尺寸框同步到模型现值。
+    ///
+    /// <para><b>为什么必须做</b>：<see cref="SaveProperties"/> 会把所有可见框一并写回模型。
+    /// 拖动后若面板里还是拖动前的 X/Y，用户接着改文本（不失焦）时，那对陈旧坐标会被
+    /// 一并写回 —— 刚拖好的位置被覆盖回原位（实测现象：改完文本按钮跳回原处）。</para>
+    /// </summary>
+    public void RefreshGeometry()
+    {
+        if (_currentControl == null) return;
+        _isUpdating = true;   // 写框会 raise ValueChanged，别让它反过来再 SaveProperties
+        try
+        {
+            PropX.Value = _currentControl.X;
+            PropY.Value = _currentControl.Y;
+            PropWidth.Value = _currentControl.Width;
+            PropHeight.Value = _currentControl.Height;
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
     /// <summary>从所有编辑器控件读取值并写回当前选中的 HmiControl。</summary>
     private void SaveProperties()
     {
