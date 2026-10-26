@@ -167,6 +167,33 @@ public class ExportGuardTests : IDisposable
     }
 
     /// <summary>
+    /// 绑到**字符串变量**的文本要走直搬（`{tag}`），不能带 `kind:fmt` + `%.2f`：
+    /// 运行时按数值渲染字符串变量会得到 0.00，输入框/标签里看不到真正的文本。
+    /// </summary>
+    [Fact]
+    public void Export_StringTagTextBinding_IsDirectNotFmt()
+    {
+        var project = ExportFixture.Build();
+        project.VariableManager.Variables.Add(new Variable
+        {
+            Id = "v_name", Name = "名称", DataType = "String", Access = "rw",
+        });
+
+        var label = project.Screens[0].Controls.First(c => c.Type == HmiControlType.Label);
+        label.VariableBindings.Clear();
+        label.VariableBindings.Add(new VariableBindingData { PropertyName = "Text", VariableId = "v_name" });
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var widget = PageWidgets().EnumerateArray()
+            .First(w => w.GetProperty("type").GetString() == "label");
+        var textBind = widget.GetProperty("bind").GetProperty("text");
+        Assert.False(textBind.TryGetProperty("kind", out _),
+            "字符串变量的 text 绑定不该带 kind:fmt（运行时会把字符串按 %.2f 渲染成 0.00）");
+    }
+
+    /// <summary>
     /// 旋转 / 镜像：契约有这三个键、运行时 apply_transform 也实现了，导出器此前只告警
     /// 丢弃 —— 用户在面板上转了控件，画布（宿主位图）和板子都不动。这里钉住"真的写出去"，
     /// 以及"越档的组合在导出期就报 Error"（运行时越档是拒绝整页）。

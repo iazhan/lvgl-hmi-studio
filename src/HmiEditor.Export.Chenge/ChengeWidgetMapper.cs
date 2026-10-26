@@ -1410,6 +1410,13 @@ internal sealed class ChengeWidgetMapper
                         $"{control.ValuePrefix}{{tag:{tag.Value}|{fmt}}}{control.ValueSuffix}";
                     continue;
                 }
+                // 字符串变量直接搬，不能套数值格式：bind.kind=fmt 配 %.2f 会把
+                // 字符串变量按数值渲染（结果是 0.00），输入框里就看不到真正的文本。
+                if (_maps.TypeByTag.TryGetValue(tag.Value, out var valueType) && valueType == "string")
+                {
+                    bind[prop] = new JsonObject { ["tag"] = tag.Value };
+                    continue;
+                }
                 bind[prop] = new JsonObject { ["tag"] = tag.Value, ["kind"] = "fmt", ["fmt"] = FmtOf(control.ValueDecimalPlaces) };
                 continue;
             }
