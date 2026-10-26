@@ -1362,6 +1362,7 @@
         }
       },
       "bind": [
+        "text",
         "value",
         "visible",
         "enabled",

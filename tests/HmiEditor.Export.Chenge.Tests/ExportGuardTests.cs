@@ -128,6 +128,45 @@ public class ExportGuardTests : IDisposable
     }
 
     /// <summary>
+    /// 输入框的 `Text` 绑定必须真的导出成 `bind.text`。
+    ///
+    /// <para><b>为什么值得一条判据</b>：契约里 <c>input.bindable</c> 原先只有 <c>value</c>，
+    /// 导出器的 <c>CanBind("input","text")</c> 因此为假 —— 输入框的绑定被静默跳过，
+    /// 运行时的 <c>bind_tag</c> 保持 -1，点击回调根本没挂上，现象就是"点输入框不弹键盘"
+    /// 而导出报告只有一条没人看的 Warn。</para>
+    /// </summary>
+    [Fact]
+    public void Export_TextAreaTextBinding_IsEmittedAsBindText()
+    {
+        var project = ExportFixture.Build();
+        var input = project.Screens[0].Controls.FirstOrDefault(c => c.Type == HmiControlType.TextArea);
+        if (input == null)
+        {
+            input = new HmiControl
+            {
+                Id = "in1", Name = "Input1", Type = HmiControlType.TextArea,
+                X = 100, Y = 300, Width = 200, Height = 40,
+            };
+            project.Screens[0].Controls.Add(input);
+        }
+        // 绑到工程里的第一个变量（夹具里一定有）
+        var tagId = project.VariableManager.Variables[0].Id;
+        input.VariableBindings.Clear();
+        input.VariableBindings.Add(new VariableBindingData { PropertyName = "Text", VariableId = tagId });
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+        Assert.DoesNotContain(result.Issues.Items, i => i.Code is "bind.not_bindable" or "bind.property");
+
+        var widget = PageWidgets().EnumerateArray()
+            .Single(w => w.GetProperty("type").GetString() == "input");
+        Assert.True(widget.TryGetProperty("bind", out var bind), "输入框的绑定没有导出（运行时因此不弹键盘）");
+        Assert.True(bind.TryGetProperty("text", out var textBind), "应该导出成 bind.text");
+        // tag 号由工程里的变量顺序决定，这里只断言"确实落到了某个变量上"
+        Assert.True(textBind.GetProperty("tag").GetInt32() >= 0);
+    }
+
+    /// <summary>
     /// 旋转 / 镜像：契约有这三个键、运行时 apply_transform 也实现了，导出器此前只告警
     /// 丢弃 —— 用户在面板上转了控件，画布（宿主位图）和板子都不动。这里钉住"真的写出去"，
     /// 以及"越档的组合在导出期就报 Error"（运行时越档是拒绝整页）。
