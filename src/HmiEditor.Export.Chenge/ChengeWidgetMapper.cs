@@ -63,6 +63,9 @@ internal sealed class ChengeWidgetMapper
                     props["font_style"] = control.LabelFontStyle!.Trim().ToLowerInvariant();
                 if (control.LabelLetterSpacing > 0) props["letter_spacing"] = Clamp(control.LabelLetterSpacing, 1, 32);
                 if (control.LabelLineSpacing > 0) props["line_spacing"] = Clamp(control.LabelLineSpacing, 1, 64);
+                // 底色/描边/圆角：运行时 apply_box_style 会读（默认透明，配了才画）。
+                // 不导出的话，编辑器里设的底色只在 C# 画布可见，位图里永远是透明。
+                AddCommonBox(props, control, where);
                 break;
 
             case HmiControlType.Value:
@@ -114,6 +117,7 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Bar:
+                RequireRange(control, where, "bar.range");
                 props["min"] = (int)Math.Round(control.MinValue);
                 props["max"] = (int)Math.Round(control.MaxValue);
                 props["direction"] = string.Equals(control.BarDirection, "Vertical", StringComparison.OrdinalIgnoreCase)
@@ -124,6 +128,7 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Slider:
+                RequireRange(control, where, "slider.range");
                 props["min"] = (int)Math.Round(control.MinValue);
                 props["max"] = (int)Math.Round(control.MaxValue);
                 props["step"] = control.StepValue;
@@ -131,6 +136,7 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Gauge:
+                RequireRange(control, where, "gauge.range");
                 props["style"] = control.ShowPointer == true ? "pointer" : "arc";
                 props["min"] = (int)Math.Round(control.MinValue);
                 props["max"] = (int)Math.Round(control.MaxValue);
@@ -149,6 +155,7 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Knob:
+                RequireRange(control, where, "knob.range");
                 props["min"] = (int)Math.Round(control.MinValue);
                 props["max"] = (int)Math.Round(control.MaxValue);
                 props["step"] = control.StepValue;
@@ -166,15 +173,15 @@ internal sealed class ChengeWidgetMapper
                     .ToArray();
                 if (options.Length == 0)
                 {
+                    // 必须 return null：没有 options 的 combobox 写出去，运行时会以
+                    // "options 不是数组" 拒绝**整页**（build_combobox 里 hmi_json_type 判失败即 -1）
                     _issues.Error("combobox.no_options", where,
                         "下拉框没有任何选项（37 §8：options 与 options_tag 至少要有一个）");
+                    return null;
                 }
-                else
-                {
-                    var arr = new JsonArray();
-                    foreach (var o in options) arr.Add(o);
-                    props["options"] = arr;
-                }
+                var optionArr = new JsonArray();
+                foreach (var o in options) optionArr.Add(o);
+                props["options"] = optionArr;
                 SetFont(props, control, DefaultFont(16));
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
                 if (control.SelectedIndex > 0)
@@ -300,9 +307,12 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Valve:
-                _issues.Error("valve.not_supported", where,
-                    "阀门控件在目标契约里没有对应图元（37 的 37 种 shape.kind 里没有 valve_*）");
-                return null;
+                // 契约 figures 有 valve_ball / valve_butterfly / valve_gate，运行时的
+                // shape_gen_valve 三个分支都实现了；编辑器的 ValveType 只决定用哪个 kind。
+                // 开度走运行时缺省（0.5 半开），编辑器没有对应属性，所以不写 open。
+                kind = ValveKindOf(control.ValveType, where);
+                MapShapeCommon(props, control, where);
+                break;
 
             case HmiControlType.Svg:
                 _issues.Error("svg.not_supported", where,
@@ -314,11 +324,11 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.HistoryCurve:
-                MapHistoryCurve(props, control, where);
+                if (!MapHistoryCurve(props, control, where)) return null;
                 break;
 
             case HmiControlType.RealtimeCurve:
-                MapRealtimeCurve(props, control, where);
+                if (!MapRealtimeCurve(props, control, where)) return null;
                 break;
 
             case HmiControlType.AlarmBar:
@@ -385,9 +395,12 @@ internal sealed class ChengeWidgetMapper
                     }
                     frames.Add(frameSrc);
                 }
-                if (frames.Count == 0)
+                // 运行时要求 2..32 帧（build_frame_anim 里 n < 2 直接 -1），只挡 0 帧
+                // 会让"配了一帧"的工程在板上整页建不起来
+                if (frames.Count < 2)
                 {
-                    _issues.Error("frame_anim.frames", where, "帧动画没有可用的帧图片（先导入图片资产）");
+                    _issues.Error("frame_anim.frames", where,
+                        "帧动画至少要 2 帧可用图片（运行时对少于 2 帧拒绝整页；先导入图片资产）");
                     return null;
                 }
                 props["frames"] = frames;
@@ -418,6 +431,7 @@ internal sealed class ChengeWidgetMapper
                 props["series"] = series;
                 props["show_legend"] = control.ChartShowLegend;
                 props["show_value"] = control.ChartShowValue;
+                RequireRange(control, where, "chart.range");
                 props["y_min"] = (int)Math.Round(control.MinValue);
                 props["y_max"] = (int)Math.Round(control.MaxValue);
                 props["y_decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
@@ -437,15 +451,16 @@ internal sealed class ChengeWidgetMapper
                 props["dot"] = control.XyDot;
                 props["line"] = control.XyLine;
                 props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
-                props["span_s"] = Clamp((int)control.SpanMin * 60, 10, 86400);
+                props["span_s"] = SpanSeconds(control, where);
+                RequireRange(control, where, "xy_curve.range");
                 props["x_min"] = (int)Math.Round(control.MinValue);
                 props["x_max"] = (int)Math.Round(control.MaxValue);
                 props["y_min"] = (int)Math.Round(control.MinValue);
                 props["y_max"] = (int)Math.Round(control.MaxValue);
-                props["x_div"] = Clamp(control.CurveXDiv, 1, 12);
-                props["y_div"] = Clamp(control.CurveYDiv, 1, 12);
-                props["x_minor"] = Clamp(control.CurveXMinor, 0, 12);
-                props["y_minor"] = Clamp(control.CurveYMinor, 0, 12);
+                props["x_div"] = Clamp(control.CurveXDiv, CurveDivMin, CurveDivMax);
+                props["y_div"] = Clamp(control.CurveYDiv, CurveDivMin, CurveDivMax);
+                props["x_minor"] = Clamp(control.CurveXMinor, CurveMinorMin, CurveMinorMax);
+                props["y_minor"] = Clamp(control.CurveYMinor, CurveMinorMin, CurveMinorMax);
                 props["x_decimals"] = Clamp(control.CurveXLabelStep is >= 0 ? control.CurveYDecimals : 0, 0, 6);
                 props["y_decimals"] = Clamp(control.CurveYDecimals, 0, 6);
                 props["grid"] = control.CurveGrid;
@@ -635,13 +650,13 @@ internal sealed class ChengeWidgetMapper
         _features.Add("alarm");
     }
 
-    private void MapHistoryCurve(JsonObject props, HmiControl control, string where)
+    private bool MapHistoryCurve(JsonObject props, HmiControl control, string where)
     {
         if (string.IsNullOrWhiteSpace(control.TrendGroup))
         {
             _issues.Error("history_curve.group", where,
                 "历史曲线没有指定的采集组（37：group 必须是 trends.json 的 logger id 或 savecfg 的组名）");
-            return;
+            return false;
         }
 
         var curves = new JsonArray();
@@ -669,7 +684,7 @@ internal sealed class ChengeWidgetMapper
         if (curves.Count == 0)
         {
             _issues.Error("history_curve.curves", where, "历史曲线至少要有一条通道（37：curves 1..4 条）");
-            return;
+            return false;
         }
 
         props["group"] = control.TrendGroup!.Trim();
@@ -679,13 +694,18 @@ internal sealed class ChengeWidgetMapper
         props["curves"] = curves;
         MapCurveCommon(props, control, where);
         _features.Add("curves");
+        return true;
     }
 
     /// <summary>
     /// 实时曲线：数据来自 sim 采样（`sample_ms` 一条），不读 trends.json，
     /// 所以没有 group / range / refresh_ms，取而代之的是 sample_ms 与 history_s。
+    ///
+    /// <para><b>返回 false = 这个控件不能导出</b>。必须让调用方跳过整个控件：只写一条
+    /// Error 而继续产出缺 <c>curves</c> 的 props，运行时会以"缺 props.curves 数组"
+    /// 拒绝整页。</para>
     /// </summary>
-    private void MapRealtimeCurve(JsonObject props, HmiControl control, string where)
+    private bool MapRealtimeCurve(JsonObject props, HmiControl control, string where)
     {
         var curves = new JsonArray();
         var ids = (control.CurveVariableIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -712,15 +732,16 @@ internal sealed class ChengeWidgetMapper
         if (curves.Count == 0)
         {
             _issues.Error("realtime_curve.curves", where, "实时曲线至少要有一条通道（37：curves 1..4 条）");
-            return;
+            return false;
         }
 
         props["curves"] = curves;
         props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
         if (control.HistoryS > 0) props["history_s"] = Clamp(control.HistoryS, 1, 86400);
-        props["span_s"] = Clamp((int)control.SpanMin * 60, 10, 86400);
+        props["span_s"] = SpanSeconds(control, where);
         MapCurveCommon(props, control, where);
         _features.Add("curves");
+        return true;
     }
 
     /// <summary>
@@ -729,6 +750,7 @@ internal sealed class ChengeWidgetMapper
     /// </summary>
     private void MapCurveCommon(JsonObject props, HmiControl control, string where)
     {
+        RequireRange(control, where, "curve.range");
         props["y_min"] = (int)Math.Round(control.MinValue);
         props["y_max"] = (int)Math.Round(control.MaxValue);
         props["grid"] = control.CurveGrid;
@@ -736,13 +758,17 @@ internal sealed class ChengeWidgetMapper
         props["show_axis"] = control.CurveShowAxis;
         props["show_ticks"] = control.ShowTicks;
         props["show_labels"] = control.CurveShowLabels;
-        props["direction"] = string.Equals(control.CurveDirection, "rl", StringComparison.OrdinalIgnoreCase) ? "rl" : "lr";
+        // 运行时只实现 lr（rl 会以"暂未实现"拒绝整页），所以 rl 一律回落并告警
+        if (string.Equals(control.CurveDirection, "rl", StringComparison.OrdinalIgnoreCase))
+            _issues.Warn("curve.direction", where,
+                "拖动回看方向 rl 运行时未实现（只支持 lr），已按 lr 导出");
+        props["direction"] = "lr";
         props["x_format"] = string.Equals(control.CurveXFormat, "rel", StringComparison.OrdinalIgnoreCase) ? "rel" : "clock";
-        props["x_div"] = Clamp(control.CurveXDiv, 1, 12);
-        props["x_minor"] = Clamp(control.CurveXMinor, 0, 12);
+        props["x_div"] = Clamp(control.CurveXDiv, CurveDivMin, CurveDivMax);
+        props["x_minor"] = Clamp(control.CurveXMinor, CurveMinorMin, CurveMinorMax);
         props["x_label_step"] = Clamp(control.CurveXLabelStep, 0, 12);
-        props["y_div"] = Clamp(control.CurveYDiv, 1, 12);
-        props["y_minor"] = Clamp(control.CurveYMinor, 0, 12);
+        props["y_div"] = Clamp(control.CurveYDiv, CurveDivMin, CurveDivMax);
+        props["y_minor"] = Clamp(control.CurveYMinor, CurveMinorMin, CurveMinorMax);
         props["y_decimals"] = Clamp(control.CurveYDecimals, 0, 6);
         props["y_digits"] = Clamp(control.CurveYDigits, 0, 12);
         props["y2_min"] = Clamp(control.CurveY2Min, -1000000, 1000000);
@@ -755,7 +781,7 @@ internal sealed class ChengeWidgetMapper
         if (_colors.ResolveOr(control.CurveGridColor, "#2F3D4C", where) is { } grC) props["grid_color"] = grC;
         if (_colors.ResolveOr(control.CurveTickColor, "#9AA7B5", where) is { } tkC) props["tick_color"] = tkC;
         if (_colors.ResolveOr(control.CurveLabelColor, "#C8D2DC", where) is { } lbC) props["label_color"] = lbC;
-        SetFont(props, control, DefaultFont(14));
+        SetFont(props, control, DefaultFont(14), 32);
     }
 
     private void MapTable(JsonObject props, HmiControl control, string pageId, string widgetId, string where)
@@ -782,7 +808,7 @@ internal sealed class ChengeWidgetMapper
             }
             props["col_w"] = arr;
         }
-        SetFont(props, control, DefaultFont(14));
+        SetFont(props, control, DefaultFont(14), 32);
 
         var cells = new JsonArray();
         foreach (var cell in control.Cells ?? new List<TableCellData>())
@@ -1139,6 +1165,63 @@ internal sealed class ChengeWidgetMapper
         _ => "top",
     };
 
+    /* 曲线刻度的取值域：运行时 build_curve 是硬校验（y_div/x_div 1..10、
+     * y_minor/x_minor 0..5），越界直接拒绝整页，所以导出期就钳在这里。 */
+    private const int CurveDivMin = 1;
+    private const int CurveDivMax = 10;
+    private const int CurveMinorMin = 0;
+    private const int CurveMinorMax = 5;
+
+    /// <summary>
+    /// 量程下限必须小于上限。运行时的 bar / slider / knob / gauge / chart / 曲线
+    /// 建页时对 <c>max &lt;= min</c> 一律 `return -1` ⇒ **整页建不起来**，
+    /// 而这种工程在导出报告里是干净的（导出器原本不校验），所以必须在这里拦。
+    /// </summary>
+    private void RequireRange(HmiControl control, string where, string code)
+    {
+        if (control.MaxValue > control.MinValue) return;
+        _issues.Error(code, where,
+            $"量程下限 {control.MinValue} 不小于上限 {control.MaxValue}：" +
+            "运行时会对这种量程拒绝整页（建页失败），请改成上限大于下限");
+    }
+
+    /// <summary>
+    /// 曲线窗口秒数。运行时只接受 1..3600（&gt;1 小时拒绝整页），编辑器填的是分钟，
+    /// 所以超过 60 分钟一律按 60 导出并告警，绝不把越界值写出去。
+    /// </summary>
+    private int SpanSeconds(HmiControl control, string where)
+    {
+        var minutes = control.SpanMin;
+        if (minutes < 1) minutes = 1;
+        if (minutes > 60)
+        {
+            _issues.Warn("curve.span", where,
+                $"窗口 {minutes} 分钟超出运行时上限 60 分钟（span_s ≤ 3600），已按 60 分钟导出");
+            minutes = 60;
+        }
+        return minutes * 60;
+    }
+
+    /// <summary>阀门类型 → 契约 figure kind（只有球/蝶/闸三种，Globe 回落球阀）。</summary>
+    private string ValveKindOf(string? valveType, string where)
+    {
+        var v = (valveType ?? "").Trim().ToLowerInvariant();
+        return v switch
+        {
+            "gate" => "valve_gate",
+            "butterfly" => "valve_butterfly",
+            "ball" or "" => "valve_ball",
+            _ => ValveFallback(valveType, where),
+        };
+    }
+
+    private string ValveFallback(string? valveType, string where)
+    {
+        _issues.Warn("valve.kind", where,
+            $"阀门类型 {valveType} 在目标图元里没有对应形状（只有球阀/蝶阀/闸阀），已按球阀导出");
+        return "valve_ball";
+    }
+
     private JsonArray? ParseRanges(string? text, string where)
     {
         if (string.IsNullOrWhiteSpace(text)) return null;
@@ -1477,7 +1560,7 @@ internal sealed class ChengeWidgetMapper
             // 运行时也有 W_PIPE 分派（build_pipe 带流动动画）；早先导成 shape 的 pipe_h/v
             // 白丢了这 5 个属性（图元版只读 wall，且不支持流动）。
             HmiControlType.Pipe => "pipe",
-            HmiControlType.Valve => null,
+            HmiControlType.Valve => "shape",
             HmiControlType.Svg => null,
             HmiControlType.AlarmList => "alarm_list",
             HmiControlType.HistoryCurve => "history_curve",
@@ -1551,10 +1634,14 @@ internal sealed class ChengeWidgetMapper
         props["text"] = text;
     }
 
-    private void SetFont(JsonObject props, HmiControl control, int fallback)
+    /// <summary>
+    /// 字号。面板允许 6..72，但运行时的 table / curve 对 <c>font_size</c> 是 10..32 的
+    /// 硬校验（越界直接拒绝整页），所以那两类必须传 <paramref name="max"/>=32。
+    /// </summary>
+    private void SetFont(JsonObject props, HmiControl control, int fallback, int max = 48)
     {
         var size = control.FontSize > 0 ? control.FontSize : fallback;
-        props["font_size"] = Clamp(size, 10, 48);
+        props["font_size"] = Clamp(size, 10, max);
     }
 
     private static int DefaultFont(int size) => size;
