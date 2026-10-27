@@ -60,6 +60,31 @@ public class PropertyPanelUiTests
         return found!;
     }
 
+    /// <summary>
+    /// 「编辑单元格」只属于表格。它是**单个按钮**、没有配对的行，复位靠单独一句
+    /// （别的行走 <c>SetParamRow</c>）—— 漏掉就变成"选任何控件都带着它"，
+    /// 点开还是空的单元格对话框。
+    /// </summary>
+    [Fact]
+    public void EditCellsButton_OnlyVisibleForTable()
+    {
+        UiTestHost.Run(() =>
+        {
+            var label = Host(MakeControl());
+            Assert.False(Find<Button>(label.Panel, "EditCellsBtn").IsVisible);
+            label.Window.Close();
+
+            var table = new HmiControl
+            {
+                Id = "t1", Name = "Table1", Type = HmiControlType.Table,
+                X = 10, Y = 20, Width = 300, Height = 200, RowCount = 3, ColumnCount = 3,
+            };
+            var t = Host(table);
+            Assert.True(Find<Button>(t.Panel, "EditCellsBtn").IsVisible);
+            t.Window.Close();
+        });
+    }
+
     [Fact]
     public void BindControl_PopulatesEditorsFromModel()
     {

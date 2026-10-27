@@ -97,6 +97,9 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblKnobArcWidth, KnobArcWidthBox, false);
         SetParamRow(LblTabHeight, TabHeightBox, false);
         SetParamRow(LblTabPos, TabPosCombo, false);
+        // 「编辑单元格」只有一个按钮、没有配对的行，复位要单独写 —— 漏了它，切到任何
+        // 控件都会带着这个按钮（点了也没用，只有表格有单元格）
+        EditCellsBtn.IsVisible = false;
         DetailParamExpander.IsVisible = false;
         ShowCurveRows(false);
         ShowAlarmListRows(false);
