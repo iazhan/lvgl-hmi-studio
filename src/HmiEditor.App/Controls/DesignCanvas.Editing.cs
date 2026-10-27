@@ -150,33 +150,8 @@ public partial class DesignCanvas : Control
             Width = Math.Max(MinControlSize, width),
             Height = Math.Max(MinControlSize, height),
             Text = localizedName,
-            BgColor = type switch
-            {
-                HmiControlType.Button => "#2563eb",
-                HmiControlType.Label => null,
-                HmiControlType.Slider => "#334155",
-                HmiControlType.Switch => "#2563eb",
-                HmiControlType.CheckBox => null,
-                HmiControlType.Bar => "#2563eb",
-                HmiControlType.Gauge => "#38bdf8",
-                HmiControlType.Knob => "#a78bfa",
-                HmiControlType.Keyboard => "#334155",
-                HmiControlType.Led => "#22c55e",
-                HmiControlType.Spinner => "#f59e0b",
-                HmiControlType.TabView => "#1e293b",
-                HmiControlType.Line => "#ffffff",
-                HmiControlType.Table => "#1e293b",
-                // I7: 过程图形控件
-                HmiControlType.Tank => "#0ea5e9",  // 天蓝（液体）
-                HmiControlType.Pipe => "#64748b",  // 管身灰
-                HmiControlType.Valve => "#ef4444", // 红色（关状态）
-                // I10: 基础绘图图形
-                HmiControlType.Rectangle => "#334155", // 填充深灰蓝（边框由 BorderColor 配置）
-                HmiControlType.Ellipse => "#334155",
-                HmiControlType.Polyline => "#ffffff", // 线色（与 Line 同语义）
-                HmiControlType.Arc => "#334155",      // 轨道色（指示色取 IndicatorColor/TextColor）
-                _ => "#334155"
-            }
+            // 默认底色表在 Core（ControlDefaults）：它会进导出产物，判据是纯单元测试
+            BgColor = ControlDefaults.NewControlBgColor(type)
         };
 
         // 下拉框/滚轮的选项必须非空：运行时 build_combobox/build_roller 拿不到 options

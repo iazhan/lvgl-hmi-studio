@@ -179,8 +179,8 @@ public class HmiControl
     /// <summary>图片缩放模式（Image：None/Fill/Contain）。null 表示默认。</summary>
     public string? StretchMode { get; set; }
 
-    /// <summary>LED 亮度 0-255（Led）。默认 128。</summary>
-    public int Brightness { get; set; } = 128;
+    /// <summary>LED 亮度 0-255（Led）。默认 255 = 灯色原样，不压暗。</summary>
+    public int Brightness { get; set; } = 255;
 
     /// <summary>加载动画周期 ms（Spinner）。默认 1000。</summary>
     public int SpinSpeed { get; set; } = 1000;

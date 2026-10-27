@@ -718,7 +718,10 @@
                             <ComboBoxItem Content="3" Tag="3"/>
                             <ComboBoxItem Content="4" Tag="4"/>
                         </ComboBox>
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="70,*" RowSpacing="4">
+                        <!-- 排布顺序与最终显示一致：倍率 → 前缀 → 单位 → 后缀。
+                             「单位」跟前后缀是同一件事（都拼在数值两侧），必须放同一组，
+                             否则面板上要开两个折叠面板才能配完一个读数。 -->
+                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="70,*" RowSpacing="4">
                             <TextBlock Text="{res:Loc prop.value.display.scale}" Grid.Row="0" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
                             <fa:FANumberBox x:Name="ValueScaleBox" Grid.Row="0" Grid.Column="1"
@@ -731,6 +734,12 @@
                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
                                      TextChanged="OnPropertyChanged" Margin="0,2"/>
+                            <TextBlock x:Name="LblUnit" Text="{res:Loc prop.param.unit}" Grid.Row="2" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="UnitBox" Grid.Row="2" Grid.Column="1" FontSize="13" Margin="0,2"
+                                     Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                     BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                     TextChanged="OnPropertyChanged"/>
                         </Grid>
                         <TextBlock Text="{res:Loc prop.value.display.suffix}" Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"/>
                         <TextBox x:Name="ValueSuffixBox"
@@ -839,7 +848,7 @@
                         <TextBlock x:Name="LblBrightness" Text="{res:Loc prop.param.brightness}" Grid.Row="14" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <fa:FANumberBox x:Name="BrightnessBox" Grid.Row="14" Grid.Column="1"
-                                        Value="128" Minimum="0" Maximum="255"
+                                        Value="255" Minimum="0" Maximum="255"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                         <TextBlock x:Name="LblSpinSpeed" Text="{res:Loc prop.param.speed}" Grid.Row="15" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
@@ -1018,12 +1027,6 @@
                                   VerticalAlignment="Center" Margin="0,2" IsVisible="False"
                                   IsCheckedChanged="OnPropertyChanged"/>
                         <!-- chenge-runtime 数据控件参数（value / alarm_list / history_curve） -->
-                        <TextBlock x:Name="LblUnit" Text="{res:Loc prop.param.unit}" Grid.Row="37" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="UnitBox" Grid.Row="37" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 TextChanged="OnPropertyChanged"/>
                         <TextBlock x:Name="LblCgAlarmGroup" Text="{res:Loc prop.param.alarm.group}" Grid.Row="38" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <TextBox x:Name="CgAlarmGroupBox" Grid.Row="38" Grid.Column="1" FontSize="13" Margin="0,2"
