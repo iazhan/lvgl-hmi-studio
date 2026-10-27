@@ -47,6 +47,9 @@ public class ExportInputRenderTests : IDisposable
             {
                 Id = "i" + i, Name = "I" + i, Type = HmiControlType.TextArea,
                 X = 100, Y = 100 + i * 120, Width = 240, Height = heights[i], FontSize = 14,
+                // 输入框的出厂外观带 1px 边框（见 AppearanceDefaults）；判据靠"比底色亮"
+                // 找框的行，没有边框就只剩下文字那几行可数
+                BorderWidth = 1,
             });
 
         var result = ExportFixture.Export(project, _dir);

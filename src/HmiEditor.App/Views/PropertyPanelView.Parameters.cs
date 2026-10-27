@@ -332,7 +332,7 @@ public partial class PropertyPanelView : UserControl
 
         // 旋转/镜像：只有运行时 apply_transform 支持的档位才显示（图片 / 图元 / 文本类），
         // 其余类型连行都不出现 —— 免得用户设了之后只在导出时撞 Error。
-        var hasTransform = HasTransform(control.Type);
+        var hasTransform = AppearanceSupport.HasTransform(control.Type);
         SetParamRow(LblRotation, RotationBox, hasTransform);
         SetParamRow(LblRotationDir, RotationDirCombo, hasTransform);
         SetParamRow(LblMirrorH, MirrorHCheck, hasTransform);

@@ -187,6 +187,15 @@ public partial class DesignCanvas : Control
         if (type == HmiControlType.Roller && string.IsNullOrWhiteSpace(control.RollerOptions))
             control.RollerOptions = HmiEditor.App.Resources.AppLocalization.Service[
                 HmiEditor.App.Resources.Lang.DefaultOptions];
+
+        // 「圆角 / 边框宽度」的**出厂值**。导出器会把这两个值原样写进产物（面板显示什么、
+        // 板子就是什么），所以新建控件时就得给出运行时原本自带的那套外观 —— 否则
+        // 面板默认 0 会把按钮/输入框/表格的圆角与 1px 边框一起抹掉，观感当场变样。
+        // 数值来源：对每类控件拿"不给该键"的位图与给定值的位图逐像素比对反推
+        // （radio/border 各自量一次），不是抄 LVGL 主题常量。
+        var (defRadius, defBorder) = AppearanceDefaults.For(type, control.Width, control.Height);
+        control.Radius = defRadius;
+        control.BorderWidth = defBorder;
         // 页签同理：没有 tabs 的 tabview 会被导出器整块跳过（"页签控件没有页签名"），
         // 新建出来就不可用。给两个默认页签，用户再改名。
         if (type == HmiControlType.TabView && string.IsNullOrWhiteSpace(control.TabTitles))

@@ -848,6 +848,7 @@ internal sealed class ChengeWidgetMapper
         props["fill_color"] = _colors.ResolveOr(control.BgColor, _colors.Surface, where);
         props["border_color"] = _colors.ResolveOr(control.BorderColor, _colors.Border, where);
         props["border_width"] = Math.Max(0, control.BorderWidth);
+        // 图元的圆角是几何参数（ui_figure 读），没配就不写、让图元用自己的缺省
         if (control.Radius > 0) props["radius"] = control.Radius;
     }
 
@@ -892,15 +893,37 @@ internal sealed class ChengeWidgetMapper
 
     private void AddCommon(JsonObject props, HmiControl control, string target, string kind, string where)
     {
+        ApplyBoxKeys(props, control, where);
+        if (control.Opacity < 100)
+            props["opacity"] = Clamp((int)Math.Round(control.Opacity * 255 / 100), 0, 255);
+        ApplyTransform(props, control, target, kind, where);
+    }
+
+    /// <summary>
+    /// 通用框样式四键（<c>bg_color</c> / <c>border_color</c> / <c>border_width</c> / <c>radius</c>）。
+    ///
+    /// <para><b>有框的类型一律写，含 0</b>：运行时只在键存在时覆盖外观
+    /// （<c>apply_common_style</c>），缺键等于"吃控件主题"（按钮 8、滑块/进度条圆头）。
+    /// 而面板上这些行显示的永远是模型值（新控件是 0）—— 只在 <c>&gt; 0</c> 时写键，
+    /// 就成了"面板说 0、板子给圆角"，把圆角从 8 改回 0 也毫无变化。
+    /// 面板与导出器共用 <see cref="AppearanceSupport.HasBoxBorder"/> 这一张表。</para>
+    /// </summary>
+    private void ApplyBoxKeys(JsonObject props, HmiControl control, string where)
+    {
         var bg = _colors.Resolve(control.BgColor, where);
         if (bg != null) props["bg_color"] = bg;
         var border = _colors.Resolve(control.BorderColor, where);
         if (border != null) props["border_color"] = border;
-        if (control.BorderWidth > 0) props["border_width"] = control.BorderWidth;
-        if (control.Radius > 0) props["radius"] = control.Radius;
-        if (control.Opacity < 100)
-            props["opacity"] = Clamp((int)Math.Round(control.Opacity * 255 / 100), 0, 255);
-        ApplyTransform(props, control, target, kind, where);
+        if (AppearanceSupport.HasBoxBorder(control.Type))
+        {
+            props["border_width"] = control.BorderWidth;
+            props["radius"] = control.Radius;
+        }
+        else
+        {
+            if (control.BorderWidth > 0) props["border_width"] = control.BorderWidth;
+            if (control.Radius > 0) props["radius"] = control.Radius;
+        }
     }
 
     /// <summary>
@@ -989,14 +1012,7 @@ internal sealed class ChengeWidgetMapper
         => target is "tabview" or "keyboard" || (target == "shape" && kind == "container");
 
     private void AddCommonBox(JsonObject props, HmiControl control, string where)
-    {
-        var bg = _colors.Resolve(control.BgColor, where);
-        if (bg != null) props["bg_color"] = bg;
-        var border = _colors.Resolve(control.BorderColor, where);
-        if (border != null) props["border_color"] = border;
-        if (control.BorderWidth > 0) props["border_width"] = control.BorderWidth;
-        if (control.Radius > 0) props["radius"] = control.Radius;
-    }
+        => ApplyBoxKeys(props, control, where);
 
     /// <summary>
     /// 按钮的交互属性：长按门槛 / 长按阈值 / 二次确认 / 禁用表现。

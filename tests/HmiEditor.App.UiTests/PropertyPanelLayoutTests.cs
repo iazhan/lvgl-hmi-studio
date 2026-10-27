@@ -110,23 +110,25 @@ public class PropertyPanelLayoutTests
             foreach (var row in rows)
                 Assert.True(Visible(row), $"标签上 {row} 应可见（运行时会读）");
 
-            // 滑块：只有指示器色有效，上面那些都不该出现
+            // 滑块：指示器色之外，通用框样式（背景 / 边框 / 圆角）与不透明度也由运行时的
+            // 建页收口统一应用，所以这些行都要出现；文字/字号/对齐它没有。
             panel.BindControl(new HmiControl { Type = HmiControlType.Slider, Name = "S1" });
             UiTestHost.Pump();
-            foreach (var row in rows)
+            foreach (var row in new[] { "RowBgColor", "RowRadius", "RowBorderWidth", "RowBorderColor", "RowOpacity" })
+                Assert.True(Visible(row), $"滑块上 {row} 应可见（建页收口会应用）");
+            foreach (var row in new[] { "RowText", "RowTextColor", "RowFontSize", "RowTextAlign" })
                 Assert.False(Visible(row), $"滑块上 {row} 不该出现（运行时不读这个键）");
 
-            // 任何类型都不该出现：字体族（导出器不看）与不透明度（运行时没有建页路径读）
+            // 字体族：导出器只写 font_size，全类型都不该出现
             panel.BindControl(new HmiControl { Type = HmiControlType.Label, Name = "L2", Text = "x" });
             UiTestHost.Pump();
             Assert.False(Visible("RowFontFamily"), "字体族导出器不读，不该显示");
-            Assert.False(Visible("RowOpacity"), "opacity 运行时无人读，不该显示");
         });
     }
 
     /// <summary>
-    /// 外观组一行都不适用时（如二维码：运行时不读 bg/border/文字色/字号/对齐），整组要收起，
-    /// 否则面板上挂一个空白卡片。
+    /// 外观组一行都不适用时（如 Keyboard：导出器根本不产出这个控件），整组要收起，
+    /// 否则面板上挂一个空白卡片，用户还会以为设了有用。
     /// </summary>
     [Fact]
     public void AppearanceGroup_IsHiddenEntirelyWhenNoRowApplies()
@@ -147,16 +149,16 @@ public class PropertyPanelLayoutTests
             Assert.True(ControlWiringFace.Find<Control>(panel, "AppearanceExpander").IsVisible,
                 "标签有底色/文字色/字号/对齐，外观组应显示");
 
-            panel.BindControl(new HmiControl { Type = HmiControlType.QrCode, Name = "Q1", QrText = "hi" });
+            panel.BindControl(new HmiControl { Type = HmiControlType.Keyboard, Name = "K1" });
             UiTestHost.Pump();
             Assert.False(ControlWiringFace.Find<Control>(panel, "AppearanceExpander").IsVisible,
-                "二维码没有任何一条外观键会被运行时读，整组应收起（不能留一张空卡片）");
+                "键盘控件导出器直接拒绝，外观组应收起（不能留一张空卡片）");
         });
     }
 
     /// <summary>
-    /// 外观组里隐藏的行不许占位：滑块只有「指示器颜色」一行，整组高度就该是那一行的高度，
-    /// 首行必须贴着顶部（此前是 12 个空 Grid 各占 RowSpacing ⇒ 顶部一片空白）。
+    /// 外观组里隐藏的行不许占位：整组高度就等于可见行的高度，首行必须贴着顶部
+    /// （此前是 12 个空 Grid 各占 RowSpacing ⇒ 顶部一片空白）。
     ///
     /// <para>做法上每个类型**新建一个面板、先 BindControl 再 Show** —— 同一个面板反复换控件时
     /// 首轮布局看到的还是旧可见性，量出来的位置不可信。</para>
@@ -170,8 +172,10 @@ public class PropertyPanelLayoutTests
 
             foreach (var (type, expectedRows) in new[]
                      {
-                         (HmiControlType.Slider, 1),    // 只有指示器颜色
-                         (HmiControlType.Label, 8),     // 背景/圆角/边框×2/文字色/字号/对齐×2
+                         // 指示器颜色 + 背景/圆角/边框×2 + 不透明度（文字/字号/对齐滑块没有）
+                         (HmiControlType.Slider, 6),
+                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度
+                         (HmiControlType.Label, 9),
                      })
             {
                 var screen = new HmiScreen { Id = "s1", Name = "S1", Width = 1024, Height = 600 };
