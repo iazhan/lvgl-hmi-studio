@@ -98,17 +98,17 @@
     },
     "border_width": {
       "type": "int",
-      "default": 0,
+      "default": null,
       "min": 0,
       "max": 20,
-      "desc": "边框宽"
+      "desc": "边框宽；不写则吃控件自带外观（输入框/表格 1px、按钮 0），写 0 = 显式无边框"
     },
     "radius": {
       "type": "int",
-      "default": 0,
+      "default": null,
       "min": 0,
       "max": 200,
-      "desc": "圆角半径"
+      "desc": "圆角半径；不写则吃控件自带外观（按钮 13、输入框 4、滑块圆头），写 0 = 显式直角"
     },
     "perm": {
       "type": "object",
@@ -1344,8 +1344,8 @@
         },
         "color": {
           "type": "color",
-          "default": "#4EA1FF",
-          "desc": "填充色"
+          "default": "#2F70D0",
+          "desc": "填充色（缺省取主题主色，与 slider/knob 同一支）"
         },
         "ranges": {
           "type": "array",
@@ -1415,8 +1415,8 @@
         },
         "color": {
           "type": "color",
-          "default": "#4EA1FF",
-          "desc": "弧/指针颜色"
+          "default": "#2F70D0",
+          "desc": "弧/指针颜色（缺省取主题主色，与 slider/bar 同一支）"
         },
         "ticks": {
           "type": "int",
@@ -1435,11 +1435,11 @@
         },
         "arc_width": {
           "type": "int",
-          "default": 0,
-          "min": 0,
+          "default": 8,
+          "min": 1,
           "max": 40,
-          "desc": "弧宽（0 = 按控件尺寸自动）",
-          "status": "planned"
+          "desc": "弧宽（像素）",
+          "status": "done"
         },
         "ranges": {
           "type": "array",
@@ -1522,13 +1522,13 @@
         },
         "min": {
           "type": "int",
-          "default": 0,
-          "desc": "允许最小值"
+          "default": null,
+          "desc": "允许最小值；不写该键则不做下限校验（运行时按键存在性判定）"
         },
         "max": {
           "type": "int",
-          "default": 1000000,
-          "desc": "允许最大值"
+          "default": null,
+          "desc": "允许最大值；不写该键则不做上限校验（运行时按键存在性判定）"
         },
         "decimals": {
           "type": "int",
@@ -1539,10 +1539,10 @@
         },
         "max_len": {
           "type": "int",
-          "default": 8,
+          "default": 12,
           "min": 1,
-          "max": 32,
-          "desc": "最多字符数"
+          "max": 24,
+          "desc": "最多字符数（键盘上限 24）"
         },
         "step": {
           "type": "float",
@@ -1615,8 +1615,8 @@
         },
         "color": {
           "type": "color",
-          "default": "#4EA1FF",
-          "desc": "滑块颜色"
+          "default": "#2F70D0",
+          "desc": "填充色（缺省取主题主色，与 knob/spinner/checkbox 同一支）"
         },
         "show_value": {
           "type": "bool",
@@ -1831,8 +1831,8 @@
         },
         "header": {
           "type": "bool",
-          "default": true,
-          "desc": "第 0 行是表头"
+          "default": false,
+          "desc": "第 0 行是表头（换底色与分隔线；没有表头文字就别开）"
         },
         "font_size": {
           "type": "int",

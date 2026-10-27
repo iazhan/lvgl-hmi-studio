@@ -100,8 +100,11 @@ public class HmiControl
     /// <summary>数值显示缩放比例（显示值 = 原始值 × 该系数）。默认 1.0。</summary>
     public double ValueScaleFactor { get; set; } = 1.0;
 
-    /// <summary>小数显示位数（0-6，仅 Float 显示类型生效）。默认 2。</summary>
-    public int ValueDecimalPlaces { get; set; } = 2;
+    /// <summary>
+    /// 小数显示位数（0-6）。默认 0 —— 与契约里 value / input / gauge / chart / knob
+    /// 五处的 <c>decimals</c> 缺省一致：读数与输入默认不带小数，要小数由用户显式选。
+    /// </summary>
+    public int ValueDecimalPlaces { get; set; }
 
     /// <summary>值前缀文本（显示在值之前，如 "温度: "）。</summary>
     public string? ValuePrefix { get; set; }
@@ -321,6 +324,13 @@ public class HmiControl
     /// <summary>HistoryTable：行高（0 = 默认 26）。</summary>
     public int HistTableRowHeight { get; set; }
 
+    /// <summary>
+    /// HistoryTable：最多显示的行数。默认取契约 <c>history_table.max_rows</c> 的 500 ——
+    /// 此前复用报警列表的 <see cref="AlarmMaxRows"/>（10），历史表恒只显示 10 行，
+    /// 而面板上没有这一行，用户改不了也看不见。
+    /// </summary>
+    public int HistTableMaxRows { get; set; } = 500;
+
     /// <summary>HistoryTable：右侧滚动条。</summary>
     public bool HistTableScrollbar { get; set; } = true;
 
@@ -437,6 +447,12 @@ public class HmiControl
 
     /// <summary>Switch：滑块颜色（空 = 跟随主题）。</summary>
     public string? SwitchKnobColor { get; set; }
+
+    /// <summary>
+    /// Switch：关闭时画在控件右侧的文字（契约 <c>switch.text_off</c>，空 = 不画）。
+    /// 打开时那段用 <see cref="Text"/>。
+    /// </summary>
+    public string? SwitchTextOff { get; set; }
 
     /// <summary>Bar：方向（Horizontal / Vertical，导出成 h / v）。</summary>
     public string? BarDirection { get; set; }

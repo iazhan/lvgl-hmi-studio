@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using HmiEditor.Core;
 using HmiEditor.Core.Models;
@@ -462,11 +463,10 @@ public class ChengeExportTests : IDisposable
     }
 
     /// <summary>
-    /// 内存导出必须与目录导出**逐字节一致**：预览读内存、正式导出读目录，
-    /// 两者若有差异，就会出现"预览好看、导出到板上不对"。
+    /// 内存导出与目录导出共享页面与资源内容；预览 manifest 额外预声明可由 J 重载动态加入的扩展能力。
     /// </summary>
     [Fact]
-    public void MemoryExport_MatchesDirectoryExport()
+    public void MemoryExport_MatchesDirectoryExportExceptPreviewCapabilities()
     {
         var project = ExportFixture.Build();
         var exporter = new ChengeExporter();
@@ -485,7 +485,20 @@ public class ChengeExportTests : IDisposable
 
         Assert.Equal(diskFiles, mem.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList());
         foreach (var rel in diskFiles)
+        {
+            if (rel == "manifest.json") continue;
             Assert.Equal(File.ReadAllBytes(Path.Combine(dir, rel)), mem[rel]);
+        }
+
+        var diskManifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(dir, "manifest.json"))).RootElement;
+        var memoryManifest = JsonDocument.Parse(Encoding.UTF8.GetString(mem["manifest.json"])).RootElement;
+        var diskFeatures = diskManifest.GetProperty("features").EnumerateArray().Select(x => x.GetString()).ToHashSet();
+        var memoryFeatures = memoryManifest.GetProperty("features").EnumerateArray().Select(x => x.GetString()).ToHashSet();
+        Assert.True(memoryFeatures.IsSupersetOf(diskFeatures));
+        Assert.Contains("table", memoryFeatures);
+        Assert.Contains("curves", memoryFeatures);
+        Assert.Contains("pipe", memoryFeatures);
+        Assert.Contains("widgets_ext", memoryFeatures);
     }
 
     /// <summary>

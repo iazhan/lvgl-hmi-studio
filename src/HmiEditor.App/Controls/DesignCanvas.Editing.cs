@@ -149,9 +149,7 @@ public partial class DesignCanvas : Control
             Y = y,
             Width = Math.Max(MinControlSize, width),
             Height = Math.Max(MinControlSize, height),
-            Text = localizedName,
-            // 默认底色表在 Core（ControlDefaults）：它会进导出产物，判据是纯单元测试
-            BgColor = ControlDefaults.NewControlBgColor(type)
+            Text = NewControlDefaults.HasCaption(type) ? localizedName : null,
         };
 
         // 下拉框/滚轮的选项必须非空：运行时 build_combobox/build_roller 拿不到 options
@@ -163,60 +161,68 @@ public partial class DesignCanvas : Control
             control.RollerOptions = HmiEditor.App.Resources.AppLocalization.Service[
                 HmiEditor.App.Resources.Lang.DefaultOptions];
 
-        // 「圆角 / 边框宽度」的**出厂值**。导出器会把这两个值原样写进产物（面板显示什么、
-        // 板子就是什么），所以新建控件时就得给出运行时原本自带的那套外观 —— 否则
-        // 面板默认 0 会把按钮/输入框/表格的圆角与 1px 边框一起抹掉，观感当场变样。
-        // 数值来源：对每类控件拿"不给该键"的位图与给定值的位图逐像素比对反推
-        // （radio/border 各自量一次），不是抄 LVGL 主题常量。
-        var (defRadius, defBorder) = AppearanceDefaults.For(type, control.Width, control.Height);
-        control.Radius = defRadius;
-        control.BorderWidth = defBorder;
         // 页签同理：没有 tabs 的 tabview 会被导出器整块跳过（"页签控件没有页签名"），
         // 新建出来就不可用。给两个默认页签，用户再改名。
         if (type == HmiControlType.TabView && string.IsNullOrWhiteSpace(control.TabTitles))
             control.TabTitles = HmiEditor.App.Resources.AppLocalization.Service[
                 HmiEditor.App.Resources.Lang.DefaultTabs];
 
-        // I10: 图形默认几何 —— 边框/圆角/指示色/角度范围/顶点（仅在未显式配置时给出）
-        switch (type)
-        {
-            case HmiControlType.Rectangle:
-            case HmiControlType.Ellipse:
-                if (control.BorderWidth <= 0) control.BorderWidth = 1;
-                if (string.IsNullOrEmpty(control.BorderColor)) control.BorderColor = "#64748b";
-                break;
-            case HmiControlType.Polyline:
-                if (control.BorderWidth <= 0) control.BorderWidth = 2;
-                control.Text = null; // 折线无文本
-                control.Points = points?.ToList() ?? new List<PointData>
-                {
-                    new(10, 10),
-                    new(control.Width - 10, control.Height - 10),
-                };
-                break;
-            case HmiControlType.Line:
-                if (control.BorderWidth <= 0) control.BorderWidth = 2;
-                control.Text = null; // 直线无文本
-                // 点击式绘制：保存两端点局部坐标；拖拽/工具箱路径保持 null（渲染回退对角线）
-                if (points is { Count: >= 2 })
-                {
-                    control.Points = points.Take(2).ToList();
-                }
-                break;
-            case HmiControlType.Arc:
-                if (control.BorderWidth <= 0) control.BorderWidth = 10;
-                if (control.MinValue == 0 && control.MaxValue == 100)
-                {
-                    // 默认角度范围 0..360°，指示弧默认 270°（3/4 圆）
-                    control.MaxValue = 360;
-                    control.Value = 270;
-                }
-                if (string.IsNullOrEmpty(control.IndicatorColor)) control.IndicatorColor = "#38bdf8";
-                control.Text = null; // 圆弧无文本
-                break;
-        }
+        // 其余的模板初值（底色 / 圆角 / 边框 / 图形几何 / 输入框量程 / 读数字号）在
+        // Core 的 NewControlDefaults —— 导出判据与画布必须走同一份，否则"拖出来什么样"
+        // 与"产物里是什么"会各说一套。
+        NewControlDefaults.Apply(control, points);
+
+        // 曲线/图表没有数据源时导出期直接报错，运行时以整页建页失败收场 ——
+        // 画布上就是"拖进来一片空白"。新建时先挂工程里第一个数值变量，用户再换通道。
+        EnsureDefaultSeries(control);
 
         return control;
+    }
+
+    /// <summary>
+    /// 给数据型控件挂一个**默认通道/序列**。
+    ///
+    /// <para>这几类的 props 里"至少一条通道"是硬要求（导出器不满足就报 Error，运行时
+    /// 拒绝整页），而新建控件的模型字段是空的 —— 结果就是拖进来之后画布空白、实时预览
+    /// 也不出图，用户得先猜到"要先去面板填通道"才看得见控件。挂第一个数值变量是最小
+    /// 可用形态：看得见曲线/图表，再按需要改。</para>
+    /// </summary>
+    private static void EnsureDefaultSeries(HmiControl control)
+    {
+        var project = DockLayoutState.CurrentProject;
+        var vars = project?.VariableManager.Variables;
+        if (vars == null) return;
+
+        var first = vars.FirstOrDefault(v =>
+            !string.IsNullOrEmpty(v.Id) && v.DataType is not ("String" or "Bool"));
+        if (first == null) return;
+
+        switch (control.Type)
+        {
+            case HmiControlType.RealtimeCurve:
+                if (string.IsNullOrWhiteSpace(control.CurveVariableIds))
+                    control.CurveVariableIds = first.Id;
+                break;
+
+            case HmiControlType.HistoryCurve:
+                if (string.IsNullOrWhiteSpace(control.CurveVariableIds))
+                    control.CurveVariableIds = first.Id;
+                // 历史曲线还要求趋势组：取工程里第一个数据记录组（没有就留空，
+                // 导出期会提示"没有趋势组"，但通道已经挂好，用户只差选组）
+                if (string.IsNullOrWhiteSpace(control.TrendGroup))
+                    control.TrendGroup = project!.DataLogConfigs.FirstOrDefault()?.Name;
+                break;
+
+            case HmiControlType.XyCurve:
+                if (string.IsNullOrWhiteSpace(control.XyTagX)) control.XyTagX = first.Id;
+                if (string.IsNullOrWhiteSpace(control.XyTagY)) control.XyTagY = first.Id;
+                break;
+
+            case HmiControlType.Chart:
+                if (string.IsNullOrWhiteSpace(control.ChartSeries))
+                    control.ChartSeries = $"{first.Id}:{first.Name}";
+                break;
+        }
     }
 
     // ── I10: 绘图工具提交 ──

@@ -373,7 +373,19 @@
                         <Grid x:Name="RowText" ColumnDefinitions="62,*">
                             <TextBlock x:Name="LblPropText" Text="{res:Loc prop.text}" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <!-- 开关的框里那段文字会导出成 text_on（画在控件框右边），
+                                 用「内容」这个标签等于让人猜它是干嘛的 -->
+                            <TextBlock x:Name="LblPropTextOn" Text="{res:Loc prop.text.on}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"
+                                       IsVisible="False"/>
                             <TextBox x:Name="PropText" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"/>
+                        </Grid>
+                        <!-- 开关的关闭态文字（导出成 text_off，打开态用上面那格） -->
+                        <Grid x:Name="RowSwitchTextOff" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblSwitchTextOff" Text="{res:Loc prop.text.off}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="SwitchTextOffBox" Grid.Column="1"
                                      Text="" TextChanged="OnPropertyChanged"/>
                         </Grid>
                     </StackPanel>
@@ -1151,6 +1163,12 @@
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <fa:FANumberBox x:Name="RollerRowsBox" Grid.Row="57" Grid.Column="1"
                                         Value="3" Minimum="3" Maximum="7"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <TextBlock x:Name="LblInputDecimals" Text="{res:Loc prop.param.input.decimals}" Grid.Row="58" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"
+                                   ToolTip.Tip="{res:Loc prop.param.input.decimals.hint}"/>
+                        <fa:FANumberBox x:Name="InputDecimalsBox" Grid.Row="58" Grid.Column="1"
+                                        Value="0" Minimum="0" Maximum="6"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
                 </Expander>

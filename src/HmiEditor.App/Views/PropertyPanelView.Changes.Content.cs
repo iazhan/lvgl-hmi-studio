@@ -28,4 +28,17 @@ public partial class PropertyPanelView
         if (RollerRowsBox.IsVisible)
             ValidateAndWrite(nameof(HmiControl.RollerVisibleRows), (int)RollerRowsBox.Value, v => _currentControl.RollerVisibleRows = v);
     }
+
+    /// <summary>
+    /// 开关的关闭态文字（打开态那格走 <see cref="HmiControl.Text"/>，导出成 text_on）。
+    /// 与 <see cref="WriteContentFields"/> 分开：那一段挂在「控件功能参数」展开器的可见性下，
+    /// 而这一行在**总可见**的「内容」组里 —— 开关根本没有那个展开器，放进去就永远不保存。
+    /// </summary>
+    private void WriteSwitchTextOff()
+    {
+        if (_currentControl?.Type != HmiControlType.Switch) return;
+        ValidateAndWrite(nameof(HmiControl.SwitchTextOff),
+            string.IsNullOrWhiteSpace(SwitchTextOffBox.Text) ? null : SwitchTextOffBox.Text,
+            v => _currentControl.SwitchTextOff = v);
+    }
 }

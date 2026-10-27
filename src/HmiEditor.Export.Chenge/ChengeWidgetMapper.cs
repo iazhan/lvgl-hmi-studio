@@ -105,7 +105,7 @@ internal sealed class ChengeWidgetMapper
                     string.IsNullOrWhiteSpace(control.SwitchColorOff) ? control.BgColor : control.SwitchColorOff,
                     _colors.Border, where);
                 props["text_on"] = control.Text ?? "";
-                props["text_off"] = "";
+                props["text_off"] = control.SwitchTextOff ?? "";
                 if (!string.IsNullOrWhiteSpace(control.SwitchKnobColor) &&
                     _colors.Resolve(control.SwitchKnobColor, where) is { } knob)
                     props["knob_color"] = knob;
@@ -213,12 +213,19 @@ internal sealed class ChengeWidgetMapper
                 }
                 // num/text 由**绑定变量的类型**决定，不是由用户填的哪个属性名决定：
                 // 绑 f32 却导成 text 模式，运行时就会弹文本键盘、提交时再转数值。
-                props["mode"] = control.PasswordMode ? "password"
-                    : IsNumericBinding(control) ? "num" : "text";
-                props["min"] = (int)Math.Round(control.MinValue);
-                props["max"] = (int)Math.Round(control.MaxValue);
-                props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
-                props["max_len"] = control.MaxLength > 0 ? Clamp(control.MaxLength, 1, 64) : 64;
+                var inputNumeric = !control.PasswordMode && IsNumericBinding(control);
+                props["mode"] = control.PasswordMode ? "password" : inputNumeric ? "num" : "text";
+                // 量程/小数位只对数值型输入有意义：文本/密码输入（绑 s16/str 变量）提交的是
+                // 字符串，运行时也不解析数值。写进去只会让"输入 ABC"看起来受量程限制。
+                if (inputNumeric)
+                {
+                    props["min"] = (int)Math.Round(control.MinValue);
+                    props["max"] = (int)Math.Round(control.MaxValue);
+                    props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
+                }
+                // 契约 input.max_len 缺省 12、上限 24（ui_keypad.c 把请求钳到 1..24）。
+                // 0 在模型里是"不限"，导出成 24 = 键盘能给到的上限。
+                props["max_len"] = control.MaxLength > 0 ? Clamp(control.MaxLength, 1, 24) : 24;
                 SetFont(props, control, DefaultFont(16));
                 props["align"] = Align(control.TextAlign);
                 // 写回时机：ok 是默认值不写；blur = 失焦即写
@@ -502,7 +509,9 @@ internal sealed class ChengeWidgetMapper
                 }
                 props["columns"] = hcols;
                 props["source"] = new JsonObject { ["group"] = control.HistTableGroup!.Trim() };
-                props["max_rows"] = Clamp(control.AlarmMaxRows, 10, 500);
+                // 历史表用自己的行数（契约缺省 500）。复用报警列表的 AlarmMaxRows（10）
+                // 会让历史表恒只显示 10 行，而面板没有这一行可改。
+                props["max_rows"] = Clamp(control.HistTableMaxRows, 10, 2000);
                 props["refresh_ms"] = Clamp(control.RefreshMs, 0, 60000);
                 props["row_height"] = control.HistTableRowHeight > 0 ? Clamp(control.HistTableRowHeight, 16, 60) : 26;
                 props["scrollbar"] = control.HistTableScrollbar;
@@ -755,6 +764,17 @@ internal sealed class ChengeWidgetMapper
         props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
         if (control.HistoryS > 0) props["history_s"] = Clamp(control.HistoryS, 1, 86400);
         props["span_s"] = SpanSeconds(control, where);
+        // 窗口 × 采样决定图点数（上限 300，widget_curve.c），而 X 轴的跨度是按
+        // "实际点数 × 采样周期"标的 —— 窗口超预算时面板说的时长板上根本画不出来，
+        // 用户会以为曲线卡住了。这里点出来，别让人对着面板猜。
+        {
+            var sampleMs = props["sample_ms"]!.GetValue<int>();
+            var budgetS = 300L * sampleMs / 1000;
+            if (props["span_s"]!.GetValue<int>() > budgetS)
+                _issues.Warn("realtime_curve.span", where,
+                    $"窗口 {props["span_s"]}s 超出 300 点预算（采样 {sampleMs}ms → 最多 {budgetS}s），" +
+                    $"板上只画最近 {budgetS}s");
+        }
         MapCurveCommon(props, control, where);
         _features.Add("curves");
         return true;

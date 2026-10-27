@@ -117,6 +117,7 @@ public partial class PropertyPanelView : UserControl
         ValidateAndWrite(nameof(HmiControl.Width), PropertyValidator.ClampSize(PropWidth.Value), v => _currentControl.Width = v);
         ValidateAndWrite(nameof(HmiControl.Height), PropertyValidator.ClampSize(PropHeight.Value), v => _currentControl.Height = v);
         ValidateAndWrite(nameof(HmiControl.Text), string.IsNullOrEmpty(PropText.Text) ? null : PropText.Text, v => _currentControl.Text = v);
+        WriteSwitchTextOff();
         ValidateAndWrite(nameof(HmiControl.Radius), PropertyValidator.ClampRadius((int)PropRadius.Value), v => _currentControl.Radius = v);
         ValidateAndWrite(nameof(HmiControl.BorderWidth), PropertyValidator.ClampBorderWidth((int)PropBorderWidth.Value), v => _currentControl.BorderWidth = v);
         ValidateAndWrite(nameof(HmiControl.IsChecked), PropIsChecked.IsChecked ?? false, v => _currentControl.IsChecked = v);
@@ -153,6 +154,8 @@ public partial class PropertyPanelView : UserControl
             ValidateAndWrite(nameof(HmiControl.Options), string.IsNullOrWhiteSpace(OptionsBox.Text) ? null : OptionsBox.Text.Replace("\r\n", "\n"), v => _currentControl.Options = v);
             ValidateAndWrite(nameof(HmiControl.PlaceholderText), string.IsNullOrEmpty(PlaceholderBox.Text) ? null : PlaceholderBox.Text, v => _currentControl.PlaceholderText = v);
             ValidateAndWrite(nameof(HmiControl.MaxLength), (int)MaxLengthBox.Value, v => _currentControl.MaxLength = v);
+            if (InputDecimalsBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.ValueDecimalPlaces), (int)InputDecimalsBox.Value, v => _currentControl.ValueDecimalPlaces = v);
             ValidateAndWrite(nameof(HmiControl.PasswordMode), PasswordCheck.IsChecked ?? false, v => _currentControl.PasswordMode = v);
             ValidateAndWrite(nameof(HmiControl.MajorTickCount), (int)TickCountBox.Value, v => _currentControl.MajorTickCount = v);
             ValidateAndWrite(nameof(HmiControl.RowCount), (int)RowCountBox.Value, v => _currentControl.RowCount = v);

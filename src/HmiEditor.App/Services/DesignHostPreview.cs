@@ -36,6 +36,12 @@ public sealed class DesignHostPreview : IDisposable
     private DesignCanvas? _canvas;
     private WriteableBitmap? _bitmap;
     private byte[] _frame = Array.Empty<byte>();
+    private byte[]? _lastPayload;          /* 上一份推给宿主的页面 JSON（判"重建是否白重建"） */
+    private static readonly bool _frameTrace =
+        Environment.GetEnvironmentVariable("HMI_TRACE_FRAME") == "1";
+    private static readonly bool _hostSay =
+        Environment.GetEnvironmentVariable("HMI_HOST_SAY") == "1";
+    private long _lastReloadMs;            /* 上次整页重建的时刻（节流用） */
     private DispatcherTimer? _timer;
     private long _lastVersion = -1;
     private uint _epoch;
@@ -155,8 +161,30 @@ public sealed class DesignHostPreview : IDisposable
         _timer.Tick += (_, _) => Pump();
         _timer.Start();
         Pump();
+
+        // 等到**第一帧真的到手**才算启动成功。宿主进程活着但画面还没画出来（字体加载、
+        // 首帧渲染慢）时，"起来一个没画面的会话"在画布上就是一片空白 —— 用户唯一的
+        // 出路是手动把真机渲染开关点了又点。这里把它变成失败：调用方可以重试。
+        var deadline = Environment.TickCount64 + 4000;
+        while (!HasFirstFrame && Environment.TickCount64 < deadline && _session is { IsOpen: true })
+        {
+            await Task.Delay(30);
+            Pump();
+        }
+        if (!HasFirstFrame)
+        {
+            LastError = (LastError is { Length: > 0 } ? LastError + " / " : "")
+                        + $"host produced no frame in 4s (alive={_session?.IsOpen == true})";
+            return false;
+        }
         return true;
     }
+
+    /// <summary>是否已经收到过至少一帧真机画面。</summary>
+    public bool HasFirstFrame => _lastVersion > 0;
+
+    /// <summary>宿主最后一行日志（启动失败诊断用：它会自己说"工程加载失败：…"）。</summary>
+    public string HostLogTail => _session?.LogTail ?? "";
 
     /// <summary>UI 线程一拍：先补丁（可能让宿主重绘），再取帧。</summary>
     private void Pump()
@@ -195,6 +223,15 @@ public sealed class DesignHostPreview : IDisposable
         // 注意必须是**重导出**：宿主里的快照不含拖动后的新坐标，直接 L 会把控件拉回原位。
         if (_needsReload && !_reloading && now - _lastChangeMs >= 300)
         {
+            // 合并节流：整页重建会把画面清掉再画。若存在"改模型 → 重建 → 又改模型"的
+            // 回环（面板某一行回写与导出归一化打架），不节流就是每 16ms 重建一次，
+            // 画布看着就是一片空白。节流后最坏也只是一秒几次——回环本身仍要靠
+            // 上面的"首个差异"日志定位，这里只保证它不把画面打没。
+            if (now - _lastReloadMs < 300)
+            {
+                return;
+            }
+            _lastReloadMs = now;
             _reloading = true;
             _ = ReloadWithFreshJsonAsync();
         }
@@ -215,12 +252,27 @@ public sealed class DesignHostPreview : IDisposable
             // 只导出当前页：整包导出会把所有页面 BuildPage 一遍、还要转换图片资产，
             // 而重建单页只需要这一页的 JSON（资产在会话启动时已推给宿过）。
             var screenId = _screenId;
+            // 模型里的控件数：导出前后各取一次。差得多说明"白屏"是**模型丢控件**（谁把它从
+            // 平铺列表里摘走了），差得少说明是导出侧把它跳过了 —— 这两种修法完全不同，
+            // 而此前日志里只有 JSON 字节数，判不出来。
+            var nBefore = project.Screens.FirstOrDefault(s => s.Id == screenId)?.Controls.Count ?? -1;
             var (export, json) = await Task.Run(() =>
             {
                 var pageJson = new ChengeExporter().ExportPageOnly(project, assets, options, dir, screenId,
                     out var res, out _);
                 return (Result: res, Json: pageJson);
             });
+            var nAfter = project.Screens.FirstOrDefault(s => s.Id == screenId)?.Controls.Count ?? -1;
+            if (json != null && json.Length < 200)
+            {
+                // 同时报画布当前那块屏：它们若不是同一个实例，"空页"就不是被删，而是导出
+                // 走的那份工程里压根不是画布上这个屏。
+                var canvasScreen = _canvas?.Screen;
+                var same = ReferenceEquals(canvasScreen, project.Screens.FirstOrDefault(s => s.Id == screenId));
+                Console.WriteLine($"[design] empty page: project={nBefore}->{nAfter} " +
+                                  $"canvas={canvasScreen?.Controls.Count.ToString() ?? "null"} " +
+                                  $"sameInstance={same} payload={json.Length}B");
+            }
             if (json == null || _session == null)
             {
                 LastError = ChengeExportService.DescribeIssues(export);
@@ -234,9 +286,42 @@ public sealed class DesignHostPreview : IDisposable
             // 切屏重启一次（重新导出）才好"。
             _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
 
+            // 重导出的内容若与上一份一致就没必要重建（重建本身会让画面白一下）。
+            // 不一致时把"首个差异"打出来：这类问题此前只能靠猜 —— 面板某一行回写模型
+            // 与导出器归一化打架时，画面会每 16ms 重建一次（看着像白屏），而日志里只有
+            // 一串递增的 bytes= 数字，看不出是谁在动。
+            if (_lastPayload != null && _lastPayload.AsSpan().SequenceEqual(bytes))
+            {
+                Console.WriteLine($"[design] J skip（内容与上一份相同，{bytes.Length} 字节）");
+                return;
+            }
+            if (_lastPayload != null)
+            {
+                var at = FirstDiff(_lastPayload, bytes);
+                Console.WriteLine($"[design] J 内容变化 {_lastPayload.Length}→{bytes.Length} 字节 @{at}：{Snippet(bytes, at)}");
+            }
+            _lastPayload = bytes;
+
+            // 调试：HMI_DUMP_PAGE=<文件> 时把每次推给宿主的页面 JSON 落盘 —— 画布空白时
+            // 第一件要确认的事就是"宿主拿到的到底是什么"，而它只活在进程间的 stdin 里。
+            var dump = Environment.GetEnvironmentVariable("HMI_DUMP_PAGE");
+            if (!string.IsNullOrEmpty(dump))
+            {
+                try { File.WriteAllBytes(dump, bytes); } catch { }
+            }
+
             _epoch++;
             _session.ReloadPageJson(_epoch, bytes);
             Console.WriteLine($"[design] J epoch={_epoch} bytes={bytes.Length} stamp={stamp}");
+
+            // 宿主对这份 JSON 的裁决在它自己的 stdout 里（"工程加载失败：…"）。等一小会儿
+            // 抄一行过来：没有这行，"画布空白"就只能是猜。
+            await Task.Delay(120);
+            var verdict = _session?.LogTail ?? "";
+            if (verdict.Length > 0 && (_hostSay
+                                       || verdict.Contains("rc=-", StringComparison.Ordinal)
+                                       || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase)))
+                Console.WriteLine($"[design] host says: {verdict}");
         }
         catch (Exception ex)
         {
@@ -252,6 +337,24 @@ public sealed class DesignHostPreview : IDisposable
         }
     }
 
+    /// <summary>两份页面 JSON 的首个差异字节下标（相等时返回 -1）。</summary>
+    private static int FirstDiff(byte[] a, byte[] b)
+    {
+        var n = Math.Min(a.Length, b.Length);
+        for (var i = 0; i < n; i++)
+            if (a[i] != b[i]) return i;
+        return a.Length == b.Length ? -1 : n;
+    }
+
+    /// <summary>差异点前后的一小段（日志里能看出是哪个键在变）。</summary>
+    private static string Snippet(byte[] bytes, int at)
+    {
+        if (at < 0 || at >= bytes.Length) return "<tail>";
+        var from = Math.Max(0, at - 40);
+        var len = Math.Min(80, bytes.Length - from);
+        return System.Text.Encoding.UTF8.GetString(bytes, from, len).Replace("\n", " ");
+    }
+
     private void PullFrame()
     {
         if (_session == null || _bitmap == null || _canvas == null) return;
@@ -264,6 +367,18 @@ public sealed class DesignHostPreview : IDisposable
             Marshal.Copy(_frame, 0, fb.Address, Math.Min(_frame.Length, fb.RowBytes * _bitmap.PixelSize.Height));
 
         _lastVersion = version;
+
+        // 调试（HMI_TRACE_FRAME=1）：新帧到手时记一行"这帧是不是空白"。
+        // 画布白屏时它能一刀切开两种可能：宿主发了空白帧（宿主问题）还是收到的是好帧、
+        // 画布没画出来（编辑器问题）。
+        if (_frameTrace)
+        {
+            var nz = 0;
+            for (var i = 0; i < Math.Min(_frame.Length, 800 * 4 * 480); i += 97)
+                if (_frame[i] != 0) nz++;
+            Console.WriteLine($"[design] frame v={version} len={_frame.Length} nonZeroSamples={nz}");
+        }
+
         // HostFrame 引用没变，StyledProperty 不会触发 AffectsRender —— 手动点一次
         _canvas.InvalidateVisual();
     }

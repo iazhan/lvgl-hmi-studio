@@ -88,6 +88,7 @@ public partial class PropertyPanelView : UserControl
         StepValueBox.ValueChanged += OnNumberChanged;
         SelectedIndexBox.ValueChanged += OnNumberChanged;
         MaxLengthBox.ValueChanged += OnNumberChanged;
+        InputDecimalsBox.ValueChanged += OnNumberChanged;
         TickCountBox.ValueChanged += OnNumberChanged;
         RowCountBox.ValueChanged += OnNumberChanged;
         ColCountBox.ValueChanged += OnNumberChanged;
@@ -240,6 +241,7 @@ public partial class PropertyPanelView : UserControl
             PropHeight.Value = control.Height;
             PropName.Text = Services.ControlNameDefaults.Display(control);
             PropText.Text = control.Text ?? "";
+            SwitchTextOffBox.Text = control.SwitchTextOff ?? "";
             PropBgColor.Text = control.BgColor ?? "";
             PropTextColor.Text = control.TextColor ?? "";
             PropRadius.Value = control.Radius;
@@ -305,11 +307,13 @@ public partial class PropertyPanelView : UserControl
 
             // 加载值显示配置（Label 等显示型控件可见）
             // 过程图形控件也支持：Tank 液位 / Valve 开度 / Pipe 流量百分比
+            // 开关/复选不在其列：它们绑的是布尔（IsChecked），值类型/比例/小数位/前后缀
+            // 一个都不参与格式化 —— 留着只会让面板多出一组改了没反应的控件。
             bool supportsValueDisplay = control.Type is HmiControlType.Label
                 or HmiControlType.Value
                 or HmiControlType.Gauge or HmiControlType.Bar or HmiControlType.Knob
-                or HmiControlType.Led or HmiControlType.Slider or HmiControlType.CheckBox
-                or HmiControlType.Switch or HmiControlType.Dropdown
+                or HmiControlType.Led or HmiControlType.Slider
+                or HmiControlType.Dropdown
                 or HmiControlType.Tank or HmiControlType.Pipe or HmiControlType.Valve;
             ValueDisplayExpander.IsVisible = supportsValueDisplay;
             if (supportsValueDisplay)

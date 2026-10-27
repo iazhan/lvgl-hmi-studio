@@ -70,5 +70,5 @@ public class HmiScreen
     /// </summary>
     public ObservableCollection<string> ReferencedLayerIds { get; set; } = new();
 
-    public ObservableCollection<HmiControl> Controls { get; set; } = new();
+    public ControlCollection Controls { get; set; } = new();
 }

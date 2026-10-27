@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using HmiEditor.App.Resources;
@@ -49,6 +51,109 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     private Thread? _outThread;
     private Stream? _stdin;
     private volatile bool _disposed;
+
+    /// <summary>
+    /// 活着的宿主进程。编辑器被强杀（kill / 关终端 / 崩溃）时 <see cref="Dispose"/> 不会跑，
+    /// 宿主就变成孤儿：每个都占着 800×480 的共享内存和一份 LVGL 缓冲。实测一次工作区里堆了
+    /// 53 个、/dev/shm 368MB —— 再开一个新会话就抢不到资源，画布一片空白（"点两次开关才好"
+    /// 正是第二次抢到了）。所以：进程收到 SIGTERM/SIGINT 时统一收尸。
+    /// </summary>
+    private static readonly List<Process> s_live = new();
+    private static bool s_exitHookInstalled;
+
+    private static void InstallExitHook()
+    {
+        if (s_exitHookInstalled) return;
+        s_exitHookInstalled = true;
+
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => KillLive();
+        foreach (var sig in new[] { PosixSignal.SIGTERM, PosixSignal.SIGINT, PosixSignal.SIGHUP })
+        {
+            try
+            {
+                PosixSignalRegistration.Create(sig, ctx =>
+                {
+                    KillLive();
+                    ctx.Cancel = false;      /* 收完尸照常按默认行为退出 */
+                });
+            }
+            catch
+            {
+                // 不支持的平台（Windows 只有 SIGINT/SIGTERM 的一支）忽略
+            }
+        }
+    }
+
+    private static void KillLive()
+    {
+        Process[] snapshot;
+        lock (s_live) snapshot = s_live.ToArray();
+        foreach (var p in snapshot)
+        {
+            try { if (!p.HasExited) p.Kill(entireProcessTree: true); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// 清掉上一轮留下的孤儿宿主（父进程已死 ⇒ ppid=1）。编辑器被 SIGKILL、测试进程被运行器
+    /// 直接杀掉时，上面的退出钩子也跑不到；这些宿主会一直攥着共享内存与 LVGL 缓冲。
+    /// 返回清掉的个数。
+    /// </summary>
+    public static int ReapOrphans()
+    {
+        if (!OperatingSystem.IsLinux()) return 0;
+
+        var killed = 0;
+        foreach (var dir in Directory.EnumerateDirectories("/proc"))
+        {
+            if (!int.TryParse(Path.GetFileName(dir), out var pid)) continue;
+
+            // 认进程按 **cmdline** 而不是 stat 的 comm：内核把 comm 截到 15 字符，
+            // "chenge-preview-host" 会变成 "chenge-preview-"，按全名匹配一个都认不出来。
+            string[] argv;
+            try { argv = File.ReadAllText(Path.Combine(dir, "cmdline")).Split('\0'); }
+            catch { continue; }
+            if (!argv.Any(a => a.EndsWith(ExeLinux, StringComparison.Ordinal))) continue;
+
+            string stat;
+            try { stat = File.ReadAllText(Path.Combine(dir, "stat")); } catch { continue; }
+
+            // /proc/<pid>/stat: pid (comm) state ppid ... —— comm 里可能有空格，取最后一个 ')'
+            var close = stat.LastIndexOf(')');
+            if (close < 0) continue;
+            var rest = stat[(close + 1)..].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (rest.Length < 2 || rest[1] != "1") continue;      // 第 2 段是 ppid
+
+            try
+            {
+                using var p = Process.GetProcessById(pid);
+                p.Kill(entireProcessTree: true);
+                killed++;
+                try { File.Delete(Path.Combine("/dev/shm", ShmNameOf(p))); } catch { }
+            }
+            catch
+            {
+                // 正好自己退了
+            }
+        }
+        return killed;
+    }
+
+    /// <summary>从宿主命令行里取 <c>--shm /name</c>，用来删掉它那份共享内存文件。</summary>
+    private static string ShmNameOf(Process p)
+    {
+        try
+        {
+            var cmd = File.ReadAllText($"/proc/{p.Id}/cmdline").Split('\0');
+            for (var i = 0; i + 1 < cmd.Length; i++)
+                if (cmd[i] == "--shm") return cmd[i + 1].TrimStart('/');
+        }
+        catch
+        {
+            // 读不到就算了，shm 文件留着无害（下次按名字复用的极少数情况下会重新建）
+        }
+        return "";
+    }
 
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -158,6 +263,9 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 LastError = AppLocalization.Service["live.err.host_start"];
                 return false;
             }
+
+            InstallExitHook();
+            lock (s_live) s_live.Add(_proc);
 
             _stdin = _proc.StandardInput.BaseStream;
             _logThread = new Thread(ReadLog) { IsBackground = true, Name = "chenge-host-log" };
@@ -298,6 +406,9 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             // 进程退出时流会断，正常
         }
     }
+
+    /// <summary>宿主最后一行日志（启动失败时贴出来：它自己会说"工程加载失败：…"）。</summary>
+    public string LogTail => LastLog();
 
     private string LastLog()
     {
@@ -449,7 +560,11 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             _mmf?.Dispose();
             _view = null;
             _mmf = null;
-            _proc?.Dispose();
+            if (_proc != null)
+            {
+                lock (s_live) s_live.Remove(_proc);
+                _proc.Dispose();
+            }
             _proc = null;
             try { if (File.Exists(_shmPath)) File.Delete(_shmPath); } catch { }
         }

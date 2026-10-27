@@ -45,6 +45,21 @@ public sealed class ChengeExporter
         var sink = new MemoryExportSink();
 
         result = ExportCore(project, assets, options, projectDirectory, sink);
+        if (result.Success && sink.Files.TryGetValue("manifest.json", out var manifestBytes))
+        {
+            var manifest = JsonNode.Parse(manifestBytes) as JsonObject;
+            if (manifest?["features"] is JsonArray features)
+            {
+                // 设计画布的 J 重载只能替换页面 JSON，不能更新已加载的 manifest；预览包预声明
+                // 可由编辑器在会话中动态加入的扩展控件能力，正式落盘工程仍保持精确声明。
+                foreach (var feature in new[] { "table", "curves", "pipe", "widgets_ext" })
+                {
+                    if (!features.Any(node => string.Equals(node?.GetValue<string>(), feature, StringComparison.Ordinal)))
+                        features.Add(feature);
+                }
+                sink.Files["manifest.json"] = Encoding.UTF8.GetBytes(manifest.ToJsonString(WriteOptions));
+            }
+        }
         return sink.Files;
     }
 
@@ -299,8 +314,20 @@ public sealed class ChengeExporter
 
         var widgets = new JsonArray();
         var seq = 0;
-        foreach (var control in screen.Controls.Where(c => string.IsNullOrEmpty(c.ParentId)))
-            AppendWidget(widgets, control, pageId, "w", ref seq, maps, mapper, features, fontSizes, issues, ref widgetCount);
+        // 顶层 = **不属于任何容器**的控件，而不是"ParentId 为空"的控件。ParentId 只是反向引用，
+        // 它可能指向已被删除的容器（撤销删除后容器回来、或手工改过工程文件）——按"非空即跳过"
+        // 会让那个控件从产物里彻底消失：画布一片空白、实时预览却正常，而且不报任何错。
+        var index = HmiEditor.Core.ContainerHierarchy.Index(screen);
+        foreach (var control in screen.Controls)
+        {
+            if (HmiEditor.Core.ContainerHierarchy.ParentOf(control, index) != null) continue;
+
+            if (!string.IsNullOrEmpty(control.ParentId))
+                issues.Warn("page.orphan_parent", pageId,
+                    $"控件 {control.Id} 的 ParentId={control.ParentId} 指向不存在的容器，已按顶层控件导出");
+            AppendWidget(widgets, control, pageId, "w", ref seq, maps, mapper, features, fontSizes,
+                issues, ref widgetCount);
+        }
         page["widgets"] = widgets;
         return page;
     }

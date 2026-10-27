@@ -33,6 +33,10 @@ public partial class MainWindow
 {
     private void WireCanvasAndSelectionEvents()
     {
+        // 启动即清上一轮被强杀留下的宿主（ppid=1）：它们攥着共享内存与 LVGL 缓冲，
+        // 新会话抢不到资源时画布就是空白 —— 与"点两次真机渲染开关才有图"是同一件事。
+        ReapOrphanHosts();
+
         // 将变量管理器传递给属性面板，用于变量绑定下拉列表
         PropertyPanel.SetVariableManager(_currentProject.VariableManager);
         PropertyPanel.SetProject(_currentProject);

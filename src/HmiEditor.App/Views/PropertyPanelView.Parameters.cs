@@ -153,6 +153,11 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblSelectedIndex, SelectedIndexBox, true);
                 break;
             case HmiControlType.TextArea:
+                // 量程 + 小数位：数值型输入（绑 i16/f32 变量）才用得上，文本型导出时不写
+                // 这两组键（见 ChengeWidgetMapper 的 inputNumeric 分支）。
+                SetParamRow(LblMinValue, MinValueBox, true);
+                SetParamRow(LblMaxValue, MaxValueBox, true);
+                SetParamRow(LblInputDecimals, InputDecimalsBox, true);
                 SetParamRow(LblPlaceholder, PlaceholderBox, true);
                 SetParamRow(LblMaxLength, MaxLengthBox, true);
                 SetParamRow(LblPassword, PasswordCheck, true);
@@ -378,6 +383,7 @@ public partial class PropertyPanelView : UserControl
         OptionsBox.Text = control.Options ?? "";
         PlaceholderBox.Text = control.PlaceholderText ?? "";
         MaxLengthBox.Value = control.MaxLength;
+        InputDecimalsBox.Value = Math.Clamp(control.ValueDecimalPlaces, 0, 6);
         PasswordCheck.IsChecked = control.PasswordMode;
         TickCountBox.Value = control.MajorTickCount;
         RowCountBox.Value = control.RowCount;

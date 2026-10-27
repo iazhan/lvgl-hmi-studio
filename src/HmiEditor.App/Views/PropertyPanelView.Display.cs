@@ -69,13 +69,17 @@ public partial class PropertyPanelView : UserControl
         UpdateValueDecimalsVisibility();
     }
 
-    /// <summary>小数位数行仅在值类型为 Float 时显示。</summary>
+    /// <summary>
+    /// 小数位数行在 Float 与 Auto 下显示。Auto = 按变量类型自己判断，f32 变量同样按这一位
+    /// 格式化 —— 只在 Float 下显示会让默认的 Auto 藏着一个"板上真的生效、面板看不见"的值。
+    /// Integer / Text 下它确实不参与格式化，才隐藏。
+    /// </summary>
     private void UpdateValueDecimalsVisibility()
     {
-        var isFloat = ParseValueDisplayType(ValueDisplayTypeCombo.SelectedItem as ComboBoxItem)
-            == ValueDisplayType.Float;
-        LblValueDecimals.IsVisible = isFloat;
-        ValueDecimalsCombo.IsVisible = isFloat;
+        var type = ParseValueDisplayType(ValueDisplayTypeCombo.SelectedItem as ComboBoxItem);
+        var used = type is ValueDisplayType.Float or ValueDisplayType.Auto;
+        LblValueDecimals.IsVisible = used;
+        ValueDecimalsCombo.IsVisible = used;
     }
 
     /// <summary>值类型切换时联动小数位数行的可见性。</summary>
@@ -91,7 +95,7 @@ public partial class PropertyPanelView : UserControl
     {
         if (item?.Tag is string tag && int.TryParse(tag, out var n))
             return Math.Clamp(n, 0, 6);
-        return 2;
+        return 0;
     }
 
     /// <summary>解析值类型下拉的选中项为枚举。</summary>

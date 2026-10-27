@@ -68,6 +68,9 @@ public class AppXamlAttributeWiringFaceTests
         new("PropertyPanelView.axaml", "PropText", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
+        new("PropertyPanelView.axaml", "SwitchTextOffBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：开关的关闭态文字（导出成 text_off），与 PropText 同一面覆盖"),
         new("PropertyPanelView.axaml", "PropTextColor", "OnPropertyChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
@@ -315,7 +318,7 @@ public class AppXamlAttributeWiringFaceTests
         // 🎯 棘轮：属性面板的每一条 `TextChanged="OnPropertyChanged"` 都必须有判据（枚举驱动或
         //   在 PropertyPanelWiringTests 里带理由豁免），`pending` 必须是 0。
         //   加一条属性式接线就要同步加 1 并给它一个场景/豁免 —— 只改这个数不算数。
-        Assert.Equal(64, driven);
+        Assert.Equal(65, driven);
         Assert.True(pending == 0,
             $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面登记的全部条目都该有判据");
     }

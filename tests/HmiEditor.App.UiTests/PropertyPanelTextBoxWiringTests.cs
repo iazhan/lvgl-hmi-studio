@@ -60,6 +60,7 @@ public class PropertyPanelTextBoxWiringTests
     {
         ["PropName"] = "控件名：XAML 属性式接线（`TextChanged=\"OnPropertyChanged\"`）⇒ 不在本面（本面只扫 code-behind `+=`）；写回走 `SaveProperties`，判据欠账见 AppXamlAttributeWiringFaceTests",
         ["PropText"] = "文本：同上（**XAML 属性式接线**，不在本面）",
+        ["SwitchTextOffBox"] = "开关关闭态文字：同上（**XAML 属性式接线**，不在本面）",
         ["PropTextColor"] = "文本色：同上（**XAML 属性式接线**，不在本面）",
         ["PropBgColor"] = "背景色：同上（**XAML 属性式接线**，不在本面）",
         ["PropBorderColor"] = "边框色：同上（**XAML 属性式接线**，不在本面）",

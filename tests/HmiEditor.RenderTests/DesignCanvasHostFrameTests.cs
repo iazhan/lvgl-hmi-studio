@@ -79,6 +79,36 @@ public class DesignCanvasHostFrameTests
         });
     }
 
+    /// <summary>
+    /// 页面上有**表格**时，真机位图必须照样画出来（不是被 C# 自绘的占位层盖住、
+    /// 也不是这一帧直接没画）。设计画布"拖一个表格就白屏、按钮却正常"就发生在这里：
+    /// 宿主交给画布的位图是对的，画布自己那一帧画崩了。
+    /// </summary>
+    [Fact]
+    public void UseHostFrame_StillShowsWithTableOnPage()
+    {
+        RenderTestHost.Run(() =>
+        {
+            var canvas = BuildCanvas();
+            canvas.Screen!.Controls.Add(new HmiControl
+            {
+                Id = "t1", Name = "Table1", Type = HmiControlType.Table,
+                X = 40, Y = 60, Width = 300, Height = 200,
+            });
+            canvas.HostFrame = SolidFrame();
+            canvas.UseHostFrame = true;
+
+            var pixels = Render(canvas);
+            // 取表格之外的空白处：位图必须还在
+            var (b, g, r, a) = PixelReader.At(pixels, W, 10, 10);
+
+            Assert.Equal(0xFF, a);
+            Assert.Equal(FrameR, r);
+            Assert.Equal(FrameG, g);
+            Assert.Equal(FrameB, b);
+        });
+    }
+
     [Fact]
     public void UseHostFrameOff_FallsBackToLocalRendering()
     {

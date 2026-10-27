@@ -26,6 +26,12 @@ public partial class PropertyPanelView
         any |= SetRow(RowText, type is HmiControlType.Label or HmiControlType.Button
             or HmiControlType.CheckBox or HmiControlType.Switch or HmiControlType.EnumText);
 
+        // 开关的这段文字导出成 text_on（画在控件框右边），标签换成"打开时文字"；
+        // 关闭态那格是另一条（text_off），只有开关有
+        LblPropText.IsVisible = type != HmiControlType.Switch;
+        LblPropTextOn.IsVisible = type == HmiControlType.Switch;
+        any |= SetRow(RowSwitchTextOff, type == HmiControlType.Switch);
+
         // 底色 / 圆角 / 描边 / 不透明度：由运行时的建页收口统一应用（见 AppearanceSupport）
         any |= SetRow(RowBgColor, AppearanceSupport.HasBgColor(type));
         any |= SetRow(RowRadius, AppearanceSupport.HasBoxBorder(type));
