@@ -16,13 +16,15 @@ public partial class PropertyPanelView
         SetParamRow(LblGaugeNeedleWidth, GaugeNeedleWidthBox, visible);
         SetParamRow(LblGaugeCenterRadius, GaugeCenterRadiusBox, visible);
         SetParamRow(LblGaugeShowValue, GaugeShowValueCheck, visible);
-        SetParamRow(LblGaugeRanges, GaugeRangesBox, visible);
+        // 按值换色（GaugeRanges / LampRanges / BarRanges）不显示：运行时只实现了
+        // bind[kind=ranges] 这条路，而编辑器没有"区间 → 变量"的模型可导出，写了也没人读。
+        SetParamRow(LblGaugeRanges, GaugeRangesBox, false);
     }
 
     private void ShowLampRows(bool visible)
     {
         SetParamRow(LblLampSize, LampSizeBox, visible);
-        SetParamRow(LblLampRanges, LampRangesBox, visible);
+        SetParamRow(LblLampRanges, LampRangesBox, false);
     }
 
     private void ShowButtonRows(bool visible)

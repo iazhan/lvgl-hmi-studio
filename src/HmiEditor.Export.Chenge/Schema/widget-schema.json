@@ -62,9 +62,23 @@
       "max": 255,
       "desc": "不透明度 0..255"
     },
-    "rotation": {"type": "int", "default": 0, "min": 0, "max": 359, "desc": "旋转角度（adr/0019）：图片与图元任意角；文本类仅 0/90/180/270 且不超过 256×256；容器禁止"},
-    "mirror_x": {"type": "bool", "default": false, "desc": "水平镜像（适用边界同 rotation）"},
-    "mirror_y": {"type": "bool", "default": false, "desc": "垂直镜像（适用边界同 rotation）"},
+    "rotation": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 359,
+      "desc": "旋转角度（adr/0019）：图片与图元任意角；文本类仅 0/90/180/270 且不超过 256×256；容器禁止"
+    },
+    "mirror_x": {
+      "type": "bool",
+      "default": false,
+      "desc": "水平镜像（适用边界同 rotation）"
+    },
+    "mirror_y": {
+      "type": "bool",
+      "default": false,
+      "desc": "垂直镜像（适用边界同 rotation）"
+    },
     "z": {
       "type": "int",
       "default": 0,
@@ -479,19 +493,37 @@
     "valve_ball": {
       "title": "球阀",
       "props": {
-        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀芯转角"}
+        "open": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "desc": "开度（0 关 / 1 全开），决定阀芯转角"
+        }
       }
     },
     "valve_butterfly": {
       "title": "蝶阀",
       "props": {
-        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀板角度"}
+        "open": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "desc": "开度（0 关 / 1 全开），决定阀板角度"
+        }
       }
     },
     "valve_gate": {
       "title": "闸阀",
       "props": {
-        "open": {"type": "float", "default": 0.5, "min": 0, "max": 1, "desc": "开度（0 关 / 1 全开），决定阀板上提高度"}
+        "open": {
+          "type": "float",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "desc": "开度（0 关 / 1 全开），决定阀板上提高度"
+        }
       }
     },
     "plane_concave": {
@@ -675,7 +707,16 @@
       "group": "基础",
       "status": "done",
       "props": {
-        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "valign": {
+          "type": "enum",
+          "default": "top",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
+          "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"
+        },
         "text": {
           "type": "string",
           "default": "",
@@ -733,11 +774,22 @@
           "desc": "字距",
           "status": "planned"
         },
+        "long_mode": {
+          "type": "enum",
+          "default": "wrap",
+          "enum": [
+            "wrap",
+            "dots",
+            "clip",
+            "scroll",
+            "scroll_circular"
+          ],
+          "desc": "文字超出框时的处理（换行 / 省略号 / 裁掉 / 滚动 / 首尾相接滚动）"
+        },
         "wrap": {
           "type": "bool",
           "default": true,
-          "desc": "超宽是否换行",
-          "status": "planned"
+          "desc": "超宽是否换行（long_mode 缺省时的旧写法；false = clip）"
         },
         "decimals": {
           "type": "int",
@@ -765,7 +817,16 @@
       "group": "基础",
       "status": "done",
       "props": {
-        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "valign": {
+          "type": "enum",
+          "default": "top",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
+          "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"
+        },
         "decimals": {
           "type": "int",
           "default": 0,
@@ -820,6 +881,7 @@
         }
       },
       "bind": [
+        "text",
         "value",
         "color",
         "bg_color",
@@ -837,7 +899,16 @@
       "group": "基础",
       "status": "done",
       "props": {
-        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "valign": {
+          "type": "enum",
+          "default": "top",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
+          "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"
+        },
         "map": {
           "type": "array",
           "default": null,
@@ -1007,26 +1078,83 @@
       "group": "基础",
       "status": "done",
       "props": {
-        "text": {"type": "string", "default": "", "min": 0, "max": 32, "desc": "文字"},
-        "font_size": {"type": "int", "default": 16, "min": 8, "max": 48, "desc": "字号（manifest.font_sizes 里的一档）"},
-        "color": {"type": "color", "default": "#E6EDF3", "desc": "文字颜色"},
-        "checked": {"type": "bool", "default": false, "desc": "初始是否勾选（bind.checked 覆盖它）"},
-        "box_color": {"type": "color", "default": "#2F70D0", "desc": "勾选后的方块颜色"}
+        "text": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 32,
+          "desc": "文字"
+        },
+        "font_size": {
+          "type": "int",
+          "default": 16,
+          "min": 8,
+          "max": 48,
+          "desc": "字号（manifest.font_sizes 里的一档）"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
+        },
+        "checked": {
+          "type": "bool",
+          "default": false,
+          "desc": "初始是否勾选（bind.checked 覆盖它）"
+        },
+        "box_color": {
+          "type": "color",
+          "default": "#2F70D0",
+          "desc": "勾选后的方块颜色"
+        }
       },
-      "bind": ["checked", "text", "visible", "enabled"],
-      "events": ["change", "click"]
+      "bind": [
+        "checked",
+        "text",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change",
+        "click"
+      ]
     },
     "spinner": {
       "title": "加载圈",
       "group": "扩展",
       "status": "done",
       "props": {
-        "color": {"type": "color", "default": "#2F70D0", "desc": "弧线颜色"},
-        "arc_width": {"type": "int", "default": 4, "min": 1, "max": 24, "desc": "弧线宽度"},
-        "arc_len": {"type": "int", "default": 200, "min": 10, "max": 359, "desc": "弧长（度）"},
-        "speed_ms": {"type": "int", "default": 1000, "min": 100, "max": 10000, "desc": "转一圈的毫秒数"}
+        "color": {
+          "type": "color",
+          "default": "#2F70D0",
+          "desc": "弧线颜色"
+        },
+        "arc_width": {
+          "type": "int",
+          "default": 4,
+          "min": 1,
+          "max": 24,
+          "desc": "弧线宽度"
+        },
+        "arc_len": {
+          "type": "int",
+          "default": 200,
+          "min": 10,
+          "max": 359,
+          "desc": "弧长（度）"
+        },
+        "speed_ms": {
+          "type": "int",
+          "default": 1000,
+          "min": 100,
+          "max": 10000,
+          "desc": "转一圈的毫秒数"
+        }
       },
-      "bind": ["visible", "enabled"],
+      "bind": [
+        "visible",
+        "enabled"
+      ],
       "events": []
     },
     "keyboard": {
@@ -1034,10 +1162,25 @@
       "group": "扩展",
       "status": "done",
       "props": {
-        "target": {"type": "string", "default": "", "min": 0, "max": 31, "desc": "要输入的 input 控件 id（必填）；键位按它的类型自动选数字/文本"},
-        "title": {"type": "string", "default": "", "min": 0, "max": 32, "desc": "顶部提示，一般写变量名"}
+        "target": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 31,
+          "desc": "要输入的 input 控件 id（必填）；键位按它的类型自动选数字/文本"
+        },
+        "title": {
+          "type": "string",
+          "default": "",
+          "min": 0,
+          "max": 32,
+          "desc": "顶部提示，一般写变量名"
+        }
       },
-      "bind": ["visible", "enabled"],
+      "bind": [
+        "visible",
+        "enabled"
+      ],
       "events": []
     },
     "tabview": {
@@ -1045,28 +1188,95 @@
       "group": "扩展",
       "status": "done",
       "props": {
-        "tabs": {"type": "array", "default": null, "desc": "[{title, widgets:[...]}]，最多 8 个；子控件坐标相对页签内容区，并计入单页 150 上限"},
-        "tab_pos": {"type": "enum", "default": "top", "enum": ["top", "bottom", "left", "right"], "desc": "页签位置"},
-        "tab_h": {"type": "int", "default": 40, "min": 24, "max": 80, "desc": "页签高度（左右位置时是宽度）"}
+        "tabs": {
+          "type": "array",
+          "default": null,
+          "desc": "[{title, widgets:[...]}]，最多 8 个；子控件坐标相对页签内容区，并计入单页 150 上限"
+        },
+        "tab_pos": {
+          "type": "enum",
+          "default": "top",
+          "enum": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "desc": "页签位置"
+        },
+        "tab_h": {
+          "type": "int",
+          "default": 40,
+          "min": 24,
+          "max": 80,
+          "desc": "页签高度（左右位置时是宽度）"
+        }
       },
-      "bind": ["visible", "enabled"],
-      "events": ["change"]
+      "bind": [
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change"
+      ]
     },
     "knob": {
       "title": "旋钮",
       "group": "基础",
       "status": "done",
       "props": {
-        "min": {"type": "int", "default": 0, "desc": "量程下限"},
-        "max": {"type": "int", "default": 100, "desc": "量程上限"},
-        "step": {"type": "float", "default": 1, "min": 0, "max": 1000, "desc": "松手吸附的刻度间隔（0 = 不吸附）"},
-        "color": {"type": "color", "default": "#2F70D0", "desc": "已选弧段颜色"},
-        "arc_width": {"type": "int", "default": 10, "min": 2, "max": 30, "desc": "弧线宽度"},
-        "decimals": {"type": "int", "default": 0, "min": 0, "max": 3, "desc": "中心读数的小数位"},
-        "show_value": {"type": "bool", "default": true, "desc": "是否显示中心读数"}
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "量程下限"
+        },
+        "max": {
+          "type": "int",
+          "default": 100,
+          "desc": "量程上限"
+        },
+        "step": {
+          "type": "float",
+          "default": 1,
+          "min": 0,
+          "max": 1000,
+          "desc": "松手吸附的刻度间隔（0 = 不吸附）"
+        },
+        "color": {
+          "type": "color",
+          "default": "#2F70D0",
+          "desc": "已选弧段颜色"
+        },
+        "arc_width": {
+          "type": "int",
+          "default": 10,
+          "min": 2,
+          "max": 30,
+          "desc": "弧线宽度"
+        },
+        "decimals": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 3,
+          "desc": "中心读数的小数位"
+        },
+        "show_value": {
+          "type": "bool",
+          "default": true,
+          "desc": "是否显示中心读数"
+        }
       },
-      "bind": ["value", "visible", "enabled"],
-      "events": ["change", "press", "release"]
+      "bind": [
+        "value",
+        "visible",
+        "enabled"
+      ],
+      "events": [
+        "change",
+        "press",
+        "release"
+      ]
     },
     "lamp": {
       "title": "指示灯",
@@ -1081,7 +1291,8 @@
         "ranges": {
           "type": "array",
           "default": null,
-          "desc": "按值换色 [{lt,color},{color}]"
+          "desc": "按值换色 [{lt,color},{color}]（只有 bind[kind=ranges] 实现；props 里的这张表未实现）",
+          "status": "planned"
         },
         "size": {
           "type": "int",
@@ -1089,6 +1300,13 @@
           "min": 0,
           "max": 200,
           "desc": "灯珠直径（0 = 按控件尺寸取小者）"
+        },
+        "brightness": {
+          "type": "int",
+          "default": 255,
+          "min": 0,
+          "max": 255,
+          "desc": "亮度（0 = 全暗，255 = 灯色原样）"
         }
       },
       "bind": [
@@ -1442,6 +1660,13 @@
           "type": "color",
           "default": "#E6EDF3",
           "desc": "文字颜色"
+        },
+        "selected": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 31,
+          "desc": "静态选项的初始选中项下标（options_tag 给定时由变量当前值决定，本键不参与）"
         }
       },
       "bind": [
@@ -1578,8 +1803,18 @@
       "requires": "table",
       "status": "done",
       "props": {
-        "row_h": {"type": "int", "default": 0, "min": 0, "max": 200, "desc": "固定行高（0 = 按控件高度等分）"},
-        "col_w": {"type": "array", "default": null, "desc": "各列宽度数组（个数须等于 cols；缺省等分）"},
+        "row_h": {
+          "type": "int",
+          "default": 0,
+          "min": 0,
+          "max": 200,
+          "desc": "固定行高（0 = 按控件高度等分）"
+        },
+        "col_w": {
+          "type": "array",
+          "default": null,
+          "desc": "各列宽度数组（个数须等于 cols；缺省等分）"
+        },
         "rows": {
           "type": "int",
           "default": 3,
@@ -1666,6 +1901,15 @@
             "v"
           ],
           "desc": "方向"
+        },
+        "flow_dir": {
+          "type": "enum",
+          "default": "forward",
+          "enum": [
+            "forward",
+            "reverse"
+          ],
+          "desc": "流动方向（与 direction 叠加：h 时 forward 从左到右）"
         },
         "wall": {
           "type": "float",
@@ -2451,6 +2695,11 @@
           "min": 10,
           "max": 32,
           "desc": "字号"
+        },
+        "color": {
+          "type": "color",
+          "default": "#E6EDF3",
+          "desc": "文字颜色"
         }
       },
       "bind": [
@@ -2795,7 +3044,16 @@
       "group": "数据",
       "requires": "widgets_ext",
       "props": {
-        "valign": {"type": "enum", "default": "top", "enum": ["top", "middle", "bottom"], "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"},
+        "valign": {
+          "type": "enum",
+          "default": "top",
+          "enum": [
+            "top",
+            "middle",
+            "bottom"
+          ],
+          "desc": "垂直对齐（LVGL 只管水平对齐，垂直靠上内边距推）"
+        },
         "max_len": {
           "type": "int",
           "default": 32,
@@ -2971,9 +3229,14 @@
       ],
       "desc": "确认报警：给规则 id 或组名，都省略 = 全部"
     },
-
-    "shelve_alarm": {"status": "done", "params": ["alarm|group", "minutes"],
-      "desc": "搁置报警：alarm=规则 id（省略=全部活动报警），minutes 1..480；到期自动恢复"},
+    "shelve_alarm": {
+      "status": "done",
+      "params": [
+        "alarm|group",
+        "minutes"
+      ],
+      "desc": "搁置报警：alarm=规则 id（省略=全部活动报警），minutes 1..480；到期自动恢复"
+    },
     "load_recipe": {
       "status": "done",
       "requires": "recipe",

@@ -34,9 +34,9 @@ public partial class PropertyPanelView
         any |= SetRow(RowTextColor, AppearanceSupport.HasTextColor(type));
         any |= SetRow(RowFontSize, AppearanceSupport.HasFontSize(type));
 
-        // 对齐：水平与垂直同一批类型
+        // 对齐：水平与垂直同一批类型；输入框只有水平（build_input 不读 valign）
         var hasAlign = AppearanceSupport.HasTextAlign(type);
-        any |= SetRow(RowTextAlign, hasAlign);
+        any |= SetRow(RowTextAlign, hasAlign || AppearanceSupport.HasInputAlignOnly(type));
         any |= SetRow(RowTextVAlign, hasAlign);
 
         // 字体族：导出器只写 font_size（SetFont），从不读 FontFamily ⇒ 全类型隐藏

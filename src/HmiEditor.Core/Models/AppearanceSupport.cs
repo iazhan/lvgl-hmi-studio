@@ -50,25 +50,28 @@ public static class AppearanceSupport
         or HmiControlType.Screen or HmiControlType.Svg or HmiControlType.Keyboard);
 
     /// <summary>
-    /// 文字色（<c>props.color</c>）会被运行时读的类型。combobox / input / table /
-    /// message 的文字色在各自 build 里硬编码，改不动。
+    /// 文字色（<c>props.color</c>）会被运行时读的类型。input / table / message 的文字色
+    /// 在各自 build 里硬编码（契约里也没有这几个键），改不动。
     /// </summary>
     public static bool HasTextColor(HmiControlType type) => type is HmiControlType.Label
         or HmiControlType.Value or HmiControlType.Button or HmiControlType.CheckBox
         or HmiControlType.EnumText or HmiControlType.AsciiDisplay
-        or HmiControlType.AlarmBar or HmiControlType.Led;
+        or HmiControlType.AlarmBar or HmiControlType.Led or HmiControlType.Dropdown;
 
     /// <summary>水平/垂直对齐：运行时只有这几类走 apply_text_style / apply_text_valign。</summary>
     public static bool HasTextAlign(HmiControlType type) => type is HmiControlType.Label
         or HmiControlType.Value or HmiControlType.EnumText
         or HmiControlType.AsciiDisplay or HmiControlType.Message;
 
+    /// <summary>水平对齐、没有垂直对齐的输入框（build_input 只认 align）。</summary>
+    public static bool HasInputAlignOnly(HmiControlType type) => type is HmiControlType.TextArea;
+
     /// <summary>字号（<c>font_size</c>）会被运行时按类型取 ui_font 的类型。</summary>
     public static bool HasFontSize(HmiControlType type) => type is HmiControlType.Label
         or HmiControlType.Value or HmiControlType.Button or HmiControlType.CheckBox
         or HmiControlType.TextArea or HmiControlType.EnumText
         or HmiControlType.AsciiDisplay or HmiControlType.AlarmBar
-        or HmiControlType.AlarmList or HmiControlType.Roller
+        or HmiControlType.AlarmList or HmiControlType.Roller or HmiControlType.Dropdown
         or HmiControlType.Table or HmiControlType.HistoryTable
         or HmiControlType.RecipeTable or HmiControlType.HistoryCurve
         or HmiControlType.RealtimeCurve or HmiControlType.XyCurve;

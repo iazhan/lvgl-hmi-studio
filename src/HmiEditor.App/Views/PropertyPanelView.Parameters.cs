@@ -112,9 +112,6 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblStepValue, StepValueBox, true);
-                SetParamRow(LblValueMode, ValueModeCombo, true);
-                SetParamRow(LblShowTicks, ShowTicksCheck, true);
-                SetParamRow(LblShowPointer, ShowPointerCheck, true);
                 break;
             case HmiControlType.Switch:
                 SetParamRow(LblSwitchOn, SwitchColorOnBox, true);
@@ -125,12 +122,8 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.Bar:
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
-                SetParamRow(LblValueMode, ValueModeCombo, true);
-                SetParamRow(LblShowTicks, ShowTicksCheck, true);
-                SetParamRow(LblShowPointer, ShowPointerCheck, true);
                 // 批次 1b
                 SetParamRow(LblBarDirection, BarDirectionCombo, true);
-                SetParamRow(LblBarRanges, BarRangesBox, true);
                 SetParamRow(LblBarPercent, BarShowPercentCheck, true);
                 DetailParamExpander.IsVisible = true;
                 break;
@@ -202,17 +195,15 @@ public partial class PropertyPanelView : UserControl
                 DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Line:
-                SetParamRow(LblLineCap, LineCapCombo, true);
+                // 没有专属行：细线图元是"填充的窄矩形"，没有端点样式可配（LineCap 不导出）
                 break;
             case HmiControlType.Keyboard:
                 SetParamRow(LblKeyboardMode, KeyboardModeCombo, true);
                 break;
             // I7: 过程图形控件
             case HmiControlType.Tank:
-                SetParamRow(LblMinValue, MinValueBox, true);
-                SetParamRow(LblMaxValue, MaxValueBox, true);
-                SetParamRow(LblTankShowScale, TankShowScaleCheck, true);
-                SetParamRow(LblTankTickCount, TankTickCountBox, true);
+                // 罐形图元没有液位比例，量程/刻度/读数都没有落点（运行时 tank 只有
+                // wall/flare/top 三个几何参数），这四行一律不显示。
                 break;
             case HmiControlType.Chart:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -262,9 +253,9 @@ public partial class PropertyPanelView : UserControl
                 break;
             // chenge-runtime 目标新增
             case HmiControlType.Value:
+                // 值显示是只读的：量程由绑定变量的 min/max 决定，导出器也不写，
+                // 面板上不再显示「量程下限/上限」。
                 SetParamRow(LblUnit, UnitBox, true);
-                SetParamRow(LblMinValue, MinValueBox, true);
-                SetParamRow(LblMaxValue, MaxValueBox, true);
                 break;
             case HmiControlType.AlarmBar:
                 SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, true);

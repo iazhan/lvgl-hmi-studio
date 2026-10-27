@@ -96,6 +96,17 @@ public class PropertyPanelWiringTests
         ["AlarmScrollMsBox"] = "报警条滚动间隔：夹具里还没有 AlarmBar 类型",
         ["AlarmScrollCharsBox"] = "报警条滚动步长：同上",
         ["ShapeKindCombo"] = "通用图元的种类下拉：夹具里还没有 Shape 类型",
+        // 以下六项**面板已不再显示**（对应的键运行时没有实现，面板留着就是\"配了也没用\"）：
+        // 按值换色只实现了 bind[kind=ranges]，而编辑器没有区间→变量的模型；滑块/进度的
+        // 刻度与指针、罐形的量程/刻度在目标类型上都没有落点。控件仍在 axaml 里（删行要动
+        // 网格行号，容易踩 PropertyPanelLayoutTests 的三条布局坑），但任何类型都不会把它
+        // 显示出来，所以枚举驱动永远够不着。
+        ["GaugeRangesBox"] = "面板不再显示：按值换色未实现（运行时只认 bind[kind=ranges]）",
+        ["LampRangesBox"] = "面板不再显示：同上",
+        ["ShowPointerCheck"] = "面板不再显示：滑块/进度条没有指针可画",
+        ["ShowTicksCheck"] = "面板不再显示：滑块/进度条的刻度没有落点",
+        ["TankShowScaleCheck"] = "面板不再显示：罐形图元没有液位比例",
+        ["TankTickCountBox"] = "面板不再显示：同上",
         ["AsciiEncodingCombo"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["AsciiMaxLenBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["ChartKindCombo"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",

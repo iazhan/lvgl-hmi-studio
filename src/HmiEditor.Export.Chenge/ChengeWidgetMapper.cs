@@ -63,6 +63,11 @@ internal sealed class ChengeWidgetMapper
                     props["font_style"] = control.LabelFontStyle!.Trim().ToLowerInvariant();
                 if (control.LabelLetterSpacing > 0) props["letter_spacing"] = Clamp(control.LabelLetterSpacing, 1, 32);
                 if (control.LabelLineSpacing > 0) props["line_spacing"] = Clamp(control.LabelLineSpacing, 1, 64);
+                // 超长文字的排法（契约 label.long_mode）：面板那五档一一对应运行时的
+                // LV_LABEL_LONG_*。wrap 是运行时缺省，不写。
+                if (!string.IsNullOrWhiteSpace(control.LabelLongMode) &&
+                    LongModeOf(control.LabelLongMode) is { } longMode)
+                    props["long_mode"] = longMode;
                 // 底色/描边/圆角：运行时 apply_box_style 会读（默认透明，配了才画）。
                 // 不导出的话，编辑器里设的底色只在 C# 画布可见，位图里永远是透明。
                 AddCommonBox(props, control, where);
@@ -70,8 +75,14 @@ internal sealed class ChengeWidgetMapper
 
             case HmiControlType.Value:
                 props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
-                var unit = string.IsNullOrWhiteSpace(control.Unit) ? control.ValueSuffix : control.Unit;
-                if (!string.IsNullOrWhiteSpace(unit)) props["unit"] = unit.Trim();
+                // 单位 / 前缀 / 后缀是三样东西，各有各的键：运行时的拼法是
+                // 「前缀 + 数值 +（空格）单位 + 后缀」。以前把「后缀」当单位兜底，
+                // 面板上填「%」得到的是「60 %」而不是「60%」。
+                if (!string.IsNullOrWhiteSpace(control.Unit)) props["unit"] = control.Unit.Trim();
+                if (!string.IsNullOrWhiteSpace(control.ValuePrefix))
+                    props["prefix"] = control.ValuePrefix.Trim();
+                if (!string.IsNullOrWhiteSpace(control.ValueSuffix))
+                    props["suffix"] = control.ValueSuffix.Trim();
                 props["align"] = Align(control.TextAlign);
                 SetFont(props, control, DefaultFont(20));
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
@@ -113,6 +124,8 @@ internal sealed class ChengeWidgetMapper
                 props["size"] = control.LampSize > 0
                     ? Clamp(control.LampSize, 4, 400)
                     : (int)Math.Round(Math.Min(control.Width, control.Height));
+                // 面板的「亮度」必须写出去：缺键时运行时按 255 画，面板显示 128 就对不上
+                props["brightness"] = Clamp(control.Brightness, 0, 255);
                 if (ParseRanges(control.LampRanges, where) is { } lampRanges) props["ranges"] = lampRanges;
                 break;
 
@@ -184,9 +197,9 @@ internal sealed class ChengeWidgetMapper
                 props["options"] = optionArr;
                 SetFont(props, control, DefaultFont(16));
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
+                // 初始选中项（契约 combobox.selected）：0 是缺省，不写；越界钳到选项数
                 if (control.SelectedIndex > 0)
-                    _issues.Warn("combobox.selected", where,
-                        "下拉框的初始选中项无法导出：运行时读 props.selected，但 spec/widget-schema.json 的 combobox 没有该属性（等价于写了会整页拒绝）。用 options_tag 绑变量来定选中项");
+                    props["selected"] = Clamp(control.SelectedIndex, 0, options.Length - 1);
                 break;
 
             case HmiControlType.TextArea:
@@ -294,6 +307,9 @@ internal sealed class ChengeWidgetMapper
             case HmiControlType.Pipe:
                 props["direction"] = string.Equals(control.PipeDirection, "Vertical", StringComparison.OrdinalIgnoreCase)
                     ? "v" : "h";
+                // 流动方向（契约 pipe.flow_dir）：forward 是缺省，不写
+                if (string.Equals(control.PipeFlowDirection, "Reverse", StringComparison.OrdinalIgnoreCase))
+                    props["flow_dir"] = "reverse";
                 props["wall"] = Math.Round(Math.Clamp(control.PipeWall is >= 0.05 and <= 0.45 ? control.PipeWall : 0.2, 0.05, 0.45), 3);
                 props["color"] = _colors.ResolveOr(control.IndicatorColor ?? control.BgColor, "#4EA1FF", where);
                 if (!string.IsNullOrWhiteSpace(control.PipeChannelColor) &&
@@ -811,6 +827,18 @@ internal sealed class ChengeWidgetMapper
         SetFont(props, control, DefaultFont(14), 32);
 
         var cells = new JsonArray();
+        // 表头文字（面板「表头」那行，逗号分隔）写成第 0 行的静态单元格。以前只写
+        // 布尔 header，表头文字整段丢掉 —— 表头有底色、有分隔线，但一个字都没有。
+        // 先写表头、后写用户单元格，同格以用户在单元格编辑器里填的为准。
+        if (!string.IsNullOrWhiteSpace(control.HeaderTexts))
+        {
+            var headers = control.HeaderTexts.Split(',', StringSplitOptions.TrimEntries);
+            for (var c = 0; c < headers.Length && c < cols; c++)
+            {
+                if (headers[c].Length == 0) continue;
+                cells.Add(new JsonObject { ["r"] = 0, ["c"] = c, ["text"] = headers[c] });
+            }
+        }
         foreach (var cell in control.Cells ?? new List<TableCellData>())
         {
             if (cell.Row < 0 || cell.Row >= rows || cell.Col < 0 || cell.Col >= cols)
@@ -1419,9 +1447,12 @@ internal sealed class ChengeWidgetMapper
             {
                 // 带前后缀的文本用占位符（运行时按变量值替换），不再单发 bind——
                 // 两者同时存在会让 bind 的结果把前后缀整段盖掉。
-                if (!string.IsNullOrEmpty(control.ValuePrefix) || !string.IsNullOrEmpty(control.ValueSuffix))
+                // value 控件例外：它自己的 prefix/suffix/unit 键已经在 props 里，
+                // 运行时会拼「前缀 + 数值 + 单位 + 后缀」，再折成占位符会拼两遍。
+                if (control.Type != HmiControlType.Value &&
+                    (!string.IsNullOrEmpty(control.ValuePrefix) || !string.IsNullOrEmpty(control.ValueSuffix)))
                 {
-                    var fmt = FmtOf(control.ValueDecimalPlaces);
+                    var fmt = FmtForTag(tag.Value, control.ValueDecimalPlaces);
                     widget["props"]!["text"] =
                         $"{control.ValuePrefix}{{tag:{tag.Value}|{fmt}}}{control.ValueSuffix}";
                     continue;
@@ -1433,7 +1464,7 @@ internal sealed class ChengeWidgetMapper
                     bind[prop] = new JsonObject { ["tag"] = tag.Value };
                     continue;
                 }
-                bind[prop] = new JsonObject { ["tag"] = tag.Value, ["kind"] = "fmt", ["fmt"] = FmtOf(control.ValueDecimalPlaces) };
+                bind[prop] = new JsonObject { ["tag"] = tag.Value, ["kind"] = "fmt", ["fmt"] = FmtForTag(tag.Value, control.ValueDecimalPlaces) };
                 continue;
             }
 
@@ -1766,6 +1797,16 @@ internal sealed class ChengeWidgetMapper
         _ => "middle",
     };
 
+    /// <summary>面板的长文模式 → 契约 label.long_mode；wrap 是运行时缺省，返回 null 不写键。</summary>
+    private static string? LongModeOf(string raw) => raw.Trim().ToLowerInvariant() switch
+    {
+        "dots" => "dots",
+        "clip" => "clip",
+        "scroll" => "scroll",
+        "scrollcircular" or "scroll_circular" => "scroll_circular",
+        _ => null,
+    };
+
     private static string? MapBindProperty(string propertyName, HmiControlType type)
     {
         var p = propertyName.Trim().ToLowerInvariant();
@@ -1792,6 +1833,18 @@ internal sealed class ChengeWidgetMapper
     }
 
     private static string FmtOf(int decimals) => decimals < 0 ? "%g" : decimals == 0 ? "%d" : "%." + decimals + "f";
+
+    /// <summary>
+    /// 按变量类型选格式化串。运行时 build 绑定时会拒绝「fmt 含浮点转换、但变量是布尔/
+    /// 窄整数」的绑定（整页建页失败），而面板的小数位默认是 2 —— 值显示控件绑到 i16
+    /// 变量上导出就是 <c>%.2f</c>，板上表现为停在前一页/黑屏。
+    /// </summary>
+    private string FmtForTag(int tag, int decimals)
+    {
+        if (_maps.TypeByTag.TryGetValue(tag, out var type) && type is "i16" or "u16" or "i32" or "u32" or "i64" or "bool")
+            return "%d";
+        return FmtOf(decimals);
+    }
 
     /// <summary>
     /// 输入框该用数字键盘还是文本键盘：看**绑定变量的类型**。

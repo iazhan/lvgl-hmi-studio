@@ -16,8 +16,8 @@ namespace HmiEditor.App.UiTests;
 /// <list type="bullet">
 /// <item><c>font_size</c>：运行时按类型取 <c>ui_font(fs)</c>，combobox / message / tabview
 /// 等硬编码 16 ⇒ 这些类型不显示；</item>
-/// <item><c>align</c>：只有 <c>apply_text_style</c> / <c>apply_text_valign</c> 那几类读
-/// （input 与 combobox 导出器会写，但运行时不读 ⇒ 不显示）；</item>
+/// <item><c>align</c>：只有 <c>apply_text_style</c> / <c>apply_text_valign</c> 那几类读；
+/// 输入框是单独一条（<c>build_input</c> 把 text_align 设在内部 label 上），只有水平、没有垂直；</item>
 /// <item><c>font_family</c>：导出器只写 <c>font_size</c>（<c>SetFont</c>），**从不读字体族** ⇒
 /// 全类型隐藏（此前的名单把它算成"文本类可见"，那是按生成器文本块猜的，不是按消费端）。</item>
 /// </list>
@@ -81,22 +81,23 @@ public class PropertyPanelTextRowsVisibilityTests
                     AssertRow(panel, "RowFontSize", true, type.ToString());
                 }
 
-                // 水平对齐：只有 apply_text_style 那条链上的类型
+                // 水平对齐：apply_text_style 那条链上的类型 + 输入框（build_input 自己读 align）
                 foreach (var type in new[]
                          {
                              HmiControlType.Label, HmiControlType.Value,
                              HmiControlType.EnumText, HmiControlType.AsciiDisplay, HmiControlType.Message,
+                             HmiControlType.TextArea,
                          })
                 {
                     Bind(type);
                     AssertRow(panel, "RowTextAlign", true, type.ToString());
                 }
 
-                // 按钮文字居中固定、input/combobox 导出但运行时不读 ⇒ 对齐行不显示
+                // 按钮文字居中固定、combobox 没有 align 键 ⇒ 对齐行不显示
                 foreach (var type in new[]
                          {
                              HmiControlType.Button, HmiControlType.CheckBox,
-                             HmiControlType.TextArea, HmiControlType.Dropdown,
+                             HmiControlType.Dropdown,
                          })
                 {
                     Bind(type);
