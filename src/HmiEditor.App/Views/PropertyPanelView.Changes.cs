@@ -344,12 +344,12 @@ public partial class PropertyPanelView : UserControl
             if (StretchCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.StretchMode), GetComboTag(StretchCombo), v => _currentControl.StretchMode = v);
             ValidateAndWrite(nameof(HmiControl.Brightness), (int)BrightnessBox.Value, v => _currentControl.Brightness = v);
-            // 显示刻度/指针（仅 Slider/Bar 面板可见时保存；ShowPointer 空值语义=按类型默认，勾选写 true、取消写 false）
+            // 显示刻度（仪表 ticks / 曲线 show_ticks）与显示指针（仪表 style）各行独立判可见：
+            // 曲线只显示刻度那一行，一起写会把它的 ShowPointer 也改掉（多出一条无意义的撤销）
             if (ShowTicksCheck.IsVisible)
-            {
                 ValidateAndWrite(nameof(HmiControl.ShowTicks), ShowTicksCheck.IsChecked ?? false, v => _currentControl.ShowTicks = v);
+            if (ShowPointerCheck.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ShowPointer), ShowPointerCheck.IsChecked ?? false, v => _currentControl.ShowPointer = v);
-            }
             // 旋转/镜像（所有控件通用）
             ValidateAndWrite(nameof(HmiControl.Rotation), RotationBox.Value, v => _currentControl.Rotation = v);
             ValidateAndWrite(nameof(HmiControl.RotationDirection), GetComboTag(RotationDirCombo), v => _currentControl.RotationDirection = v);

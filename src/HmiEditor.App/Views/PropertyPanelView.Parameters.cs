@@ -355,7 +355,7 @@ public partial class PropertyPanelView : UserControl
         CgTrendGroupBox.Text = control.TrendGroup ?? "";
         CgSpanMinBox.Value = control.SpanMin;
         CgCurveVarsBox.Text = control.CurveVariableIds ?? "";
-        FillDetail1aFields(control);
+        FillGaugeLampButtonFields(control);
         SwitchColorOnBox.Text = control.SwitchColorOn ?? "";
         SwitchColorOffBox.Text = control.SwitchColorOff ?? "";
         SwitchKnobColorBox.Text = control.SwitchKnobColor ?? "";

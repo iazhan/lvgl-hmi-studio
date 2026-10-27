@@ -211,9 +211,76 @@ public class NewControlDefaultsExportTests : IDisposable
         Assert.DoesNotContain("加载失败", log);
     }
 
+    /// <summary>
+    /// 曲线刻度：勾上必须导出 <c>show_ticks=true</c>（契约缺省也是 true），不勾是 false；
+    /// 仪表同一个复选框驱动的是 <c>ticks</c>（刻度线条数）。
+    /// 此前这一行对任何控件都不显示，曲线的 show_ticks 恒 false —— 板上永远没有刻度线。
+    /// </summary>
+    [Fact]
+    public void ShowTicks_ReachesTheExport()
+    {
+        var on = ExportFresh(HmiControlType.RealtimeCurve, c =>
+        {
+            c.CurveVariableIds = "v_temp";
+            c.ShowTicks = true;
+        });
+        Assert.True(on.GetProperty("show_ticks").GetBoolean());
+
+        var off = ExportFresh(HmiControlType.RealtimeCurve, c => c.CurveVariableIds = "v_temp");
+        Assert.False(off.GetProperty("show_ticks").GetBoolean());
+
+        var gauge = ExportFresh(HmiControlType.Gauge, c =>
+        {
+            c.ShowTicks = true;
+            c.MajorTickCount = 6;
+        });
+        Assert.Equal(6, gauge.GetProperty("ticks").GetInt32());
+    }
+
+    /// <summary>勾上刻度后，位图必须真的多出刻度线（不是只有 JSON 变了）。</summary>
+    [Fact]
+    public void CurveShowTicks_ChangesTheBitmap()
+    {
+        var (offShot, offLog) = ShootFresh(HmiControlType.RealtimeCurve,
+            c => { c.CurveVariableIds = "v_temp"; c.ShowTicks = false; }, 400, 180);
+        if (offShot.Length == 0) return;      // 没有 CHENGE_RUNTIME_DIR：跳过
+
+        var (onShot, _) = ShootFresh(HmiControlType.RealtimeCurve,
+            c => { c.CurveVariableIds = "v_temp"; c.ShowTicks = true; }, 400, 180, "ticks");
+
+        Assert.True(File.Exists(offShot) && File.Exists(onShot), $"没有截图\n{offLog}");
+        // 刻度是发丝线：Y 轴每条 5×1、X 轴每条 1×4，默认 6+6 条 ≈ 50 像素（实测 45），
+        // 所以门槛按"几十像素"设，不能按大字号的量级要求
+        var changed = CountDiff(offShot, onShot, 40, 60, 400, 180);
+        Assert.True(changed > 25, $"勾上刻度只改了 {changed} 个像素（期望 >25：刻度线）");
+    }
+
+    /// <summary>两张 32 位 BMP 在给定矩形内逐像素比较，返回不同像素数。</summary>
+    private static int CountDiff(string aPath, string bPath, int x, int y, int w, int h)
+    {
+        var a = File.ReadAllBytes(aPath);
+        var b = File.ReadAllBytes(bPath);
+        var offA = BitConverter.ToInt32(a, 10);
+        var offB = BitConverter.ToInt32(b, 10);
+        var width = BitConverter.ToInt32(a, 18);
+        var height = Math.Abs(BitConverter.ToInt32(a, 22));
+        var bpp = BitConverter.ToInt16(a, 28) / 8;
+        var row = (width * bpp + 3) & ~3;
+
+        var n = 0;
+        for (var yy = y; yy < y + h; yy++)
+        for (var xx = x; xx < x + w; xx++)
+        {
+            var i = offA + (height - 1 - yy) * row + xx * bpp;
+            var j = offB + (height - 1 - yy) * row + xx * bpp;
+            if (a[i] != b[j] || a[i + 1] != b[j + 1] || a[i + 2] != b[j + 2]) n++;
+        }
+        return n;
+    }
+
     /// <summary>导出一页只含一个新建控件、跑一次宿主运行时截图，返回 (截图, 运行时日志)。</summary>
     private (string Shot, string Log) ShootFresh(HmiControlType type, Action<HmiControl>? tune,
-        int width, int height)
+        int width, int height, string tag = "")
     {
         var runtimeDir = Environment.GetEnvironmentVariable("CHENGE_RUNTIME_DIR") ?? "";
         var binary = runtimeDir.Length == 0 ? "" : Path.Combine(runtimeDir, "chenge-runtime");
@@ -234,7 +301,7 @@ public class NewControlDefaultsExportTests : IDisposable
         control.Height = height;
         project.Screens[0].Controls.Add(control);
 
-        var dir = Path.Combine(_dir, "shoot-" + type);
+        var dir = Path.Combine(_dir, "shoot-" + type + (tag.Length > 0 ? "-" + tag : ""));
         Directory.CreateDirectory(dir);
         var result = ExportFixture.Export(project, dir);
         Assert.True(result.Success, string.Join("\n", result.Issues.Items));

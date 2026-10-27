@@ -3,8 +3,10 @@ namespace HmiEditor.App.Views;
 using HmiEditor.Core.Models;
 
 /// <summary>
-/// 属性面板里**批次 1a**的「控件细节」行（仪表 / 指示灯 / 按钮）。
-/// 抽出来的原因同曲线、报警、批次 5：<c>Parameters.cs</c> 有 500 行上限。
+/// 属性面板「控件功能参数」里**仪表 / 指示灯 / 按钮**专属的行，以及它们的回填。
+/// 拆文件的唯一原因：<c>Parameters.cs</c> 有 500 行上限（与曲线、报警、内容型同规矩）。
+/// 行按控件类型整组显隐 —— 隐藏的行不占 RowSpacing，但必须显式复位，否则切控件类型时
+/// 上一类的行会留在下一个控件上。
 /// </summary>
 public partial class PropertyPanelView
 {
@@ -16,6 +18,10 @@ public partial class PropertyPanelView
         SetParamRow(LblGaugeNeedleWidth, GaugeNeedleWidthBox, visible);
         SetParamRow(LblGaugeCenterRadius, GaugeCenterRadiusBox, visible);
         SetParamRow(LblGaugeShowValue, GaugeShowValueCheck, visible);
+        // 显示刻度 / 显示指针：仪表的两组键都由它们驱动（ticks / style）。这两行以前
+        // 对**任何**控件都不显示，"刻度数"那个数字框因此永远只是个孤立的数
+        SetParamRow(LblShowTicks, ShowTicksCheck, visible);
+        SetParamRow(LblShowPointer, ShowPointerCheck, visible);
         // 按值换色（GaugeRanges / LampRanges / BarRanges）不显示：运行时只实现了
         // bind[kind=ranges] 这条路，而编辑器没有"区间 → 变量"的模型可导出，写了也没人读。
         SetParamRow(LblGaugeRanges, GaugeRangesBox, false);
@@ -38,8 +44,8 @@ public partial class PropertyPanelView
         SetParamRow(LblBtnOffStyle, OffStyleCombo, visible);
     }
 
-    /// <summary>批次 1a 的字段回填。</summary>
-    private void FillDetail1aFields(HmiControl control)
+    /// <summary>仪表 / 指示灯 / 按钮那些行的回填（值与显隐无关，一律填）。</summary>
+    private void FillGaugeLampButtonFields(HmiControl control)
     {
         GaugeArcWidthBox.Value = control.GaugeArcWidth;
         GaugeTickLenBox.Value = control.GaugeTickLen;

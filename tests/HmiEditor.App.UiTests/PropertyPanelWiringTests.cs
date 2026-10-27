@@ -103,8 +103,8 @@ public class PropertyPanelWiringTests
         // 显示出来，所以枚举驱动永远够不着。
         ["GaugeRangesBox"] = "面板不再显示：按值换色未实现（运行时只认 bind[kind=ranges]）",
         ["LampRangesBox"] = "面板不再显示：同上",
-        ["ShowPointerCheck"] = "面板不再显示：滑块/进度条没有指针可画",
-        ["ShowTicksCheck"] = "面板不再显示：滑块/进度条的刻度没有落点",
+        // ShowTicksCheck / ShowPointerCheck 已改为挂在仪表与曲线上（运行时读 ticks /
+        // style / show_ticks），由 Gauge 场景驱动，不再豁免。
         ["TankShowScaleCheck"] = "面板不再显示：罐形图元没有液位比例",
         ["TankTickCountBox"] = "面板不再显示：同上",
         ["AsciiEncodingCombo"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
