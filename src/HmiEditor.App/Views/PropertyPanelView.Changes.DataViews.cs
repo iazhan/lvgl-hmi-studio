@@ -3,12 +3,12 @@ namespace HmiEditor.App.Views;
 using HmiEditor.Core.Models;
 
 /// <summary>
-/// 批次 5（图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示）的写回。
+/// 数据类控件（图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示）的写回。
 /// 抽出来的原因：<c>Changes.cs</c> 有 500 行上限。
 /// </summary>
 public partial class PropertyPanelView
 {
-    private void WriteBatch5Fields()
+    private void WriteDataViewFields()
     {
         if (ChartKindCombo.IsVisible)
             ValidateAndWrite(nameof(HmiControl.ChartKind), GetComboTag(ChartKindCombo), v => _currentControl.ChartKind = v);

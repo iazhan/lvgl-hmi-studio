@@ -59,7 +59,7 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblPipeWall, PipeWallBox, false);
         SetParamRow(LblPipeChannel, PipeChannelColorBox, false);
         SetParamRow(LblShapeKind, ShapeKindCombo, false);
-        // 批次 5（行太多，挪到 PropertyPanelView.Parameters.Batch5.cs）
+        // 数据类控件（行太多，挪到 PropertyPanelView.Parameters.DataViews.cs）
         ShowChartRows(false);
         ShowXyRows(false);
         ShowHistTableRows(false);
@@ -376,7 +376,7 @@ public partial class PropertyPanelView : UserControl
         PipeWallBox.Value = control.PipeWall;
         PipeChannelColorBox.Text = control.PipeChannelColor ?? "";
         SelectComboByTag(ShapeKindCombo, control.ShapeKind, 0);
-        FillBatch5Fields(control);
+        FillDataViewFields(control);
         FillMediaFields(control);
         FillContentFields(control);
 

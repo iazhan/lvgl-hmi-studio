@@ -368,10 +368,10 @@ public class ChengeExportTests : IDisposable
     }
 
     /// <summary>
-    /// 批次 5：图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示的核心属性要落进 JSON。
+    /// 数据类控件（图表 / XY 曲线 / 历史表 / 配方表 / ASCII 显示）的核心属性要落进 JSON。
     /// </summary>
     [Fact]
-    public void Export_Batch5Widgets_ReachThePageJson()
+    public void Export_DataViewWidgets_ReachThePageJson()
     {
         var result = ExportFixture.Export(ExportFixture.Build(), _dir);
         Assert.True(result.Success, string.Join("\n", result.Issues.Items));
