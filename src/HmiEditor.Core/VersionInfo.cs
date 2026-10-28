@@ -10,7 +10,7 @@ public static class VersionInfo
     /// 版本号：**major 固定 2**，只递增后两位（2.x.y）。
     /// 新增控件/属性属于 minor（2.x.0），修缺陷属于 patch（2.x.y）。
     /// </summary>
-    public const string Version = "2.23.0";
+    public const string Version = "2.23.1";
 
     /// <summary>完整的版本显示字符串</summary>
     public const string DisplayVersion = $"HMI Editor v{Version}";

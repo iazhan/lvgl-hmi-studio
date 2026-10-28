@@ -29,6 +29,15 @@ class Program
             return;
         }
 
+        // 隔离宿主自检（Windows 上唯一可用的后端）：不启动 Avalonia，直接在控制台
+        // 把"找得到运行时 → 起得来 → 出得了帧 → 点得动"四步逐条判掉。
+        // 用户在别的机器上出问题时，这一条命令的输出就是全部线索。
+        if (args.Length > 0 && args[0] == "--selftest-host")
+        {
+            Environment.ExitCode = RunHostSelftest(args);
+            return;
+        }
+
         try
         {
             // Avalonia 12.x 在 Linux/Wayland 下弹窗定位异常的修复：
@@ -222,6 +231,105 @@ class Program
     /// 走 <see cref="AppPaths.TempSubdir"/>：应用数据根只允许 AppPaths 解析。
     /// </summary>
     private static string AppPaths_ForSelftest() => AppPaths.TempSubdir("chenge-embed-selftest");
+
+    /// <summary>
+    /// `--selftest-host [工程目录]`：隔离宿主的无界面自检。
+    ///
+    /// <para>不带参数就用**随包示例工程** <c>&lt;运行时目录&gt;/sample</c>，所以在用户机上
+    /// 只需要一条命令，不用先找工程、也不用先配运行时目录。四步各自给结论：
+    /// ① 定位运行时（找不到就列出找过的目录）② 起进程并等到首帧
+    /// ③ 取一帧看是否真有像素 ④ 注一次点击再看帧序号是否推进。</para>
+    /// </summary>
+    private static int RunHostSelftest(string[] args)
+    {
+        var runtime = ChengeExportService.LocateRuntime(null);
+        if (runtime == null)
+        {
+            Console.WriteLine("FAIL: 找不到运行时。已找过：");
+            foreach (var dir in ChengeExportService.RuntimeSearchDirs(null))
+                Console.WriteLine("  · " + dir);
+            return 2;
+        }
+
+        // 自检要的是**隔离宿主**（吃共享内存 + stdin 协议），不是截图用的进程版：
+        // 同一目录里两个都在时，按 BinaryPath 拿到的可能是进程版 —— 它会正常进主循环，
+        // 只是永远不建共享内存，现象是"等不到首帧"（这里踩过一次）。
+        if (!ChengeProcessSession.TryLocate(runtime.RuntimeDir, out var hostExe))
+        {
+            Console.WriteLine($"FAIL: {runtime.RuntimeDir} 下没有 {ChengeProcessSession.ExecutableName}");
+            return 2;
+        }
+        Console.WriteLine($"运行时：{hostExe}");
+        var projectDir = args.Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal))
+                         ?? Path.Combine(runtime.RuntimeDir, "sample");
+        if (!Directory.Exists(projectDir))
+        {
+            Console.WriteLine($"FAIL: 工程目录不存在：{projectDir}（也可以自己给一个导出过的工程目录）");
+            return 2;
+        }
+        Console.WriteLine($"工程  ：{projectDir}");
+
+        var dataDir = AppPaths.TempSubdir("chenge-host-selftest");
+        using var proc = new ChengeProcessSession(hostExe, dataDir);
+        if (!proc.Open(projectDir))
+        {
+            Console.WriteLine($"FAIL: 宿主打开失败：{proc.LastError}");
+            Console.WriteLine("宿主日志：\n" + proc.LogTail);
+            return 3;
+        }
+        Console.WriteLine($"通道  ：{proc.Width}x{proc.Height} stride={proc.Stride}");
+
+        // 等首帧：宿主建页在子进程里，慢机器上要几百毫秒
+        var version = proc.FrameVersion;
+        var deadline = Environment.TickCount64 + 8000;
+        while (proc.FrameVersion == 0 && Environment.TickCount64 < deadline) Thread.Sleep(50);
+        if (proc.FrameVersion == 0)
+        {
+            Console.WriteLine("FAIL: 等不到首帧（共享内存一直没更新）");
+            Console.WriteLine("宿主日志：\n" + proc.LogTail);
+            return 4;
+        }
+
+        var buf = new byte[proc.Stride * proc.Height];
+        if (!proc.TryCopyFrame(buf))
+        {
+            Console.WriteLine("FAIL: 读不到共享内存帧");
+            Console.WriteLine("宿主日志：\n" + proc.LogTail);
+            return 5;
+        }
+
+        var step = 4 * 97;
+        var nz = 0;
+        var total = 0;
+        for (var i = 0; i + 2 < buf.Length; i += step, total++)
+            if (buf[i] != 0 || buf[i + 1] != 0 || buf[i + 2] != 0) nz++;
+
+        var lit = (double)nz / Math.Max(total, 1);
+        Console.WriteLine($"首帧  ：非黑 {lit:P1}（{version} → {proc.FrameVersion}）");
+        if (lit < 0.01)
+        {
+            Console.WriteLine("FAIL: 画面几乎全黑 —— 帧是空的（建页失败？字体/资源没读到？）");
+            Console.WriteLine("宿主日志：\n" + proc.LogTail);
+            return 6;
+        }
+
+        // 点一下示例里的按钮（40,110 起 160x48）：按下会改它的按下态 ⇒ 像素变 ⇒ 帧序号推进。
+        // 点空白也能"通"，但像素不变就不会推帧序号（宿主只在画面真变时才发帧），
+        // 那样的"没推进"会让人误判成指针没接上。
+        var before = proc.FrameVersion;
+        proc.Pointer(120, 134, true);
+        Thread.Sleep(200);
+        proc.Pointer(120, 134, false);
+        Thread.Sleep(400);
+        Console.WriteLine($"点击  ：帧序号 {before} → {proc.FrameVersion}"
+                          + (proc.FrameVersion > before
+                              ? "（推进了 —— stdin 指针通道通）"
+                              : "（没推进：指针没接上，或这个位置没有会变的控件）"));
+
+        Console.WriteLine("宿主日志（尾部）：\n" + proc.LogTail);
+        Console.WriteLine("OK: 隔离宿主可用（定位 / 起进程 / 出帧 / 指针 四步都过了）");
+        return 0;
+    }
 
     /// <summary>把一个已导出的工程目录读成"相对路径 → 字节"，模拟编辑器内存里的产物。</summary>
     private static Dictionary<string, byte[]> ReadProjectFiles(string dir)

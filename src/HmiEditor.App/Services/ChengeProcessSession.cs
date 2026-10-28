@@ -231,12 +231,6 @@ public sealed class ChengeProcessSession : IChengePreviewSession
 
     private bool StartHost(bool stdinProject, string? projectDir)
     {
-        if (OperatingSystem.IsWindows())
-        {
-            LastError = AppLocalization.Service["live.err.windows_unsupported"];
-            return false;
-        }
-
         try
         {
             var psi = new ProcessStartInfo(_exePath)
@@ -345,7 +339,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             Thread.Sleep(50);
         }
 
-        LastError = AppLocalization.Service["live.err.shm_timeout"];
+        LastError = AppLocalization.Service.Format("live.err.shm_timeout", LastLog());
         return false;
     }
 
