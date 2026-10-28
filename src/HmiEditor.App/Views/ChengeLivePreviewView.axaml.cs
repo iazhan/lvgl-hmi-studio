@@ -50,7 +50,10 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private readonly List<string> _watchNames = new();
     private long _tagMark;
     private long _renderCount;
+    private long _pumpCount;      /* 诊断：出帧泵每秒跑了几拍 */
+    private long _verCount;       /* 诊断：宿主每秒推进了几帧 */
     private long _uiTicks;
+    private long _fpsWarnedMs;    /* 帧率告警的节流时刻（每 5s 最多一行） */
     private long _fpsMark = Environment.TickCount64;
 
     // ── 心跳（见 Services/PreviewHealth.cs）──
@@ -233,7 +236,11 @@ public partial class ChengeLivePreviewView : ChromeWindow
             _frozenLog = "";
 
             CollectWatchNames();
-            _timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+            // 优先级用 Normal 而不是 Render：这个 Tick 自己会 InvalidateVisual（排出一次渲染），
+            // 挂在 Render 优先级上等于和"它自己排出来的渲染"抢同一个优先级档 —— 连续出帧时
+            // 会被挤到后面，表现是"管道自己在动时帧率极低（2~6），点一下画面反而快了"
+            // （点击是输入事件，顺带把积压的 Tick 一起放行）。出帧泵必须在渲染之前跑。
+            _timer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = TimeSpan.FromMilliseconds(16) };
             _timer.Tick += (_, _) => Pump();
             _timer.Start();
         }
@@ -254,18 +261,25 @@ public partial class ChengeLivePreviewView : ChromeWindow
         if (_session == null || _bitmap == null) return;
 
         var nowMs = Environment.TickCount64;
+        _pumpCount++;                       // 诊断：出帧泵自己跑了多少拍（与"有没有新帧"无关）
         var version = _session.FrameVersion;
         if (version == _lastVersion)
         {
             CheckHealth(nowMs);
+            ReportFps(nowMs);               // 没有新帧也要每秒报一次，否则读数会冻在旧值
             return;
         }
+        _verCount++;                        // 诊断：宿主真的推进了多少帧
         _lastVersion = version;
         _lastFrameChangeMs = nowMs;
 
         // 量"贴图 + 失效"这一段：帧率上不去时先看是这段贵，还是 tick 线程给不出帧。
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        if (!_session.TryCopyFrame(_frame)) return;
+        if (!_session.TryCopyFrame(_frame))
+        {
+            ReportFps(nowMs);
+            return;
+        }
         using (var fb = _bitmap.Lock())
         {
             System.Runtime.InteropServices.Marshal.Copy(_frame, 0, fb.Address, _frame.Length);
@@ -276,33 +290,58 @@ public partial class ChengeLivePreviewView : ChromeWindow
         // 显示**实际刷新的帧率**，不是 tick 频率：tick 一直 60 而画面不动时，
         // 这个数字会掉到 0，正好区分"没渲染"与"渲染了但内容没变"。
         _renderCount++;
-        if (nowMs - _fpsMark >= 1000)
-        {
-            var fps = _renderCount * 1000.0 / (nowMs - _fpsMark);
-            var uiMs = _renderCount == 0
-                ? 0
-                : _uiTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / _renderCount;
-            FpsText.Text = AppLocalization.Service.Format("live.fps",
-                fps.ToString("0.0"), _session.Fps.ToString("0"), uiMs.ToString("0.0"));
-            _renderCount = 0;
-            _uiTicks = 0;
-            _fpsMark = nowMs;
+        ReportFps(nowMs);
+    }
 
-            // 宿主日志：隔离模式下这是唯一能看到运行时说法的窗口
-            // （比如 "keypad: 文本键盘" / "input: 键盘打不开"）。
-            var log = _session.Log;
-            var tail = log.Count == 0
-                ? ""
-                : string.Join("\n", log.Count <= 24 ? log : log.Skip(log.Count - 24));
-            var text = string.IsNullOrEmpty(_warnings) ? tail
-                : string.IsNullOrEmpty(tail) ? _warnings : _warnings + "\n---\n" + tail;
-            if (text != WatchBox.Text)
-            {
-                WatchBox.Text = text;
-                WatchBox.CaretIndex = text.Length;
-            }
-            PumpTags(nowMs);
+    /// <summary>
+    /// 每秒一次把读数刷到界面与日志。
+    /// <para>三个数分工：<c>pump</c> = 出帧泵跑了几拍（定时器有没有被饿死）、
+    /// <c>ver</c> = 宿主推进了几帧（有没有东西在动）、<c>paint</c> = 真正贴图+重绘了几次。
+    /// 三者一比就知道瓶颈在哪：pump 低=UI 线程忙；ver 低=画面本来就静止；
+    /// ver 高而 paint 低=贴图/重绘跟不上。</para>
+    /// </summary>
+    private void ReportFps(long nowMs)
+    {
+        if (nowMs - _fpsMark < 1000) return;
+
+        var span = nowMs - _fpsMark;
+        var fps = _renderCount * 1000.0 / span;
+        var ver = _verCount * 1000.0 / span;
+        var pump = _pumpCount * 1000.0 / span;
+        var uiMs = _renderCount == 0
+            ? 0
+            : _uiTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency / _renderCount;
+        FpsText.Text = AppLocalization.Service.Format("live.fps",
+            fps.ToString("0.0"), _session!.Fps.ToString("0"), uiMs.ToString("0.0"));
+
+        // 帧率偏低时把四个数打进日志（每 5s 最多一行，够定位又不刷屏）。
+        if (fps < 25 && nowMs - _fpsWarnedMs >= 5000)
+        {
+            _fpsWarnedMs = nowMs;
+            Console.WriteLine($"[live] 帧率偏低 paint={fps:0.0}/s ver={ver:0.0}/s " +
+                              $"pump={pump:0.0}/s ui={uiMs:0.0}ms backend={_backend}");
         }
+
+        _renderCount = 0;
+        _verCount = 0;
+        _pumpCount = 0;
+        _uiTicks = 0;
+        _fpsMark = nowMs;
+
+        // 宿主日志：隔离模式下这是唯一能看到运行时说法的窗口
+        // （比如 "keypad: 文本键盘" / "input: 键盘打不开"）。
+        var log = _session!.Log;
+        var tail = log.Count == 0
+            ? ""
+            : string.Join("\n", log.Count <= 24 ? log : log.Skip(log.Count - 24));
+        var text = string.IsNullOrEmpty(_warnings) ? tail
+            : string.IsNullOrEmpty(tail) ? _warnings : _warnings + "\n---\n" + tail;
+        if (text != WatchBox.Text)
+        {
+            WatchBox.Text = text;
+            WatchBox.CaretIndex = text.Length;
+        }
+        PumpTags(nowMs);
     }
 
     /// <summary>

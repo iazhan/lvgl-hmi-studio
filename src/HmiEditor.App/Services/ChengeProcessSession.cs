@@ -272,6 +272,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             _logThread.Start();
             _outThread = new Thread(ReadValues) { IsBackground = true, Name = "chenge-host-tags" };
             _outThread.Start();
+            StartFpsMonitor();
             return true;
         }
         catch (Exception ex)
@@ -334,6 +335,36 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             _stdin!.Write(bytes, 0, bytes.Length);
             _stdin.Flush();
         }
+    }
+
+    /// <summary>
+    /// 宿主实际推进的帧率（按共享内存的 <c>seq</c> 增量算）。
+    /// <para>实时预览据此与"界面真重绘了几次"对照：两者一起看才知道是宿主给不出帧，
+    /// 还是给了帧但界面贴图/重绘跟不上。<c>Fps</c> 以前只有进程内后端会填，
+    /// 隔离后端一直是 0 —— 界面上那个 host 数字因此永远是个 0。</para>
+    /// </summary>
+    private void StartFpsMonitor()
+    {
+        new Thread(() =>
+        {
+            var last = FrameVersion;
+            var lastMs = Environment.TickCount64;
+
+            while (!_disposed && IsOpen)
+            {
+                Thread.Sleep(500);
+                var nowMs = Environment.TickCount64;
+                var version = FrameVersion;
+                var span = nowMs - lastMs;
+
+                if (span < 400) continue;
+                Fps = (version - last) * 1000.0 / span;
+                last = version;
+                lastMs = nowMs;
+            }
+            Fps = 0;
+        })
+        { IsBackground = true, Name = "chenge-host-fps" }.Start();
     }
 
     /// <summary>标准输出只承载变量回报：`V <名字> <值> <质量>`。</summary>
