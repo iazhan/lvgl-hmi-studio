@@ -103,3 +103,6 @@ Avalonia.Headless.BareMinimum.ttf
 
 # 设备树生成物（③：开发机生成、构建机只消费）—— 见 scripts/gen-device-tree.sh
 firmware/t113/generated/screens.c
+
+# 打包产物（tools/publish-win.ps1 / dotnet publish 的输出，可随时重生）
+dist/

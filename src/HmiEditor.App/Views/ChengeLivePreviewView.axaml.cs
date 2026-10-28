@@ -120,7 +120,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
             var runtime = ChengeExportService.LocateRuntime(_settings);
             if (runtime == null)
             {
-                Fail(AppLocalization.Service["chenge.export.runtime_missing"]);
+                Fail(ChengeExportService.RuntimeMissingMessage(_settings));
                 return;
             }
 

@@ -37,6 +37,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     private readonly string _dataDir;
     private readonly string _shmName;
     private readonly string _shmPath;
+    private readonly string _shmMapName;
     private readonly bool _designMode;
     private readonly List<string> _log = new();
     private readonly Dictionary<string, string> _tags = new(StringComparer.Ordinal);
@@ -179,7 +180,11 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         _dataDir = dataDir;
         _designMode = designMode;
         _shmName = "/chenge-preview-" + Guid.NewGuid().ToString("N")[..12];
+        // Linux：POSIX 共享内存落在 /dev/shm 下，客户端按**路径**打开；
+        // Windows：宿主用 CreateFileMapping 建**命名**映射，名字就是去掉前导 '/' 的那串，
+        //          客户端按名字 MemoryMappedFile.OpenExisting 打开。头布局两边完全一致。
         _shmPath = Path.Combine("/dev/shm", _shmName.TrimStart('/'));
+        _shmMapName = _shmName.TrimStart('/');
     }
 
     public static string ExecutableName => OperatingSystem.IsWindows() ? ExeWindows : ExeLinux;
@@ -293,11 +298,29 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 LastError = AppLocalization.Service.Format("live.err.host_exit", _proc.ExitCode.ToString(), LastLog());
                 return false;
             }
-            if (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > _pixelOffset)
+            if (OperatingSystem.IsWindows())
             {
-                _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
-                    MemoryMappedFileAccess.Read);
-                _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                // 命名映射：宿主还没建出来时抛 FileNotFoundException，重试到超时
+                try
+                {
+                    _mmf = MemoryMappedFile.OpenExisting(_shmMapName, MemoryMappedFileRights.Read);
+                    _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                }
+                catch (FileNotFoundException)
+                {
+                    Thread.Sleep(50);
+                    continue;
+                }
+            }
+
+            if (_view != null || (File.Exists(_shmPath) && new FileInfo(_shmPath).Length > _pixelOffset))
+            {
+                if (_view == null)
+                {
+                    _mmf = MemoryMappedFile.CreateFromFile(_shmPath, FileMode.Open, null, 0,
+                        MemoryMappedFileAccess.Read);
+                    _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+                }
                 if (_view.ReadUInt32(0) == FrameMagic)
                 {
                     var version = _view.ReadUInt32(4);
