@@ -897,7 +897,6 @@
       },
       "bind": [
         "text",
-        "value",
         "color",
         "bg_color",
         "visible",
@@ -960,7 +959,7 @@
         }
       },
       "bind": [
-        "value",
+        "text",
         "color",
         "bg_color",
         "visible",
@@ -1078,7 +1077,6 @@
         }
       },
       "bind": [
-        "value",
         "checked",
         "visible",
         "enabled"
@@ -1781,7 +1779,6 @@
         }
       },
       "bind": [
-        "bg_color",
         "visible",
         "enabled",
         "value"

@@ -662,6 +662,8 @@
                                   SelectedIndex="0"
                                   SelectionChanged="OnTargetPropertyChanged">
                             <ComboBoxItem Content="{res:Loc prop.bind.target.value}" Tag="Text"/>
+                            <ComboBoxItem Content="{res:Loc prop.bind.target.numValue}" Tag="Value"/>
+                            <ComboBoxItem Content="{res:Loc prop.bind.target.checked}" Tag="IsChecked"/>
                             <ComboBoxItem Content="{res:Loc prop.bind.target.textColor}" Tag="TextColor"/>
                             <ComboBoxItem Content="{res:Loc prop.bind.target.bgColor}" Tag="BgColor"/>
                             <ComboBoxItem Content="{res:Loc prop.bind.target.visible}" Tag="IsVisible"/>

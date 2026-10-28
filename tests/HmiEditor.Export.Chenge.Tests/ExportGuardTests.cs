@@ -167,6 +167,39 @@ public class ExportGuardTests : IDisposable
     }
 
     /// <summary>
+    /// 进度类控件的 `Value` 绑定必须导出成 `bind.value`。
+    ///
+    /// <para><b>为什么值得一条判据</b>：<c>MapBindProperty</c> 一直认识 <c>Value → value</c>，
+    /// 但属性面板的「目标属性」只有 值/文本（映射成 <c>text</c>）、颜色、可见性 ——
+    /// bar/gauge/knob/slider/弧的数值绑定在界面里根本造不出来。面板现在补了「数值」，
+    /// 这条判据钉住它落到 <c>bind.value</c> 而不是被 <c>bind.not_bindable</c> 丢掉。</para>
+    /// </summary>
+    [Fact]
+    public void Export_BarValueBinding_IsEmittedAsBindValue()
+    {
+        var project = ExportFixture.Build();
+        var tagId = project.VariableManager.Variables[0].Id;
+        project.Screens[0].Controls.Add(new HmiControl
+        {
+            Id = "bar1", Name = "Bar1", Type = HmiControlType.Bar,
+            X = 40, Y = 320, Width = 200, Height = 30,
+            MinValue = 0, MaxValue = 100,
+            VariableBindings =
+            {
+                new VariableBindingData { PropertyName = "Value", VariableId = tagId },
+            },
+        });
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+        Assert.DoesNotContain(result.Issues.Items, i => i.Code is "bind.not_bindable" or "bind.property");
+
+        var bind = FirstOfType("bar").GetProperty("bind");
+        Assert.True(bind.TryGetProperty("value", out var valueBind), "条的数值绑定没有导出成 bind.value");
+        Assert.True(valueBind.GetProperty("tag").GetInt32() >= 0);
+    }
+
+    /// <summary>
     /// 绑到**字符串变量**的文本要走直搬（`{tag}`），不能带 `kind:fmt` + `%.2f`：
     /// 运行时按数值渲染字符串变量会得到 0.00，输入框/标签里看不到真正的文本。
     /// </summary>

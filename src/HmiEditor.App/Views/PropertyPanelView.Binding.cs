@@ -15,6 +15,7 @@ using HmiEditor.App.Views.Editors;
 using HmiEditor.Core.Design;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Services;
+using HmiEditor.Export.Chenge;
 using System.Collections.ObjectModel;
 using System.Linq;
 
@@ -28,6 +29,55 @@ public partial class PropertyPanelView : UserControl
     private const string DefaultBindingPropertyName = "Text";
 
     /// <summary>
+    /// 目标属性下拉的 Tag → 契约里的 bind 键。下拉里有的项不一定对每类控件都成立，
+    /// 由 <see cref="ApplyTargetPropertyFilter"/> 用契约的 <c>bind[]</c> 逐项显隐。
+    ///
+    /// <para><b>为什么要按契约过滤</b>：不支持的组合不会被拦在建页期，而是导出时一条
+    /// <c>bind.not_bindable</c> 警告 + 静默丢掉 —— 面板上照样显示"已绑定"，画布上却什么都不动。
+    /// 尤其是 <c>value</c>：一度只有 <c>Text</c> 一个"值"入口，于是 bar/gauge/knob/slider 的
+    /// 数值绑定在界面里根本造不出来（模型层与导出器早就支持 <c>PropertyName="Value"</c>）。</para>
+    /// </summary>
+    private static readonly (string Tag, string BindProp)[] TargetPropMap =
+    {
+        ("Text", "text"),
+        ("Value", "value"),
+        ("IsChecked", "checked"),
+        ("TextColor", "color"),
+        ("BgColor", "bg_color"),
+        ("IsVisible", "visible"),
+    };
+
+    /// <summary>导出的同一份契约（嵌入副本）：目标属性过滤的唯一依据。</summary>
+    private static readonly Lazy<ChengeSchema> Contract = new(ChengeSchema.Load);
+
+    private static string BindPropOf(object? tag)
+    {
+        var name = tag?.ToString();
+        foreach (var (t, prop) in TargetPropMap)
+            if (string.Equals(t, name, StringComparison.Ordinal)) return prop;
+        return "";
+    }
+
+    /// <summary>
+    /// 按控件类型显隐目标属性项。全隐藏时（契约里没有这个控件，如 SVG）把默认项留着 ——
+    /// 空下拉比"多一项"更难懂。
+    /// </summary>
+    private void ApplyTargetPropertyFilter(HmiControl control)
+    {
+        var contractType = ChengeContractTypes.Of(control.Type);
+        var visible = 0;
+        foreach (var item in TargetPropertyCombo.Items.OfType<ComboBoxItem>())
+        {
+            var prop = BindPropOf(item.Tag);
+            item.IsVisible = contractType != null && prop.Length > 0
+                             && Contract.Value.CanBind(contractType, prop);
+            if (item.IsVisible) visible++;
+        }
+        if (visible == 0 && TargetPropertyCombo.Items.OfType<ComboBoxItem>().FirstOrDefault() is { } first)
+            first.IsVisible = true;
+    }
+
+    /// <summary>
     /// 当前「目标属性」下拉选中的属性名。绑定条目按它分开存放，
     /// 因此同一控件可以同时绑 <c>Text</c> 与 <c>TextColor</c> 而不互相覆盖
     /// （此前两处写入都硬编码 <c>PropertyName = "Text"</c>，多属性绑定只能靠手改工程文件）。
@@ -39,8 +89,10 @@ public partial class PropertyPanelView : UserControl
 
     private void LoadVariableBinding(HmiControl control)
     {
-        // 目标属性：跟第一条读绑定的属性名走（不在下拉里则回落默认值属性）。
-        // 必须在读取绑定内容**之前**完成 —— 否则会拿默认属性的绑定去填另一个属性的界面。
+        // 目标属性：先按控件类型把不适用的项收起，再跟第一条读绑定的属性名走
+        // （不在下拉里则回落默认值属性）。必须在读取绑定内容**之前**完成 ——
+        // 否则会拿默认属性的绑定去填另一个属性的界面。
+        ApplyTargetPropertyFilter(control);
         var firstRead = control.VariableBindings.FirstOrDefault(b => b.Direction != BindingDirection.WriteOnly);
         SelectTargetProperty(firstRead?.PropertyName);
         var targetBinding = FindReadBinding(control, CurrentBindingPropertyName);
@@ -84,13 +136,16 @@ public partial class PropertyPanelView : UserControl
         }
 
         // 控制是否显示变量绑定
-        // M2: 移除 Image 和 Line —— 这两类控件无数值显示语义
-        // M3: 添加 Slider/Switch/CheckBox/Dropdown —— 输入控件也需显示绑定变量状态
+        // 名单按"契约里 bind 有 text 或 value"来定，不按"看起来像输入/显示"猜：
+        // 弧（shape.bind.value）不在名单里时，面板上根本造不出进度弧的绑定。
         bool isDisplayCtrl = control.Type is HmiControlType.Label
             or HmiControlType.Bar or HmiControlType.Gauge or HmiControlType.Knob
             or HmiControlType.Led or HmiControlType.TextArea or HmiControlType.Table
             or HmiControlType.Slider or HmiControlType.Switch
-            or HmiControlType.CheckBox or HmiControlType.Dropdown;
+            or HmiControlType.CheckBox or HmiControlType.Dropdown
+            or HmiControlType.Arc or HmiControlType.Pipe
+            or HmiControlType.Roller or HmiControlType.StateImage
+            or HmiControlType.AsciiDisplay;
         VariableBindingExpander.IsVisible = isDisplayCtrl;
 
         // 状态样式 Expander 仅对支持多态的控件显示（Button/Switch/CheckBox）
@@ -173,20 +228,19 @@ public partial class PropertyPanelView : UserControl
             b.Direction != BindingDirection.WriteOnly
             && string.Equals(b.PropertyName, propertyName, StringComparison.Ordinal));
 
-    /// <summary>把「目标属性」下拉切到指定属性名；不在下拉里的属性名回落默认值属性。</summary>
+    /// <summary>
+    /// 把「目标属性」下拉切到指定属性名；该属性对当前控件不适用（被过滤掉）时
+    /// 落到第一个可见项 —— 选中一个隐藏项会让下拉显示空白，而 <c>CurrentBindingPropertyName</c>
+    /// 仍读得到它的 Tag，于是"看着没选，实际在往那个属性写"。
+    /// </summary>
     private void SelectTargetProperty(string? propertyName)
     {
         var wanted = string.IsNullOrEmpty(propertyName) ? DefaultBindingPropertyName : propertyName;
-        for (var i = 0; i < TargetPropertyCombo.Items.Count; i++)
-        {
-            if (TargetPropertyCombo.Items[i] is ComboBoxItem item &&
-                string.Equals(item.Tag?.ToString(), wanted, StringComparison.Ordinal))
-            {
-                TargetPropertyCombo.SelectedIndex = i;
-                return;
-            }
-        }
-        TargetPropertyCombo.SelectedIndex = 0;
+        var items = TargetPropertyCombo.Items.OfType<ComboBoxItem>().ToList();
+        var index = items.FindIndex(i => string.Equals(i.Tag?.ToString(), wanted, StringComparison.Ordinal)
+                                         && i.IsVisible);
+        if (index < 0) index = items.FindIndex(i => i.IsVisible);
+        TargetPropertyCombo.SelectedIndex = index < 0 ? 0 : index;
     }
 
     /// <summary>

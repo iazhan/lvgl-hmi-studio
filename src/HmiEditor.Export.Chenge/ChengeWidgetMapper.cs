@@ -1723,52 +1723,7 @@ internal sealed class ChengeWidgetMapper
 
     private string? TargetType(HmiControlType type, string where)
     {
-        var target = type switch
-        {
-            HmiControlType.Label => "label",
-            HmiControlType.Value => "value",
-            HmiControlType.Button => "button",
-            HmiControlType.Switch => "switch",
-            HmiControlType.CheckBox => "checkbox",
-            HmiControlType.Led => "lamp",
-            HmiControlType.Bar => "bar",
-            HmiControlType.Slider => "slider",
-            HmiControlType.Gauge => "gauge",
-            HmiControlType.Knob => "knob",
-            HmiControlType.Dropdown => "combobox",
-            HmiControlType.TextArea => "input",
-            HmiControlType.Image => "image",
-            HmiControlType.Table => "table",
-            HmiControlType.TabView => "tabview",
-            HmiControlType.Spinner => "spinner",
-            HmiControlType.Keyboard => "keyboard",
-            HmiControlType.Rectangle or HmiControlType.Ellipse or HmiControlType.Line
-                or HmiControlType.Polyline or HmiControlType.Arc or HmiControlType.Tank => "shape",
-            // pipe 在契约里是**控件**（widgets.pipe，带 direction/wall/color/channel_color/flow_ms），
-            // 运行时也有 W_PIPE 分派（build_pipe 带流动动画）；早先导成 shape 的 pipe_h/v
-            // 白丢了这 5 个属性（图元版只读 wall，且不支持流动）。
-            HmiControlType.Pipe => "pipe",
-            HmiControlType.Valve => "shape",
-            HmiControlType.Svg => null,
-            HmiControlType.AlarmList => "alarm_list",
-            HmiControlType.HistoryCurve => "history_curve",
-            HmiControlType.RealtimeCurve => "realtime_curve",
-            HmiControlType.AlarmBar => "alarm_bar",
-            HmiControlType.QrCode => "qrcode",
-            HmiControlType.Message => "message",
-            HmiControlType.EnumText => "enum_text",
-            HmiControlType.Roller => "roller",
-            HmiControlType.StateImage => "state_image",
-            HmiControlType.FrameAnim => "frame_anim",
-            HmiControlType.Shape => "shape",
-            HmiControlType.Chart => "chart",
-            HmiControlType.XyCurve => "xy_curve",
-            HmiControlType.HistoryTable => "history_table",
-            HmiControlType.RecipeTable => "recipe_table",
-            HmiControlType.AsciiDisplay => "ascii_display",
-            HmiControlType.Screen => null,
-            _ => null,
-        };
+        var target = ChengeContractTypes.Of(type);
 
         if (target == null)
         {
