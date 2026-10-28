@@ -1817,6 +1817,7 @@
   "prop.detail.histtable.group": "趋势组",
   "prop.detail.histtable.rowheight": "行高（0=默认）",
   "prop.detail.histtable.scrollbar": "显示滚动条",
+  "prop.detail.histtable.maxrows": "最大行数（10..2000）",
   "prop.detail.recipe.columns": "列（键:标签[:宽]，每行一列）",
   "prop.detail.recipe.group": "配方组",
   "prop.detail.recipe.unit": "显示单位",

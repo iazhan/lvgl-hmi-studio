@@ -215,7 +215,22 @@
     },
     "arc": {
       "title": "圆弧",
-      "props": {}
+      "props": {
+        "min": {
+          "type": "int",
+          "default": 0,
+          "desc": "进度弧的量程下限（只影响 bind.value 的填充比例；不改弧本身）"
+        },
+        "max": {
+          "type": "int",
+          "default": 100,
+          "min": 1,
+          "desc": "进度弧的量程上限；绑定值按 (v-min)/(max-min) 折算到 angle_start..angle_end"
+        }
+      },
+      "bind": [
+        "value"
+      ]
     },
     "pie": {
       "title": "扇形",
@@ -1671,6 +1686,7 @@
       },
       "bind": [
         "value",
+        "selected",
         "visible",
         "enabled"
       ],
@@ -1765,10 +1781,10 @@
         }
       },
       "bind": [
-        "fill_color",
         "bg_color",
         "visible",
-        "enabled"
+        "enabled",
+        "value"
       ],
       "events": [
         "click",
@@ -3335,7 +3351,8 @@
     "visible",
     "enabled",
     "value",
-    "checked"
+    "checked",
+    "selected"
   ],
   "tag": {
     "id": {

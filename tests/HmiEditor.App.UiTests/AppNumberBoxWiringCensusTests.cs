@@ -41,8 +41,8 @@ public class AppNumberBoxWiringCensusTests
     private static readonly FileFace[] WiredNamedNumberBoxes =
     {
         // 批次 1a 加了 9 个数字框（仪表 5 / 指示灯 1 / 按钮 3），接线同步补齐
-        // 69 = 68 + InputDecimalsBox（输入框的「小数位」，数值型输入按它格式化写回）
-        new("PropertyPanelView.axaml", 70, "enumerated", "PropertyPanelWiringTests.cs"),
+        // 70 = 68 + InputDecimalsBox（输入框的「小数位」）+ HistMaxRowsBox（历史表最大行数）
+        new("PropertyPanelView.axaml", 71, "enumerated", "PropertyPanelWiringTests.cs"),
         new("SettingsDialog.axaml", 9, "perBox", "SettingsDialogNumberBoxWiringTests.cs"),
         new("ScreenManagerView.axaml", 2, "perBox", "ScreenManagerNumberBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 1, "perBox", "ProjectSettingsNumberBoxWiringTests.cs"),
@@ -265,6 +265,7 @@ public class AppNumberBoxWiringCensusTests
         {
             "GaugeArcWidthBox", "GaugeTickLenBox", "GaugeNeedleLenBox", "GaugeNeedleWidthBox",
             "GaugeCenterRadiusBox", "LampSizeBox", "ConfirmWaitMsBox", "HoldMsBox", "LongPressMsBox",
+            "HistRowHeightBox", "HistMaxRowsBox",
         };
 
         var codePath = Path.Combine(SourceScanner.RepoRoot,

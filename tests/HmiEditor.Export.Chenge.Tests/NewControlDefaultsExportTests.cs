@@ -117,6 +117,30 @@ public class NewControlDefaultsExportTests : IDisposable
     }
 
     /// <summary>
+    /// 历史表的行数上限在面板「最大行数」行里能改 ⇒ 产物里的 <c>max_rows</c> 必须跟着走，
+    /// 否则那一行只是摆设。顺带钉住钳制区间（契约 10..2000）。
+    /// </summary>
+    [Fact]
+    public void HistoryTable_MaxRows_FollowsThePanelValue()
+    {
+        var props = ExportFresh(HmiControlType.HistoryTable, c =>
+        {
+            c.HistTableColumns = "time:时间";
+            c.HistTableGroup = "temp";
+            c.HistTableMaxRows = 250;
+        });
+        Assert.Equal(250, props.GetProperty("max_rows").GetInt32());
+
+        var clamped = ExportFresh(HmiControlType.HistoryTable, c =>
+        {
+            c.HistTableColumns = "time:时间";
+            c.HistTableGroup = "temp";
+            c.HistTableMaxRows = 5000;
+        });
+        Assert.Equal(2000, clamped.GetProperty("max_rows").GetInt32());
+    }
+
+    /// <summary>
     /// 开关：新建不给标题文字。它的 Text 会导出成 <c>text_on</c>，而运行时把非空的
     /// <c>text_on</c> 画在**控件框右边**（widget_action.c 的 build_switch）—— 新建出来就
     /// 在旁边挂一个"开关1"纯属噪声，还会压到相邻控件。

@@ -142,6 +142,7 @@ public partial class PropertyPanelView : UserControl
         PipeWallBox.ValueChanged += OnNumberChanged;
         PipeWidthBox.ValueChanged += OnNumberChanged;
         HistRowHeightBox.ValueChanged += OnNumberChanged;
+        HistMaxRowsBox.ValueChanged += OnNumberChanged;
         AsciiMaxLenBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入

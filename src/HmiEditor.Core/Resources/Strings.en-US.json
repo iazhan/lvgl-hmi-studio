@@ -1817,6 +1817,7 @@
   "prop.detail.histtable.group": "Trend group",
   "prop.detail.histtable.rowheight": "Row height (0 = default)",
   "prop.detail.histtable.scrollbar": "Show scrollbar",
+  "prop.detail.histtable.maxrows": "Max rows (10..2000)",
   "prop.detail.recipe.columns": "Columns (key:label[:w], one per line)",
   "prop.detail.recipe.group": "Recipe group",
   "prop.detail.recipe.unit": "Show unit",

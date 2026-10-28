@@ -1184,8 +1184,8 @@
                 <Expander x:Name="DetailParamExpander" Header="{res:Loc prop.detail}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
-                    <!-- 行数 ≥ 下面最大 Grid.Row+1（当前 0..30） -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <!-- 行数 ≥ 下面最大 Grid.Row+1（当前 0..69） -->
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="0" Margin="0,4,0,0">
                         <!-- 同「控件功能参数」：必须显式 0，否则 `Expander Grid` 的全局 4px 让
                              隐藏行也占位（69 行 → 276px 空白）。 -->
@@ -1632,6 +1632,14 @@
                                   Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
                                   VerticalAlignment="Center" Margin="0,2" IsVisible="False"
                                   IsCheckedChanged="OnPropertyChanged"/>
+                        <!-- 最大行数：契约 history_table.max_rows（缺省 500，范围 10..2000）。
+                             取的是模型里独立的 HistTableMaxRows —— 复用过报警列表的 10
+                             会让历史表恒只显示 10 行。 -->
+                        <TextBlock x:Name="LblHistMaxRows" Text="{res:Loc prop.detail.histtable.maxrows}" Grid.Row="69" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <fa:FANumberBox x:Name="HistMaxRowsBox" Grid.Row="69" Grid.Column="1"
+                                        Value="500" Minimum="10" Maximum="2000"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                         <TextBlock x:Name="LblRecipeColumns" Text="{res:Loc prop.detail.recipe.columns}" Grid.Row="64" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <TextBox x:Name="RecipeColumnsBox" Grid.Row="64" Grid.Column="1" FontSize="13" Margin="0,2" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="44"

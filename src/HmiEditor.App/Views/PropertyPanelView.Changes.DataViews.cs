@@ -34,6 +34,8 @@ public partial class PropertyPanelView
             ValidateAndWrite(nameof(HmiControl.HistTableRowHeight), (int)HistRowHeightBox.Value, v => _currentControl.HistTableRowHeight = v);
         if (HistScrollbarCheck.IsVisible)
             ValidateAndWrite(nameof(HmiControl.HistTableScrollbar), HistScrollbarCheck.IsChecked == true, v => _currentControl.HistTableScrollbar = v);
+        if (HistMaxRowsBox.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.HistTableMaxRows), (int)HistMaxRowsBox.Value, v => _currentControl.HistTableMaxRows = v);
         if (RecipeColumnsBox.IsVisible)
             ValidateAndWrite(nameof(HmiControl.RecipeColumns), string.IsNullOrWhiteSpace(RecipeColumnsBox.Text) ? null : RecipeColumnsBox.Text.Trim(), v => _currentControl.RecipeColumns = v);
         if (RecipeGroupBox.IsVisible)

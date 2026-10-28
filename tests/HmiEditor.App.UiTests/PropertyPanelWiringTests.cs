@@ -117,6 +117,7 @@ public class PropertyPanelWiringTests
         ["HistGroupBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["HistRowHeightBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["HistScrollbarCheck"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
+        ["HistMaxRowsBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["RecipeColumnsBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["RecipeGroupBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["RecipeUnitCheck"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",

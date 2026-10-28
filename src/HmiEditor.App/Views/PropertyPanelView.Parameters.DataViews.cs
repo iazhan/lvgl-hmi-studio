@@ -33,6 +33,7 @@ public partial class PropertyPanelView
         SetParamRow(LblHistGroup, HistGroupBox, visible);
         SetParamRow(LblHistRowHeight, HistRowHeightBox, visible);
         SetParamRow(LblHistScrollbar, HistScrollbarCheck, visible);
+        SetParamRow(LblHistMaxRows, HistMaxRowsBox, visible);
     }
 
     private void ShowRecipeRows(bool visible)
@@ -65,6 +66,7 @@ public partial class PropertyPanelView
         HistGroupBox.Text = control.HistTableGroup ?? "";
         HistRowHeightBox.Value = control.HistTableRowHeight;
         HistScrollbarCheck.IsChecked = control.HistTableScrollbar;
+        HistMaxRowsBox.Value = control.HistTableMaxRows;
 
         RecipeColumnsBox.Text = control.RecipeColumns ?? "";
         RecipeGroupBox.Text = control.RecipeGroup ?? "";
