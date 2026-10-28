@@ -80,6 +80,24 @@ public partial class MainWindow
             var screen = canvasView.Canvas.Screen;
             if (screen == null) return;
 
+            // 按点图元（线/折线/弧/管道）拖进来 ≠ 落一个默认框：这些形状由**点**决定，
+            // 落一个框只能得到"没有走向的直管"或"一条对角线"。改成把落点当第一个点，
+            // 后面的点用户接着点（工具同时选中，工具栏高亮）。
+            if (args.ParentContainer == null)
+            {
+                var droppedTool = args.ControlType == HmiControlType.Shape
+                    ? CanvasTool.Figure(args.ShapeKind ?? "rect")
+                    : CanvasTool.Widget(args.ControlType);
+                if (droppedTool.IsPointTool)
+                {
+                    // 顺序不能反：SetDrawTool 会把画布上的在途绘制**放弃**掉（切工具语义），
+                    // 先播种第一个点就会被它清掉 —— 必须"先选中工具，再落下第一个点"。
+                    SetDrawTool(droppedTool);
+                    canvasView.Canvas.BeginPointTool(droppedTool, args.X, args.Y);
+                    return;
+                }
+            }
+
             // 落在容器图元里 → 作为子控件放入（坐标相对容器，不进平铺列表）
             HmiControl control;
             IUndoableCommand command;

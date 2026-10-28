@@ -172,6 +172,11 @@ public partial class DesignCanvas : Control
         // 与"产物里是什么"会各说一套。
         NewControlDefaults.Apply(control, points);
 
+        // 按点图元的顶点：Apply 只给折线/直线写了初值，管道与多边形（Shape）在这里统一落点 ——
+        // 少了这一步，画布上按点画出来的形状与产物里的 points 就是两回事。
+        if (points is { Count: >= 2 } && control.Points == null && FigureGeometry.UsesPointList(control))
+            control.Points = points.ToList();
+
         // 曲线/图表没有数据源时导出期直接报错，运行时以整页建页失败收场 ——
         // 画布上就是"拖进来一片空白"。新建时先挂工程里第一个数值变量，用户再换通道。
         EnsureDefaultSeries(control);
@@ -234,17 +239,96 @@ public partial class DesignCanvas : Control
     private Point ToModel(Point viewportPoint)
         => Coordinates.ScreenToModel(viewportPoint);
 
+    /// <summary>视口坐标 → 模型坐标（<see cref="PointData"/> 版，几何换算用）。</summary>
+    private PointData ToModelData(Point viewportPoint)
+    {
+        var p = ToModel(viewportPoint);
+        return new PointData(p.X, p.Y);
+    }
+
+    /// <summary>画布上是否有在途的绘制手势 —— 右键菜单据此让位给"取消绘制"。</summary>
+    public bool HasToolGesture => _drawSession != null || _isDrawing;
+
     /// <summary>
-    /// 绘图工具释放时提交：将拖拽矩形（或单击落点）转为控件并触发 ControlDrawn。
-    /// 边界吸附网格并限制在屏幕范围内；Polyline 生成局部坐标顶点。
+    /// 从"拖进来的工具"开始按点绘制：把落点当作第一个点。
+    /// 工具箱把弯管/多段管道拖到画布时走这条 —— 按老路落一个默认框，只会得到一根
+    /// 没有走向的直管（形状信息全丢了），用户看到的就是"拖了但没画出弯管"。
     /// </summary>
-    private void CommitDraw(Point endViewportPoint)
+    public void BeginPointTool(CanvasTool tool, double modelX, double modelY)
+    {
+        if (!tool.IsPointTool) return;
+
+        AbortToolSession();
+        _drawSession = new FigureDrawSession(tool);
+        if (_drawSession.Click(new PointData(modelX, modelY)) == FigureDrawOutcome.Commit)
+        {
+            var session = _drawSession;
+            ResetDrawState();
+            CommitPointShape(session);
+            return;
+        }
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// ESC / 右键：结束在途绘制。按点图元"够点即提交"（N 点式就在这里成形），
+    /// 不足点数直接放弃 —— 不留退化形状，也不就地落控件。
+    /// </summary>
+    public bool FinishToolGesture()
+    {
+        var handled = false;
+        if (_drawSession is { } session)
+        {
+            handled = true;
+            if (session.Finish() == FigureDrawOutcome.Commit)
+                CommitPointShape(session);
+            ResetDrawState();
+        }
+        if (_isDrawing)
+        {
+            _isDrawing = false;
+            handled = true;
+            InvalidateVisual();
+        }
+        return handled;
+    }
+
+    /// <summary>
+    /// 切页面 / 离开画布：**放弃**在途绘制。绝不在这里提交 —— 用户没做完的形状不该
+    /// 因为他切了个页面就"就地落一个控件"。
+    /// </summary>
+    public void AbortToolGesture() => AbortToolSession();
+
+    /// <summary>工具切换 / 切页面 / 离开画布：**放弃**在途绘制（永不落控件）。</summary>
+    private void AbortToolSession()
+    {
+        if (_drawSession != null)
+            Console.WriteLine($"[draw] abort n={_drawSession.Points.Count} mode={_drawSession.Mode}");
+        _drawSession?.Cancel();
+        ResetDrawState();
+    }
+
+    private void ResetDrawState()
+    {
+        _drawSession = null;
+        _drawHoverPoint = default;
+        _drawPressMoved = false;
+        _isDrawing = false;
+        PublishGuides(null);          // 绘制结束/放弃：参考线一起收掉
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// 拖框工具释放时提交：拖拽矩形为控件边界，单击（没拖动）按该类型默认尺寸落在点击处。
+    /// 边界吸附网格并限制在屏幕范围内。
+    /// </summary>
+    private void CommitBoxDraw(Point endViewportPoint)
     {
         try
         {
             var tool = DrawTool;
             var screen = Screen;
-            if (tool == null || screen == null) return;
+            if (tool is not { } armed || screen == null) return;
 
             var start = ToModel(_drawStartPoint);
             var end = ToModel(endViewportPoint);
@@ -254,10 +338,10 @@ public partial class DesignCanvas : Control
             if (w < MinControlSize && h < MinControlSize)
             {
                 // 单击：以点击处为中心创建默认尺寸图形
-                var (dw, dh) = DefaultSize(tool.Value);
-                var ctrl = AddControlAt(tool.Value,
+                var (dw, dh) = DefaultSize(armed.Type);
+                var ctrl = AddControlAt(armed.Type,
                     SnapToGrid(start.X - dw / 2),
-                    SnapToGrid(start.Y - dh / 2), dw, dh);
+                    SnapToGrid(start.Y - dh / 2), dw, dh, null, armed.ShapeKind);
                 ControlDrawn?.Invoke(this, new ControlDrawnEventArgs(ctrl));
                 return;
             }
@@ -274,23 +358,12 @@ public partial class DesignCanvas : Control
             w = Math.Max(MinControlSize, w);
             h = Math.Max(MinControlSize, h);
 
-            IReadOnlyList<PointData>? pts = null;
-            if (tool == HmiControlType.Polyline)
-            {
-                // 局部坐标对角线（左上→右下），与 BuildControl 默认一致
-                pts = new List<PointData>
-                {
-                    new(0, 0),
-                    new(w, h),
-                };
-            }
-
-            var drawn = AddControlAt(tool.Value, x, y, w, h, pts);
+            var drawn = AddControlAt(armed.Type, x, y, w, h, null, armed.ShapeKind);
             ControlDrawn?.Invoke(this, new ControlDrawnEventArgs(drawn));
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DesignCanvas] 绘图提交异常: {ex}");
+            System.Diagnostics.Debug.WriteLine($"[DesignCanvas] 拖框绘制提交异常: {ex}");
         }
         finally
         {
@@ -299,100 +372,316 @@ public partial class DesignCanvas : Control
         }
     }
 
-    // ── I10: 点击式绘制（Line / Polyline）──
+    // ── 顶点/端点拖拽 ──
 
     /// <summary>
-    /// 追加一个点击顶点（视口坐标）：
-    ///   Line —— 第二击即提交该直线（工具保持激活，可继续画下一条）；
-    ///   Polyline —— 每次点击追加转折点，直到退出工具时统一提交。
+    /// 几何快照：几何图元拖一个顶点会同时改 X/Y/W/H（框=点集包围盒）或起止角，
+    /// 撤销必须整组回滚 —— 只回滚框会让顶点留在新位置，形状与框错位。
     /// </summary>
-    private void AppendClickPoint(Point viewportPoint)
+    private readonly record struct GeometrySnapshot(
+        double X, double Y, double Width, double Height, double MinValue, double MaxValue,
+        IReadOnlyList<PointData>? Points)
     {
-        var screen = Screen;
-        if (screen == null) return;
-
-        _clickHoverPoint = viewportPoint;
-        _clickPoints.Add(viewportPoint);
-        InvalidateVisual();
-
-        // Line：第二击提交（与 Polyline 相同，直线即两点折线）
-        if (DrawTool == HmiControlType.Line && _clickPoints.Count >= 2)
+        public bool SameAs(GeometrySnapshot other)
         {
-            CommitClickDraw(HmiControlType.Line);
+            if (Math.Abs(X - other.X) > 0.001 || Math.Abs(Y - other.Y) > 0.001 ||
+                Math.Abs(Width - other.Width) > 0.001 || Math.Abs(Height - other.Height) > 0.001 ||
+                Math.Abs(MinValue - other.MinValue) > 0.001 || Math.Abs(MaxValue - other.MaxValue) > 0.001)
+                return false;
+
+            var a = Points;
+            var b = other.Points;
+            if (a == null || b == null) return a == b && Points == other.Points;
+            if (a.Count != b.Count) return false;
+            for (var i = 0; i < a.Count; i++)
+                if (Math.Abs(a[i].X - b[i].X) > 0.001 || Math.Abs(a[i].Y - b[i].Y) > 0.001)
+                    return false;
+            return true;
         }
     }
 
-    /// <summary>
-    /// 提交点击式绘制结果（Polyline 退出工具时调用；Line 第二击时调用）。
-    /// 至少两个顶点才生成控件；提交后清空点击状态（工具保持激活）。
-    /// </summary>
-    private void CommitClickDraw() => CommitClickDraw(HmiControlType.Polyline);
+    private static GeometrySnapshot SnapshotGeometry(HmiControl control) => new(
+        control.X, control.Y, control.Width, control.Height,
+        control.MinValue, control.MaxValue,
+        control.Points?.ToList());
 
-    private void CommitClickDraw(HmiControlType tool)
+    private static void RestoreGeometry(HmiControl control, GeometrySnapshot snapshot)
     {
-        if (_clickPoints.Count < 2) { ClearClickDraw(); return; }
+        control.X = snapshot.X;
+        control.Y = snapshot.Y;
+        control.Width = snapshot.Width;
+        control.Height = snapshot.Height;
+        control.MinValue = snapshot.MinValue;
+        control.MaxValue = snapshot.MaxValue;
+        control.Points = snapshot.Points?.ToList();
+    }
 
+    private void BeginAnchorDrag(HmiControl control, int index)
+    {
+        _dragMode = DragMode.Vertex;
+        _dragControl = control;
+        _vertexIndex = index;
+        _vertexStart = SnapshotGeometry(control);
+    }
+
+    private void ApplyAnchorDrag(Point viewportPoint, bool ortho = false)
+    {
+        if (_dragControl == null || _vertexIndex < 0) return;
+
+        var dragModel = AnchorViewportToModel(_dragControl, viewportPoint);
+        var model = new PointData(dragModel.X, dragModel.Y);
+        List<AlignmentGuide> guides;
+
+        if (ortho)
+        {
+            // Shift：只沿水平/垂直方向走，锚点取相邻顶点 —— 拖完这一条边就是正的水平/垂直线段
+            var absolute = FigureGeometry.AbsolutePoints(_dragControl);
+            var anchorIndex = FigureGeometry.OrthoAnchorIndex(_vertexIndex, absolute.Count);
+            if (anchorIndex >= 0)
+                model = FigureGeometry.ConstrainOrtho(absolute[anchorIndex], model);
+            guides = new List<AlignmentGuide>();
+        }
+        else
+        {
+            (model, guides) = SnapAnchorPoint(_dragControl, _vertexIndex, model);
+        }
+
+        if (!FigureGeometry.TryMoveAnchor(_dragControl, _vertexIndex, model.X, model.Y, 0))
+            return;
+
+        PublishGuides(guides);
+        ControlPropertyChanged?.Invoke(this, _dragControl);
+    }
+
+    /// <summary>顶点拖拽 / 按点绘制的对齐吸附容差（视口像素）——与控件拖动的参考线同一量级。</summary>
+    private const double AnchorGuideThreshold = 5;
+
+    /// <summary>
+    /// 按点绘制时的吸附候选：其它控件的左/中/右与上/中/下 + 本图元已取的点 + 屏幕边与中线。
+    /// （顶点拖拽不算"本图元已取的点"—— 那些在 <see cref="SnapAnchorPoint"/> 里单独收。）
+    /// </summary>
+    private (PointData Point, List<AlignmentGuide> Guides) SnapDrawPoint(PointData modelPoint)
+    {
         var screen = Screen;
-        if (screen == null) { ClearClickDraw(); return; }
+        var zoom = EffectiveZoom;
+        var tolerance = AnchorGuideThreshold / Math.Max(zoom, 0.01);
+
+        var candX = new List<double>();
+        var candY = new List<double>();
+
+        if (screen != null)
+        {
+            var map = BuildIndex();
+            foreach (var (other, ox, oy) in FlattenedAbsolute(map))
+            {
+                candX.Add(ox);
+                candX.Add(ox + other.Width / 2);
+                candX.Add(ox + other.Width);
+                candY.Add(oy);
+                candY.Add(oy + other.Height / 2);
+                candY.Add(oy + other.Height);
+            }
+            candX.Add(0);
+            candX.Add(screen.Width / 2.0);
+            candX.Add(screen.Width);
+            candY.Add(0);
+            candY.Add(screen.Height / 2.0);
+            candY.Add(screen.Height);
+        }
+
+        if (_drawSession is { } session)
+        {
+            foreach (var p in session.Points)
+            {
+                candX.Add(p.X);
+                candY.Add(p.Y);
+            }
+        }
+
+        return SnapToCandidates(candX, candY, modelPoint, tolerance);
+    }
+
+    /// <summary>把候选坐标吸进 <paramref name="modelPoint"/>，并给出命中轴的参考线（视口坐标）。</summary>
+    private (PointData Point, List<AlignmentGuide> Guides) SnapToCandidates(
+        List<double> candX, List<double> candY, PointData modelPoint, double tolerance)
+    {
+        var screen = Screen;
+        var zoom = EffectiveZoom;
+        var guides = new List<AlignmentGuide>();
+
+        var x = modelPoint.X;
+        var y = modelPoint.Y;
+        var hitX = FigureGeometry.TryNearest(candX, x, tolerance, out var snappedX);
+        var hitY = FigureGeometry.TryNearest(candY, y, tolerance, out var snappedY);
+
+        // 没命中对齐候选的轴才吸网格（对齐优先：贴隔壁控件比贴栅格更重要）
+        var step = SnapEnabled ? SnapStep : 0;
+        if (hitX) x = snappedX;
+        else if (step > 0) x = Math.Round(x / step) * step;
+        if (hitY) y = snappedY;
+        else if (step > 0) y = Math.Round(y / step) * step;
+
+        var width = screen?.Width ?? 800;
+        var height = screen?.Height ?? 480;
+        if (hitX)
+            guides.Add(new AlignmentGuide(x * zoom + PanOffsetX, false,
+                PanOffsetY, height * zoom + PanOffsetY));
+        if (hitY)
+            guides.Add(new AlignmentGuide(y * zoom + PanOffsetY, true,
+                PanOffsetX, width * zoom + PanOffsetX));
+
+        return (new PointData(x, y), guides);
+    }
+
+    /// <summary>把参考线同时交给选中层的绘制与画布的预览层（两处都读 <see cref="_currentGuides"/>）。</summary>
+    private void PublishGuides(List<AlignmentGuide>? guides)
+    {
+        _currentGuides = guides ?? new List<AlignmentGuide>();
+        if (Adorner == null) return;
+        Adorner.AlignmentGuides = _currentGuides;
+        Adorner.InvalidateVisual();
+    }
+
+    /// <summary>
+    /// 顶点吸附：**对齐候选优先，其次网格**。候选 = 同一图元的其它顶点 + 其它控件的
+    /// 左/中/右与上/中/下 + 屏幕边与中线。命中时返回要画的参考线（视口坐标），
+    /// 于是"拖到与隔壁控件同一条竖线上"是看得见的，而不是靠眼力。
+    /// </summary>
+    private (PointData Point, List<AlignmentGuide> Guides) SnapAnchorPoint(
+        HmiControl control, int index, PointData modelPoint)
+    {
+        var screen = Screen;
+        var zoom = EffectiveZoom;
+        var tolerance = AnchorGuideThreshold / Math.Max(zoom, 0.01);
+
+        var candX = new List<double>();
+        var candY = new List<double>();
+
+        // 同一图元的其它顶点：拖管道时最常用（让下一段保持水平）
+        var absolute = FigureGeometry.AbsolutePoints(control);
+        for (var i = 0; i < absolute.Count; i++)
+        {
+            if (i == index) continue;
+            candX.Add(absolute[i].X);
+            candY.Add(absolute[i].Y);
+        }
+
+        if (screen != null)
+        {
+            var map = BuildIndex();
+            foreach (var (other, ox, oy) in FlattenedAbsolute(map))
+            {
+                if (ReferenceEquals(other, control)) continue;
+                candX.Add(ox);
+                candX.Add(ox + other.Width / 2);
+                candX.Add(ox + other.Width);
+                candY.Add(oy);
+                candY.Add(oy + other.Height / 2);
+                candY.Add(oy + other.Height);
+            }
+            candX.Add(0);
+            candX.Add(screen.Width / 2.0);
+            candX.Add(screen.Width);
+            candY.Add(0);
+            candY.Add(screen.Height / 2.0);
+            candY.Add(screen.Height);
+        }
+
+        return SnapToCandidates(candX, candY, modelPoint, tolerance);
+    }
+
+    /// <summary>顶点拖拽落一条撤销（只回滚几何：框 + 点集 + 起止角）。</summary>
+    private void CommitAnchorDrag(HmiControl control)
+    {
+        if (_vertexStart is not { } before) return;
+        var after = SnapshotGeometry(control);
+        if (before.SameAs(after)) return;
+
+        UndoRedoManager.Execute(new SnapshotCommand(
+            AppLocalization.Service[Lang.UndoMoveVertex],
+            () => RestoreGeometry(control, before),
+            () => RestoreGeometry(control, after)));
+    }
+
+    // ── I10: 按点图元的取点与提交 ──
+
+    /// <summary>
+    /// 取一个点（视口坐标）。按下没移动 = 取按下位置；按下后拖动过 =
+    /// 拖动开始时已取按下位置，这里再取抬起位置，于是"一拖"就得到两个端点。
+    /// <paramref name="ortho"/> = 按住 Shift：把这一笔约束到"从上一个点出发的水平/垂直方向"。
+    /// </summary>
+    private void TakeDrawPoint(Point viewportPoint, bool ortho = false)
+    {
+        if (DrawTool is not { IsPointTool: true } tool) return;
+
+        _drawHoverPoint = viewportPoint;
+        _drawSession ??= new FigureDrawSession(tool);
+
+        // ① 吸附：对齐候选（其它控件的边与中线、本图元已取的点、屏幕边与中线）优先，其次网格。
+        //    没有这一步，鼠标落在管线旁边 2px 就会画出一条"几乎水平但不是水平"的线。
+        var (modelPoint, guides) = SnapDrawPoint(modelPoint: ToModelData(viewportPoint));
+        // ② Shift：主轴之外的坐标直接被锚点覆盖（约束 > 吸附）
+        if (ortho && _drawSession.Points.Count > 0)
+            modelPoint = FigureGeometry.ConstrainOrtho(_drawSession.Points[^1], modelPoint);
+
+        PublishGuides(guides);
+
+        var outcome = _drawSession.Click(modelPoint);
+
+        if (outcome == FigureDrawOutcome.Commit)
+        {
+            var session = _drawSession;
+            ResetDrawState();
+            CommitPointShape(session!);
+            return;
+        }
+        InvalidateVisual();
+    }
+
+    /// <summary>把会话里的点落成控件：点集装框（<see cref="FigureGeometry.Fit"/>），角度图元按直径两端定半圆。</summary>
+    private void CommitPointShape(FigureDrawSession session)
+    {
+        Console.WriteLine($"[draw] commit {session.Tool.Type}/{session.Tool.Kind} " +
+                          $"mode={session.Mode} n={session.Points.Count}");
+        var screen = Screen;
+        if (screen == null) return;
 
         try
         {
-            // 顶点 → 模型坐标，并计算包围盒（局部坐标归一化到控件边界）
-            var pts = _clickPoints.Select(ToModel).ToList();
-            var minX = pts.Min(p => p.X);
-            var minY = pts.Min(p => p.Y);
-            var maxX = pts.Max(p => p.X);
-            var maxY = pts.Max(p => p.Y);
-            var w = Math.Max(MinControlSize, maxX - minX);
-            var h = Math.Max(MinControlSize, maxY - minY);
+            var pts = session.Points
+                .Select(p => new PointData(
+                    Math.Clamp(p.X, 0, screen.Width),
+                    Math.Clamp(p.Y, 0, screen.Height)))
+                .ToList();
+            if (FigureGeometry.IsDegenerate(session.Mode, pts)) return;
 
-            // 局部坐标：相对包围盒左上角
-            var local = pts.Select(p => new PointData(p.X - minX, p.Y - minY)).ToList();
+            var tool = session.Tool;
+            string? kind = tool.Type == HmiControlType.Shape ? tool.ShapeKind : null;
+            HmiControl drawn;
 
-            // 边界吸附并限制在屏幕范围内
-            var x = SnapToGrid(minX);
-            var y = SnapToGrid(minY);
-            if (x < 0) x = 0;
-            if (y < 0) y = 0;
-            if (x + w > screen.Width) w = screen.Width - x;
-            if (y + h > screen.Height) h = screen.Height - y;
-            w = Math.Max(MinControlSize, w);
-            h = Math.Max(MinControlSize, h);
+            if (session.Mode == FigurePointMode.Angle)
+            {
+                var arc = FigureGeometry.ArcFromEndpoints(pts[0], pts[1]);
+                drawn = AddControlAt(tool.Type, arc.X, arc.Y, arc.W, arc.H, null, kind);
+                // 两个端点就是起止角：面板上那一对行与画布手柄共用同一个来源
+                drawn.MinValue = arc.Start;
+                drawn.MaxValue = arc.End;
+            }
+            else
+            {
+                // 管道要按"装得下管径"的规则装框，其它图元就是纯包围盒
+                var box = tool.Type == HmiControlType.Pipe
+                    ? FigureGeometry.FitPipe(pts, FigureGeometry.DefaultPipeThickness)
+                    : FigureGeometry.Fit(pts);
+                drawn = AddControlAt(tool.Type, box.X, box.Y, box.Width, box.Height, box.Local, kind);
+            }
 
-            var drawn = AddControlAt(tool, x, y, w, h, local);
             ControlDrawn?.Invoke(this, new ControlDrawnEventArgs(drawn));
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DesignCanvas] 点击式绘制提交异常: {ex}");
+            System.Diagnostics.Debug.WriteLine($"[DesignCanvas] 按点图元提交异常: {ex}");
         }
-        finally
-        {
-            ClearClickDraw();
-        }
-    }
-
-    /// <summary>
-    /// 清空点击式绘制状态（不提交）。工具退出/切换时若有未完成折线，先提交再清空。
-    /// </summary>
-    private void ClearClickDraw()
-    {
-        _clickPoints.Clear();
-        _clickHoverPoint = default;
-        InvalidateVisual();
-    }
-
-    /// <summary>
-    /// 工具切换/退出前调用：若处于点击式绘制且有 ≥2 个顶点，提交当前折线/直线。
-    /// 由 <see cref="OnPropertyChanged"/> 在 DrawTool 变化后触发 —— 此时新工具值已应用，
-    /// 因此用"已收集顶点 + 之前确实处于点击式绘制"判断，避免把旧折线误提交到新工具。
-    /// </summary>
-    private void FlushClickDraw()
-    {
-        // 只要有 ≥2 个已点顶点且本次变化前处于点击式绘制（Line/Polyline），即提交。
-        // 顶点只在 Line/Polyline 点击时累积，因此 _clickPoints.Count 本身就是可靠标志。
-        if (_clickPoints.Count < 2) return;
-        CommitClickDraw();
     }
 
     /// <summary>

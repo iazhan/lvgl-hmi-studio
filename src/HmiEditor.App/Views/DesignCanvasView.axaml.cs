@@ -36,7 +36,7 @@ public partial class DesignCanvasView : UserControl
     public event EventHandler<Controls.ControlDrawnEventArgs>? ControlDrawn;
 
     /// <summary>I10: 绘图工具变化订阅委托（Detached 时对称解绑，见 OnDetachedFromVisualTree）。</summary>
-    private EventHandler<HmiControlType?>? _drawToolChangedHandler;
+    private EventHandler<CanvasTool?>? _drawToolChangedHandler;
 
     /// <summary>应用级设置变化订阅委托（Detached 时对称解绑）。</summary>
     private EventHandler<string>? _settingChangedHandler;
@@ -181,6 +181,13 @@ public partial class DesignCanvasView : UserControl
         // 此处仅初始化当前工具状态。
         CanvasLayer.DrawTool = DockLayoutState.ActiveDrawTool;
 
+        // 画布右键取消工具：状态真源在 DockLayoutState，画布只发起请求；同一次右键不再弹菜单。
+        CanvasLayer.ToolDismissRequested += (_, _) =>
+        {
+            _suppressNextContextMenu = true;
+            DockLayoutState.SetDrawTool(null);
+        };
+
         // R2-T2: 预览模式切换 → 同步画布状态 + 通知宿主启停仿真器
         PreviewToggleButton.IsCheckedChanged += (_, _) =>
         {
@@ -250,6 +257,9 @@ public partial class DesignCanvasView : UserControl
     private MenuItem? _ctxCopy, _ctxPaste, _ctxDuplicate, _ctxDelete;
     private MenuItem? _ctxAlign, _ctxSameSize, _ctxDistribute, _ctxGroup, _ctxUngroup;
     private ContextMenu? _canvasContextMenu;
+
+    /// <summary>这次右键已经被画布用来取消工具/结束绘制，菜单不该再弹出来。</summary>
+    private bool _suppressNextContextMenu;
 
     // ── R2-T2: 预览模式软键盘 ──
 
@@ -444,8 +454,17 @@ public partial class DesignCanvasView : UserControl
         // 设置到画布控件
         CanvasLayer.ContextMenu = _canvasContextMenu;
 
-        // 菜单打开前动态显隐
-        _canvasContextMenu.Opening += (_, _) => UpdateContextMenuVisibility();
+        // 菜单打开前动态显隐；正在绘制（或本次右键刚取消工具）时不弹菜单 —— 右键在那两种情况下是"结束/取消"
+        _canvasContextMenu.Opening += (_, args) =>
+        {
+            if (_suppressNextContextMenu || CanvasLayer.HasToolGesture)
+            {
+                _suppressNextContextMenu = false;
+                args.Cancel = true;
+                return;
+            }
+            UpdateContextMenuVisibility();
+        };
 
         // 绑定 Click 事件 → 通过 DockLayoutState 路由
         _ctxCopy.Click += (_, _) => DockLayoutState.RaiseCanvasContextAction(this, CanvasContextAction.Copy);
@@ -558,6 +577,8 @@ public partial class DesignCanvasView : UserControl
             DockLayoutState.DrawToolChanged -= _drawToolChangedHandler;
         if (_settingChangedHandler != null)
             Settings?.SettingChanged -= _settingChangedHandler;
+        // 离开画布（切窗口 / Dock 重建）：在途绘制放弃，不落控件
+        CanvasLayer.AbortToolGesture();
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -570,6 +591,7 @@ public partial class DesignCanvasView : UserControl
     /// </summary>
     public void SetScreen(HmiScreen screen, HmiProject? project = null)
     {
+        CanvasLayer.AbortToolGesture();     // 切页面：在途绘制直接放弃，不留半成品
         CanvasLayer.Screen = screen;
         EmptyHint.IsVisible = screen.Controls.Count == 0;
         ApplyProjectScreenDefaults(project);

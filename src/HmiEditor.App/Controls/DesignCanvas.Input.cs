@@ -144,14 +144,25 @@ public partial class DesignCanvas : Control
         var pos = e.GetPosition(this);
         var adorner = Adorner;
 
-        // I10: 绘图工具模式 —— 左键按下即开始绘制（跳过选中/手柄命中，允许在已有控件上叠画）
-        if (DrawTool.HasValue && pointProps.Properties.IsLeftButtonPressed)
+        // 右键 = 取消工具的另一条路：有在途绘制就先结束它（够点即提交），不再弹菜单。
+        if (pointProps.Properties.IsRightButtonPressed)
         {
-            // Line / Polyline 采用"点击式"绘制：每次左键单击追加一个顶点，
-            // 不进入拖拽（_isDrawing）。其余工具保持原有拖拽式。
-            if (DrawTool.Value is HmiControlType.Line or HmiControlType.Polyline)
+            CancelToolByGesture();
+            e.Handled = true;
+            return;
+        }
+
+        // 0. 已选工具 → 左键只用于画。按点图元等抬起时取点（拖出去时先补按下位置），
+        //    拖框工具按下即进入拖拽预览。
+        if (DrawTool is { } tool && pointProps.Properties.IsLeftButtonPressed)
+        {
+            if (tool.IsPointTool)
             {
-                AppendClickPoint(pos);
+                _drawPressViewport = pos;
+                _drawPressMoved = false;
+                _drawHoverPoint = pos;
+                _drawSession ??= new FigureDrawSession(tool);
+                InvalidateVisual();
                 e.Handled = true;
                 return;
             }
@@ -163,8 +174,17 @@ public partial class DesignCanvas : Control
             return;
         }
 
-        // 1. 先检测是否点击了缩放手柄（仅单选时显示手柄）
-        if (adorner != null && adorner.IsSelectionVisible && _selectedControls.Count == 1)
+        // 1. 顶点/端点手柄 —— 命中优先级最高（端点优先于整体拖动），且优先于缩放手柄
+        if (HitTestGeometryAnchor(pos) is { } anchorHit)
+        {
+            BeginAnchorDrag(anchorHit.Control, anchorHit.Index);
+            e.Handled = true;
+            return;
+        }
+
+        // 2. 缩放手柄（仅单选、且不是按点图元时才显示/命中手柄）
+        if (adorner != null && adorner.IsSelectionVisible && _selectedControls.Count == 1
+            && !FigureGeometry.IsPointFigure(_selectedControls[0]))
         {
             int handleIndex = HitTestHandle(pos);
             if (handleIndex >= 0 && _selectedControl != null)
@@ -181,7 +201,7 @@ public partial class DesignCanvas : Control
             }
         }
 
-        // 2. 检测是否点击了控件
+        // 3. 检测是否点击了控件
         var hit = HitTestControl(pos);
         if (hit != null)
         {
@@ -213,6 +233,16 @@ public partial class DesignCanvas : Control
             FireSelectionChanged();
             UpdateMultiAdorner();
 
+            // 选中之后再问一次顶点：点到刚选中图元的端点上时只拖这个点，
+            // 否则"第一次点线就想拉端点"会变成整条线平移。
+            var anchorOnHit = HitTestGeometryAnchorOn(hit, pos);
+            if (anchorOnHit >= 0)
+            {
+                BeginAnchorDrag(hit, anchorOnHit);
+                e.Handled = true;
+                return;
+            }
+
             _dragMode = DragMode.Move;
             _dragControl = hit;
             _dragStartPoint = pos;
@@ -234,77 +264,33 @@ public partial class DesignCanvas : Control
             return;
         }
 
-        // 3. 点击空白区域
-        if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
-        {
-            // Ctrl+空白 → 立即开始框选
-            _isRubberBanding = true;
-            _rubberBandStart = pos;
-            _selectedControls.Clear();
-            FireSelectionChanged();
-            UpdateMultiAdorner();
-            e.Handled = true;
-            return;
-        }
-
-        // 普通左键空白 → 启动长按检测：按住达到阈值后从按下位置开始框选；
-        // 快速点击或移动超容差则按普通点击空白处理（取消选中）。
-        StartLongPressSelection(pos);
-        e.Handled = true;
-        return;
-    }
-
-    /// <summary>启动长按框选检测：达到阈值未移动则进入框选模式。</summary>
-    private void StartLongPressSelection(Point pos)
-    {
-        _longPressStart = pos;
-        _longPressPending = true;
-
-        _longPressTimer?.Stop();
-        _longPressTimer = new DispatcherTimer { Interval = LongPressDelay };
-        _longPressTimer.Tick += (_, _) => OnLongPressTriggered();
-        _longPressTimer.Start();
-    }
-
-    /// <summary>长按阈值到达：从按下位置开始框选（清除当前选中集）。</summary>
-    private void OnLongPressTriggered()
-    {
-        _longPressTimer?.Stop();
-        if (!_longPressPending) return;
-
-        _longPressPending = false;
+        // 4. 空白处起拖 → 直接拉选框（不必先长按）。
+        //    单击空白（释放时没移动）在 OnPointerReleased 里当作"清除选中"。
         _isRubberBanding = true;
-        _rubberBandStart = _longPressStart;
+        _rubberBandStart = pos;
         _rubberBandRect = null;
         _selectedControls.Clear();
         FireSelectionChanged();
         UpdateMultiAdorner();
-        InvalidateVisual();
+        e.Handled = true;
     }
 
-    /// <summary>取消待定的长按框选（快速点击/移动时调用），并执行普通点击空白的取消选中。</summary>
-    private void CancelLongPressSelection()
+    /// <summary>
+    /// 右键 / 菜单让位：有在途绘制就先结束（够点即提交）并退出工具；
+    /// 没有在途绘制时只退出工具（不碰选中集）。
+    /// </summary>
+    private void CancelToolByGesture()
     {
-        _longPressPending = false;
-        _longPressTimer?.Stop();
-        _longPressTimer = null;
-
-        _selectedControls.Clear();
-        FireSelectionChanged();
-        ClearSelectionVisuals();
-
-        // 清除参考线
-        _currentGuides.Clear();
-        if (Adorner != null)
-        {
-            Adorner.AlignmentGuides = Array.Empty<AlignmentGuide>();
-            Adorner.InvalidateVisual();
-        }
-
-        _dragMode = DragMode.None;
-        _dragControl = null;
-        InvalidateVisual();
+        FinishToolGesture();
+        if (DrawTool != null)
+            ToolDismissRequested?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>
+    /// 画布请求退出当前工具（右键取消）。工具状态的真源在 <c>DockLayoutState</c>，
+    /// 画布不自己改——否则工具栏高亮与静态状态会与画布不一致，重开画布又恢复成"正在画"。
+    /// </summary>
+    public event EventHandler? ToolDismissRequested;
 
     protected override void OnPointerMoved(PointerEventArgs e)
     {
@@ -312,37 +298,38 @@ public partial class DesignCanvas : Control
 
         var pos = e.GetPosition(this);
 
-        // I10: 点击式绘制（Line/Polyline）—— 更新橡皮筋预览终点
-        if (DrawTool.HasValue
-            && DrawTool.Value is HmiControlType.Line or HmiControlType.Polyline
-            && _clickPoints.Count > 0)
+        // I10: 按点图元 —— 更新橡皮筋终点；按住并拖出去时先补上按下位置，
+        // 于是"按下→拖→抬起"一次就得到两个端点（直线/圆弧用一拖即成形状）
+        if (DrawTool is { IsPointTool: true } pointTool)
         {
-            _clickHoverPoint = pos;
+            // 预览要跟着 Shift 一起变形，否则橡皮筋指着一个方向、落下却到另一个方向
+            var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+            _drawHoverPoint = shift && _drawSession is { HasPoints: true } session
+                ? ConstrainViewport(ToViewport(session.Points[^1]), pos)
+                : pos;
+            if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed && !_drawPressMoved)
+            {
+                var dx = pos.X - _drawPressViewport.X;
+                var dy = pos.Y - _drawPressViewport.Y;
+                if (Math.Abs(dx) > DrawDragThreshold || Math.Abs(dy) > DrawDragThreshold)
+                {
+                    _drawPressMoved = true;
+                    // 只在还没取过点时补：已在画折线时拖一下不该凭空多出一个顶点
+                    if (_drawSession is { HasPoints: false })
+                        TakeDrawPoint(_drawPressViewport);
+                }
+            }
             InvalidateVisual();
             e.Handled = true;
             return;
         }
 
-        // I10: 绘图拖拽中 —— 更新预览矩形
+        // I10: 拖框绘制中 —— 更新预览矩形
         if (_isDrawing)
         {
             _drawCurrentPoint = pos;
             InvalidateVisual();
             e.Handled = true;
-            return;
-        }
-
-        // 长按框选等待中：指针移动超过容差 → 取消长按（按普通点击空白处理）
-        if (_longPressPending)
-        {
-            if (Math.Abs(pos.X - _longPressStart.X) > LongPressMoveTolerance ||
-                Math.Abs(pos.Y - _longPressStart.Y) > LongPressMoveTolerance)
-            {
-                CancelLongPressSelection();
-                UpdateCursor(pos);
-                e.Handled = true;
-                return;
-            }
             return;
         }
 
@@ -419,6 +406,11 @@ public partial class DesignCanvas : Control
             ApplyResize(ctrl, pos);
             ControlPropertyChanged?.Invoke(this, ctrl);
         }
+        else if (_dragMode == DragMode.Vertex)
+        {
+            // Shift = 正交：只沿水平/垂直方向移（锚点是相邻顶点），不吸网格也不吸对齐
+            ApplyAnchorDrag(pos, e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+        }
 
         UpdateMultiAdorner();
         InvalidateVisual();
@@ -429,18 +421,20 @@ public partial class DesignCanvas : Control
     {
         base.OnPointerReleased(e);
 
-        // I10: 绘图拖拽结束 —— 提交绘制的图形
-        if (_isDrawing)
+        // I10: 按点图元抬起 → 取一个点（拖动过的话按下位置已在阈值处补上）
+        if (DrawTool is { IsPointTool: true })
         {
-            CommitDraw(e.GetPosition(this));
+            // Shift：把这一笔约束到"上一点出发的水平/垂直方向"（画直管、直角折线最常用）
+            TakeDrawPoint(e.GetPosition(this), e.KeyModifiers.HasFlag(KeyModifiers.Shift));
+            _drawPressMoved = false;
             e.Handled = true;
             return;
         }
 
-        // 长按框选等待中快速释放 → 按普通点击空白处理（取消选中）
-        if (_longPressPending)
+        // I10: 拖框工具抬起 —— 提交拖出的框（没拖动则按默认尺寸放置）
+        if (_isDrawing)
         {
-            CancelLongPressSelection();
+            CommitBoxDraw(e.GetPosition(this));
             e.Handled = true;
             return;
         }
@@ -451,11 +445,23 @@ public partial class DesignCanvas : Control
             _isRubberBanding = false;
             _rubberBandRect = null;
             var pos = e.GetPosition(this);
+            var dx = Math.Abs(pos.X - _rubberBandStart.X);
+            var dy = Math.Abs(pos.Y - _rubberBandStart.Y);
+
+            // 没拖出框 = 单击空白 → 只清选中，不当作"框住 0 个控件"
+            if (dx < DrawDragThreshold && dy < DrawDragThreshold)
+            {
+                FireSelectionChanged();
+                ClearSelectionVisuals();
+                InvalidateVisual();
+                e.Handled = true;
+                return;
+            }
+
             var selRect = new Avalonia.Rect(
                 Math.Min(_rubberBandStart.X, pos.X),
                 Math.Min(_rubberBandStart.Y, pos.Y),
-                Math.Abs(pos.X - _rubberBandStart.X),
-                Math.Abs(pos.Y - _rubberBandStart.Y));
+                dx, dy);
 
             // 框选语义：从左向右要求完全包含，从右向左允许相交。
             // 隐藏/锁定控件不进入普通选择，避免用户无法编辑或看不到的对象被误选。
@@ -492,7 +498,13 @@ public partial class DesignCanvas : Control
             return;
         }
 
-        if (_dragMode != DragMode.None && _dragControl != null)
+        if (_dragMode == DragMode.Vertex && _dragControl != null)
+        {
+            // 顶点拖拽改的是"框 + 点集 + 起止角"这一组几何，撤销命令与移动/缩放不同源
+            CommitAnchorDrag(_dragControl);
+            ControlPropertyChanged?.Invoke(this, _dragControl);
+        }
+        else if (_dragMode != DragMode.None && _dragControl != null)
         {
             // 拖拽过程实时修改模型，释放时只提交一条历史记录。
             CommitDragHistory();
@@ -502,6 +514,8 @@ public partial class DesignCanvas : Control
         _dragMode = DragMode.None;
         _dragControl = null;
         _activeHandleIndex = -1;
+        _vertexIndex = -1;
+        _vertexStart = null;
         _dragStartAllBounds = null; // 清除多选移动临时状态
         _dragStartAbsolute = null;
         _currentGuides.Clear();
@@ -513,17 +527,26 @@ public partial class DesignCanvas : Control
         InvalidateVisual();
     }
 
-    /// <summary>取消当前移动/缩放事务，恢复按下时的全部边界。</summary>
+    /// <summary>取消当前移动/缩放/顶点事务，恢复按下时的全部几何。</summary>
     public void CancelActiveGesture()
     {
-        if (_dragStartAllBounds == null) return;
+        if (_dragMode == DragMode.None) return;
+
         _historyReplaying = true;
         try
         {
-            foreach (var pair in _dragStartAllBounds)
+            if (_dragMode == DragMode.Vertex && _dragControl != null && _vertexStart is { } start)
             {
-                pair.Key.X = pair.Value.X; pair.Key.Y = pair.Value.Y;
-                pair.Key.Width = pair.Value.Width; pair.Key.Height = pair.Value.Height;
+                RestoreGeometry(_dragControl, start);
+            }
+
+            if (_dragStartAllBounds != null)
+            {
+                foreach (var pair in _dragStartAllBounds)
+                {
+                    pair.Key.X = pair.Value.X; pair.Key.Y = pair.Value.Y;
+                    pair.Key.Width = pair.Value.Width; pair.Key.Height = pair.Value.Height;
+                }
             }
         }
         finally
@@ -534,6 +557,8 @@ public partial class DesignCanvas : Control
             _dragStartAllBounds = null;
             _dragStartAbsolute = null;
             _activeHandleIndex = -1;
+            _vertexIndex = -1;
+            _vertexStart = null;
             _currentGuides.Clear();
             if (Adorner != null) Adorner.AlignmentGuides = Array.Empty<AlignmentGuide>();
             UpdateMultiAdorner();
@@ -673,6 +698,13 @@ public partial class DesignCanvas : Control
             return;
         }
 
+        // 顶点手柄：与缩放手柄一样给"可拖"的提示，否则细线上抓不到点
+        if (HitTestGeometryAnchor(pos) != null)
+        {
+            Cursor = new Cursor(StandardCursorType.SizeAll);
+            return;
+        }
+
         var handleIndex = HitTestHandle(pos);
         Cursor = handleIndex switch
         {
@@ -802,12 +834,14 @@ public partial class DesignCanvas : Control
 
         if (_selectedControls.Count == 1)
         {
-            // 单选 → 显示常规选择框+手柄（框跟着控件转）
+            // 单选 → 显示常规选择框+手柄（框跟着控件转）；
+            // 按点图元只留虚线框：形状由顶点决定，8 个缩放点只会跟端点手柄抢命中
             var ctrl = _selectedControls[0];
             Adorner.SelectionBounds = GetControlViewRect(ctrl);
             Adorner.SelectionRotation = ctrl.EffectiveRotation();
             Adorner.IsSelectionVisible = true;
             Adorner.ShowMultiSelection = false;
+            Adorner.ShowHandles = !FigureGeometry.IsPointFigure(ctrl);
             Adorner.InvalidateVisual();
             return;
         }

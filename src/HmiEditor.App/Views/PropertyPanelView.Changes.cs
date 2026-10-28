@@ -373,6 +373,8 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.PipeFlowDirection), GetComboTag(PipeFlowDirectionCombo), v => _currentControl.PipeFlowDirection = v);
             if (PipeFlowSpeedBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.PipeFlowSpeed), (int)PipeFlowSpeedBox.Value, v => _currentControl.PipeFlowSpeed = v);
+            if (PipeWidthBox.IsVisible)
+                ValidateAndWrite(nameof(HmiControl.PipeWidth), PipeWidthBox.Value, v => _currentControl.PipeWidth = v);
             if (ValveTypeCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ValveType), GetComboTag(ValveTypeCombo), v => _currentControl.ValveType = v);
         }

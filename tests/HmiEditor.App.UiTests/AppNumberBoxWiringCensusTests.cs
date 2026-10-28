@@ -42,7 +42,7 @@ public class AppNumberBoxWiringCensusTests
     {
         // 批次 1a 加了 9 个数字框（仪表 5 / 指示灯 1 / 按钮 3），接线同步补齐
         // 69 = 68 + InputDecimalsBox（输入框的「小数位」，数值型输入按它格式化写回）
-        new("PropertyPanelView.axaml", 69, "enumerated", "PropertyPanelWiringTests.cs"),
+        new("PropertyPanelView.axaml", 70, "enumerated", "PropertyPanelWiringTests.cs"),
         new("SettingsDialog.axaml", 9, "perBox", "SettingsDialogNumberBoxWiringTests.cs"),
         new("ScreenManagerView.axaml", 2, "perBox", "ScreenManagerNumberBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 1, "perBox", "ProjectSettingsNumberBoxWiringTests.cs"),

@@ -69,12 +69,26 @@ public static class NewControlDefaults
                 if (points is { Count: >= 2 }) control.Points = points.Take(2).ToList();
                 break;
 
+            case HmiControlType.Shape when control.ShapeKind is "arc" or "pie":
+                // 通用图元里的弧/扇与 Arc 控件导出的是同一个 kind，角度必须同一套默认值：
+                // 模型给的是量程默认 0..100，直接导出会变成 100° 的弧（面板上还没有这两行可改）。
+                if (control.MinValue == 0 && control.MaxValue == 100)
+                {
+                    // 同 Arc：默认 3/4 圆。0..360 的扇形是个整圆，起止两端的手柄叠在一起
+                    control.MinValue = 0;
+                    control.MaxValue = 270;
+                }
+                if (control.BorderWidth <= 0) control.BorderWidth = 6;
+                if (string.IsNullOrEmpty(control.BorderColor)) control.BorderColor = "#38bdf8";
+                break;
+
             case HmiControlType.Arc:
                 if (control.BorderWidth <= 0) control.BorderWidth = 10;
                 if (control.MinValue == 0 && control.MaxValue == 100)
                 {
-                    // 角度范围 0..360°，指示弧默认 270°（3/4 圆）
-                    control.MaxValue = 360;
+                    // 默认 3/4 圆（0..270）：这是"弧"的常见形状，也让起止两个端点手柄**分得开**
+                    // —— 0..360 时两个手柄落在同一点上，用户根本抓不到第二个
+                    control.MaxValue = 270;
                     control.Value = 270;
                 }
                 if (string.IsNullOrEmpty(control.IndicatorColor)) control.IndicatorColor = "#38bdf8";

@@ -57,6 +57,7 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, false);
         SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, false);
         SetParamRow(LblPipeWall, PipeWallBox, false);
+        SetParamRow(LblPipeWidth, PipeWidthBox, false);
         SetParamRow(LblPipeChannel, PipeChannelColorBox, false);
         SetParamRow(LblShapeKind, ShapeKindCombo, false);
         // 数据类控件（行太多，挪到 PropertyPanelView.Parameters.DataViews.cs）
@@ -246,6 +247,7 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, true);
                 SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, true);
                 SetParamRow(LblPipeWall, PipeWallBox, true);
+                SetParamRow(LblPipeWidth, PipeWidthBox, true);
                 SetParamRow(LblPipeChannel, PipeChannelColorBox, true);
                 DetailParamExpander.IsVisible = true;
                 break;
@@ -377,6 +379,7 @@ public partial class PropertyPanelView : UserControl
         FillCurveFields(control);
         FillAlarmFields(control);
         PipeWallBox.Value = control.PipeWall;
+        PipeWidthBox.Value = Math.Clamp(control.PipeWidth, 4, 200);
         PipeChannelColorBox.Text = control.PipeChannelColor ?? "";
         SelectComboByTag(ShapeKindCombo, control.ShapeKind, 0);
         FillDataViewFields(control);

@@ -37,6 +37,7 @@ public sealed class DesignHostPreview : IDisposable
     private WriteableBitmap? _bitmap;
     private byte[] _frame = Array.Empty<byte>();
     private byte[]? _lastPayload;          /* 上一份推给宿主的页面 JSON（判"重建是否白重建"） */
+    private string? _lastWarnText;         /* 上一次打印过的导出告警（避免每次重建都刷同一串） */
     private static readonly bool _frameTrace =
         Environment.GetEnvironmentVariable("HMI_TRACE_FRAME") == "1";
     private static readonly bool _hostSay =
@@ -301,6 +302,21 @@ public sealed class DesignHostPreview : IDisposable
                 Console.WriteLine($"[design] J 内容变化 {_lastPayload.Length}→{bytes.Length} 字节 @{at}：{Snippet(bytes, at)}");
             }
             _lastPayload = bytes;
+
+            // 导出告警进日志：设计画布画的只是宿主里那一份 JSON，而导出器会**丢掉**
+            // 不在「编辑器嵌入副本 schema」里的属性（代码 prop.not_in_schema）——
+            // 这类丢键在画布上的表现是"改了没反应/按老样子画"，日志里必须留痕。
+            // （pipe.points 就是副本落后于 spec 时被静默丢掉的，画布画成一条直带。）
+            var warnText = string.Join(" | ", export.Issues.Items
+                .Where(i => i.Severity == ChengeIssueSeverity.Warning)
+                .Select(i => $"{i.Code} @ {i.Location}")
+                .Distinct()
+                .Take(6));
+            if (warnText.Length > 0 && warnText != _lastWarnText)
+            {
+                _lastWarnText = warnText;
+                Console.WriteLine($"[design] 导出告警：{warnText}");
+            }
 
             // 调试：HMI_DUMP_PAGE=<文件> 时把每次推给宿主的页面 JSON 落盘 —— 画布空白时
             // 第一件要确认的事就是"宿主拿到的到底是什么"，而它只活在进程间的 stdin 里。

@@ -8,10 +8,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using HmiEditor.App.Resources;
 using HmiEditor.App.Services;
+using HmiEditor.App.Views;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
@@ -213,6 +218,24 @@ public class ProjectFileOpenSaveRoundTripUiTests
     }
 
     /// <summary>
+    /// 走"画布提交 → 撤销命令 + 面板刷新 + 未保存标记"这条生产链路加一个控件。
+    ///
+    /// <para>⚠ 这里**不**模拟鼠标：Dock 的文档面板在 headless 下不一定进可视树
+    /// （实测本类里拿不到 TopLevel），发不出真实指针事件。指针手势本身由
+    /// <c>CanvasDrawGestureTests</c> 用真指针序列判；本条判的是"改动能否落盘"。</para>
+    /// </summary>
+    private static void AddControlThroughCanvas(MainWindow window)
+    {
+        // 活动视图（已 SetScreen 的那个）由 ViewLocator 记着；MainWindow 的 CanvasPanel 也走它
+        var view = ViewLocator.GetActiveView("Canvas") as DesignCanvasView;
+        Assert.True(view is not null, "主窗口里拿不到活动画布实例");
+
+        var control = view!.Canvas.AddControlAt(HmiControlType.Button, 120, 120, 120, 44);
+        DockLayoutState.RaiseControlDrawn(view, new HmiEditor.App.Controls.ControlDrawnEventArgs(control));
+        UiTestHost.Pump(1);
+    }
+
+    /// <summary>
     /// 打开一个工程并驱动到完成。
     ///
     /// <para><b>终态谓词为什么用标题</b>：`Title` 在 `OpenHmiFile` 的**收尾处**才被设成带工程名
@@ -365,7 +388,11 @@ public class ProjectFileOpenSaveRoundTripUiTests
                 var (opened, openDiag) = OpenAndSettle(window, hmiPath, "探针工程");
                 Assert.True(opened, $"前置条件不成立：打开没落地 —— {openDiag}");
 
+                // 生产入口：快捷按钮**选中「按钮」绘制工具**（不再就地落控件），
+                // 控件由画布提交进来（撤销命令 + 未保存标记都在那条链上）
                 Click(window, "BtnQuickButton");
+                DriveLayout(window, 2);
+                AddControlThroughCanvas(window);
                 DriveLayout(window, 2);
 
                 var sentinel = SetSentinel(hmiPath);

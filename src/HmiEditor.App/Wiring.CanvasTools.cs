@@ -138,21 +138,22 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// 绑定绘图工具栏：图形工具按钮（互斥单选 → 画布绘图模式）+ 控件快捷按钮（单击即添加）。
+    /// 绑定绘图工具栏：图形工具按钮（互斥单选 → 画布绘图模式）+ 控件快捷按钮（选中该控件的绘制工具）。
     /// 工具栏状态与 DockLayoutState.ActiveDrawTool 双向同步（Dock 重建后画布恢复工具状态）。
     /// </summary>
     private void WireDrawToolbar()
     {
         // 图形工具：选择 / 矩形 / 椭圆 / 折线 / 圆弧 / 直线 / 文本
+        // 再点一次已激活的那一项 = 取消工具（与工具箱同一套 Toggle 语义）
         BtnToolSelect.Click += (_, _) => SetDrawTool(null);
-        BtnToolRectangle.Click += (_, _) => SetDrawTool(HmiControlType.Rectangle);
-        BtnToolEllipse.Click += (_, _) => SetDrawTool(HmiControlType.Ellipse);
-        BtnToolPolyline.Click += (_, _) => SetDrawTool(HmiControlType.Polyline);
-        BtnToolArc.Click += (_, _) => SetDrawTool(HmiControlType.Arc);
-        BtnToolLine.Click += (_, _) => SetDrawTool(HmiControlType.Line);
-        BtnToolText.Click += (_, _) => SetDrawTool(HmiControlType.Label);
+        BtnToolRectangle.Click += (_, _) => ToggleDrawTool(CanvasTool.Widget(HmiControlType.Rectangle));
+        BtnToolEllipse.Click += (_, _) => ToggleDrawTool(CanvasTool.Widget(HmiControlType.Ellipse));
+        BtnToolPolyline.Click += (_, _) => ToggleDrawTool(CanvasTool.Figure("polyline"));
+        BtnToolArc.Click += (_, _) => ToggleDrawTool(CanvasTool.Figure("arc"));
+        BtnToolLine.Click += (_, _) => ToggleDrawTool(CanvasTool.Figure("line"));
+        BtnToolText.Click += (_, _) => ToggleDrawTool(CanvasTool.Widget(HmiControlType.Label));
 
-        // 控件快捷按钮：单击在画布中心添加控件并回到选择模式
+        // 控件快捷按钮：选中该类型的绘制工具（画布上点放 / 拖框都行），不再就地落控件
         BtnQuickButton.Click += (_, _) => QuickAddControl(HmiControlType.Button);
         BtnQuickLabel.Click += (_, _) => QuickAddControl(HmiControlType.Label);
         BtnQuickSlider.Click += (_, _) => QuickAddControl(HmiControlType.Slider);
@@ -173,5 +174,63 @@ public partial class MainWindow
 
         // 初始状态（默认选择工具）
         SyncDrawToolbar(DockLayoutState.ActiveDrawTool);
+    }
+
+    /// <summary>
+    /// 激活指定绘图工具（null = 返回选择模式）。
+    /// 设置后同步按钮高亮 —— 即使工具状态未变化（点击已激活工具）也恢复按钮选中态，
+    /// 避免 ToggleButton 自动翻转导致高亮与真实状态不一致。
+    /// </summary>
+    private void SetDrawTool(CanvasTool? tool)
+    {
+        DockLayoutState.SetDrawTool(tool);
+        SyncDrawToolbar(DockLayoutState.ActiveDrawTool);
+        // 工具生命周期进日志：用户报"创建不了"时先看这一行（有没有 arm、Mode 对不对）
+        Console.WriteLine($"[draw] arm={Describe(DockLayoutState.ActiveDrawTool)}");
+    }
+
+    /// <summary>点同一工具项再点一次 = 取消工具；否则激活它。</summary>
+    private void ToggleDrawTool(CanvasTool tool)
+    {
+        DockLayoutState.ToggleDrawTool(tool);
+        SyncDrawToolbar(DockLayoutState.ActiveDrawTool);
+        Console.WriteLine($"[draw] toggle={Describe(tool)} → {Describe(DockLayoutState.ActiveDrawTool)}");
+    }
+
+    /// <summary>工具的可读描述（日志用）：类型 / kind / 取点方式。</summary>
+    private static string Describe(CanvasTool? tool)
+        => tool is { } t ? $"{t.Type}/{t.Kind}/{t.Mode}" : "null";
+
+    /// <summary>
+    /// 控件快捷添加：选中该类型的绘制工具，由用户决定落在画布的哪里
+    /// （单击放默认尺寸、拖框定尺寸）。不再"点一下就在画布中心落一个控件"。
+    /// </summary>
+    private void QuickAddControl(HmiControlType type) => ToggleDrawTool(CanvasTool.Widget(type));
+
+    /// <summary>同步绘图工具栏按钮高亮与提示文本（工具状态变化时调用）。</summary>
+    private void SyncDrawToolbar(CanvasTool? tool)
+    {
+        bool Is(HmiControlType type) => tool is { } armed && armed.Type == type;
+
+        BtnToolSelect.IsChecked = tool == null;
+        BtnToolRectangle.IsChecked = Is(HmiControlType.Rectangle);
+        BtnToolEllipse.IsChecked = Is(HmiControlType.Ellipse);
+        BtnToolPolyline.IsChecked = Is(HmiControlType.Polyline) || tool?.Kind == "polyline";
+        BtnToolArc.IsChecked = Is(HmiControlType.Arc) || tool?.Kind == "arc";
+        BtnToolLine.IsChecked = Is(HmiControlType.Line) || tool?.Kind == "line";
+        BtnToolText.IsChecked = Is(HmiControlType.Label);
+
+        DrawHintText.IsVisible = tool != null;
+        DrawHintText.Text = tool switch
+        {
+            null => "",
+            // 按点图元：提示单击取点、右键/ESC 结束
+            { IsPointTool: true }
+                => $"{LocService["draw.hint.click"]} · {LocService["draw.esc.exit"]}",
+            _ => $"{LocService["draw.hint"]} · {LocService["draw.esc.exit"]}",
+        };
+
+        // 工具箱那一列也要跟着亮/灭（同一条工具在两个入口上必须表现一致）
+        ToolboxPanel?.SetActiveTool(tool);
     }
 }

@@ -269,8 +269,12 @@ public partial class DesignCanvas : Control
 
     // ── 内部状态 ──
 
-    private enum DragMode { None, Move, Resize }
+    private enum DragMode { None, Move, Resize, Vertex }
     private DragMode _dragMode = DragMode.None;
+
+    /// <summary>正在拖的顶点序号与按下瞬间的几何快照（撤销/ESC 回滚用）。</summary>
+    private int _vertexIndex = -1;
+    private GeometrySnapshot? _vertexStart;
 
     private readonly List<HmiControl> _selectedControls = new();
 
@@ -311,15 +315,6 @@ public partial class DesignCanvas : Control
     private bool _isRubberBanding;
     private Point _rubberBandStart;
     private Rect? _rubberBandRect;
-
-    // ── 长按框选：空白区域按住左键达到阈值后从按下位置开始框选 ──
-    /// <summary>长按触发框选的延迟（毫秒）。</summary>
-    private static readonly TimeSpan LongPressDelay = TimeSpan.FromMilliseconds(400);
-    /// <summary>长按判定前允许的指针移动容差（像素，视图坐标），防止轻微抖动误触发。</summary>
-    private const double LongPressMoveTolerance = 6;
-    private DispatcherTimer? _longPressTimer;
-    private Point _longPressStart;
-    private bool _longPressPending;
 
     // ── 复制粘贴剪贴板（进程内内存存储，支持多控件）──
     private List<HmiControl>? _clipboardControls;
@@ -373,25 +368,29 @@ public partial class DesignCanvas : Control
     public event EventHandler<ControlDrawnEventArgs>? ControlDrawn;
 
     /// <summary>
-    /// I10: 当前激活的绘图工具（控件类型）。null = 普通选择/编辑模式。
+    /// I10: 当前激活的绘图工具。null = 普通选择/编辑模式。
     /// 非 null 时，画布上的按下/拖拽/释放用于"画图"而非选中/移动控件：
-    ///   拖拽 → 以拖拽矩形为边界创建对应图形；单击 → 在点击处创建默认尺寸图形。
+    ///   拖框工具 → 拖出的矩形为控件边界，单击 → 在点击处放默认尺寸；
+    ///   按点图元（线/折线/圆弧/多边形/管道）→ 每次点击取一个点，取满或右键/ESC 结束。
     /// </summary>
-    public HmiControlType? DrawTool
+    public CanvasTool? DrawTool
     {
         get => GetValue(DrawToolProperty);
         set => SetValue(DrawToolProperty, value);
     }
 
-    public static readonly StyledProperty<HmiControlType?> DrawToolProperty =
-        AvaloniaProperty.Register<DesignCanvas, HmiControlType?>(nameof(DrawTool));
+    public static readonly StyledProperty<CanvasTool?> DrawToolProperty =
+        AvaloniaProperty.Register<DesignCanvas, CanvasTool?>(nameof(DrawTool));
 
-    /// <summary>工具切换/退出时，先提交未完成的点击式绘制（折线/直线顶点序列）。</summary>
+    /// <summary>
+    /// 工具切换/退出时**放弃**未完成的绘制（不留半成品、也不就地落控件）。
+    /// 只有在画布上按 ESC / 右键（<see cref="FinishToolGesture"/>）才走"够点即提交"。
+    /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
         if (change.Property == DrawToolProperty)
-            FlushClickDraw();
+            AbortToolSession();
     }
 
     // ── I10: 绘图过程状态（DrawTool 激活时有效）──
@@ -399,11 +398,22 @@ public partial class DesignCanvas : Control
     private Point _drawCurrentPoint;
     private bool _isDrawing;
 
-    // I10: 点击式绘制（Line / Polyline）—— 每次左键单击追加一个顶点，
-    // 移动鼠标显示"当前点 → 鼠标"的橡皮筋预览；Line 第二击提交，
-    // Polyline 持续追加直到退出工具（ESC / 切换工具）时提交。
-    private readonly List<Point> _clickPoints = new();
-    private Point _clickHoverPoint;
+    /// <summary>按点图元的在途会话（选中工具后第一次落点才创建）。</summary>
+    private FigureDrawSession? _drawSession;
+
+    /// <summary>按点图元的鼠标悬停位置（视口坐标）—— 预览里的橡皮筋终点。</summary>
+    private Point _drawHoverPoint;
+
+    /// <summary>本次按下期间指针是否移动过（决定"按下即取点"还是"抬起处取点"）。</summary>
+    private bool _drawPressMoved;
+    private Point _drawPressViewport;
+
+    /// <summary>指针从按下到抬起移动超过这个距离，按"拖"处理（否则算单击）。</summary>
+    private const double DrawDragThreshold = 4;
+
+    /// <summary>顶点手柄的命中容差（像素，视图坐标）。比缩放手柄大一点，细线上也好抓。</summary>
+    private const double AnchorHitTolerance = 7;
+
 
     /// <summary>
     /// 撤销/重做管理器。
@@ -546,30 +556,12 @@ public partial class DesignCanvas : Control
             context.DrawRectangle(null, pen, preview);
         }
 
-        // I10: 点击式绘制预览（Line / Polyline）—— 已点顶点连线 + 到鼠标的橡皮筋
-        if (DrawTool.HasValue
-            && DrawTool.Value is HmiControlType.Line or HmiControlType.Polyline
-            && _clickPoints.Count > 0)
-        {
-            var ghostPen = RenderResourceCache.Pen(DesignPalette.SkyAccent, 1.5, PenLineCap.Round);
-            var vertexBrush = RenderResourceCache.Brush(DesignPalette.SkyAccent);
-            for (var i = 0; i < _clickPoints.Count; i++)
-            {
-                var p = _clickPoints[i];
-                // 已确认顶点画小方块标记
-                context.FillRectangle(vertexBrush, new Rect(p.X - 2, p.Y - 2, 4, 4));
-                if (i > 0)
-                    context.DrawLine(ghostPen, _clickPoints[i - 1], p);
-            }
-            // 橡皮筋：最后一个顶点 → 当前鼠标位置
-            if (_clickPoints.Count > 0)
-            {
-                context.DrawLine(ghostPen, _clickPoints[^1], _clickHoverPoint);
-            }
-        }
+        // I10: 按点图元预览 —— 已取点连线 + 到鼠标的橡皮筋（视口坐标）
+        if (_drawSession is { HasPoints: true } session)
+            DrawPointPreview(context, session);
 
-        // I10: 绘图预览 —— 拖拽绘制时按当前工具实时显示图形轮廓（视口坐标）
-        if (_isDrawing && DrawTool.HasValue)
+        // I10: 拖框工具预览 —— 拖拽时按当前工具实时显示图形轮廓（视口坐标）
+        if (_isDrawing && DrawTool is { IsPointTool: false } boxTool)
         {
             var x = Math.Min(_drawStartPoint.X, _drawCurrentPoint.X);
             var y = Math.Min(_drawStartPoint.Y, _drawCurrentPoint.Y);
@@ -580,23 +572,11 @@ public partial class DesignCanvas : Control
                 var previewRect = new Rect(x, y, w, h);
                 var ghostBrush = RenderResourceCache.Brush(DesignPalette.SkyAccent, 0.15);
                 var ghostPen = RenderResourceCache.Pen(DesignPalette.SkyAccent, 1.5, PenLineCap.Round);
-                switch (DrawTool.Value)
+                switch (boxTool.Kind)
                 {
-                    case HmiControlType.Rectangle:
-                        context.FillRectangle(ghostBrush, previewRect);
-                        context.DrawRectangle(null, ghostPen, previewRect);
-                        break;
-                    case HmiControlType.Ellipse:
+                    case "ellipse":
+                    case "circle":
                         context.DrawEllipse(ghostBrush, ghostPen, previewRect);
-                        break;
-                    case HmiControlType.Polyline:
-                    case HmiControlType.Line:
-                        context.DrawLine(ghostPen, new Point(x, y), new Point(x + w, y + h));
-                        break;
-                    case HmiControlType.Arc:
-                        var arcPen = RenderResourceCache.Pen(DesignPalette.SkyAccent, 6, PenLineCap.Round);
-                        // 预览默认 0..270° 弧（LVGL 角度约定，提交后按 MinValue/MaxValue/Value 呈现）
-                        DrawArcPolyline(context, arcPen, previewRect, 0, 270);
                         break;
                     default:
                         context.FillRectangle(ghostBrush, previewRect);
@@ -605,6 +585,9 @@ public partial class DesignCanvas : Control
                 }
             }
         }
+
+        // 选中一个"按点图元"时，画出它的顶点手柄（视口坐标，盖在宿主位图之上）
+        DrawGeometryAnchors(context);
 
         // R2-T2: 预览模式横幅（视口坐标，画布顶部居中）
         if (IsPreviewMode)
@@ -853,6 +836,152 @@ public partial class DesignCanvas : Control
         double startAngle, double sweepAngle)
     {
         context.DrawGeometry(null, pen, RenderResourceCache.Arc(rect, startAngle, sweepAngle, asPolyline: true));
+    }
+
+    // ── 按点图元：绘制预览与顶点手柄 ──
+
+    /// <summary>
+    /// 绘制过程中的预览：已取的点连线、最后一个点到鼠标的橡皮筋；角度图元按"两点作直径"
+    /// 直接预演将要生成的半圆 —— 提交前后看到的是同一个形状。
+    /// </summary>
+    private void DrawPointPreview(DrawingContext context, FigureDrawSession session)
+    {
+        var pen = RenderResourceCache.Pen(DesignPalette.SkyAccent, 1.6, PenLineCap.Round);
+        var rubberPen = new Pen(RenderResourceCache.Brush(DesignPalette.SkyAccent, 0.75), 1.2)
+        {
+            DashStyle = new DashStyle(new double[] { 4, 3 }, 0),
+        };
+        var vertexBrush = RenderResourceCache.Brush(DesignPalette.SkyAccent);
+        var pts = session.Points.Select(ToViewport).ToList();
+
+        if (session.Mode == FigurePointMode.Angle && session.Points.Count >= 1)
+        {
+            // 起止角由两个端点唯一确定；第二点还没落下时用鼠标位置当第二个端点
+            var second = session.Points.Count >= 2 ? session.Points[1] : ToModelData(_drawHoverPoint);
+            var arc = FigureGeometry.ArcFromEndpoints(session.Points[0], second);
+            var arcPen = RenderResourceCache.Pen(DesignPalette.SkyAccent, 3, PenLineCap.Round);
+            var rect = ModelRectToViewport(arc.X, arc.Y, arc.W, arc.H);
+            DrawArcPolyline(context, arcPen, rect, arc.Start, arc.End - arc.Start);
+            context.DrawLine(rubberPen, ToViewport(session.Points[0]), ToViewport(second));
+            foreach (var p in pts) context.FillRectangle(vertexBrush, new Rect(p.X - 2.5, p.Y - 2.5, 5, 5));
+            return;
+        }
+
+        for (var i = 0; i < pts.Count; i++)
+        {
+            context.FillRectangle(vertexBrush, new Rect(pts[i].X - 2.5, pts[i].Y - 2.5, 5, 5));
+            if (i > 0) context.DrawLine(pen, pts[i - 1], pts[i]);
+        }
+
+        if (pts.Count > 0)
+            context.DrawLine(rubberPen, pts[^1], _drawHoverPoint);
+
+        // 闭合图元：预览里把"鼠标 → 首点"那条也画出来，否则看不出会不会闭合
+        if (session.Mode == FigurePointMode.ClosedPath && pts.Count >= 2)
+            context.DrawLine(rubberPen, _drawHoverPoint, pts[0]);
+    }
+
+    /// <summary>
+    /// 选中单个按点图元时画出顶点手柄。放在画布层（而不是 <c>SelectionAdorner</c>）是因为
+    /// 手柄位置要从模型坐标换到视口坐标，与命中测试共用同一套换算。
+    /// </summary>
+    private void DrawGeometryAnchors(DrawingContext context)
+    {
+        if (_selectedControls.Count != 1) return;
+        var control = _selectedControls[0];
+        if (!FigureGeometry.IsPointFigure(control)) return;
+
+        var anchors = FigureGeometry.Anchors(control);
+        if (anchors.Count == 0) return;
+
+        const double hs = 7.0;
+        var fill = RenderResourceCache.Brush(Color.FromRgb(255, 255, 255), 1);
+        var stroke = new Pen(RenderResourceCache.Brush(DesignPalette.SkyAccent, 1), 1.2);
+        foreach (var anchor in anchors)
+        {
+            var p = AnchorToViewport(control, anchor);
+            context.DrawRectangle(fill, stroke, new Rect(p.X - hs / 2, p.Y - hs / 2, hs, hs));
+        }
+    }
+
+    /// <summary>模型矩形的视口矩形（缩放 + 平移，与渲染同一套换算）。</summary>
+    private Rect ModelRectToViewport(double x, double y, double w, double h)
+    {
+        var z = EffectiveZoom;
+        return new Rect(x * z + PanOffsetX, y * z + PanOffsetY, w * z, h * z);
+    }
+
+    /// <summary>模型点 → 视口点（缩放 + 平移）。</summary>
+    private Point ToViewport(PointData modelPoint)
+        => new(modelPoint.X * EffectiveZoom + PanOffsetX, modelPoint.Y * EffectiveZoom + PanOffsetY);
+
+    /// <summary>
+    /// 视口坐标上的 Shift 正交约束（与 <see cref="FigureGeometry.ConstrainOrtho"/> 同一规则，
+    /// 只是坐标系换成视口 —— 预览用的橡皮筋就画在视口里）。缩放是等比的，两个坐标系
+    /// 判出来的主方向一致。
+    /// </summary>
+    private static Point ConstrainViewport(Point anchor, Point point)
+        => Math.Abs(point.X - anchor.X) >= Math.Abs(point.Y - anchor.Y)
+            ? new Point(point.X, anchor.Y)
+            : new Point(anchor.X, point.Y);
+
+    /// <summary>顶点手柄的视口位置：模型坐标 → 缩放平移 → 控件自身的旋转/镜像。</summary>
+    private Point AnchorToViewport(HmiControl control, GeometryAnchor anchor)
+    {
+        var z = EffectiveZoom;
+        var p = new Point(anchor.X * z + PanOffsetX, anchor.Y * z + PanOffsetY);
+        if (!control.HasTransform) return p;
+
+        var center = new Point(
+            (control.X + control.Width / 2) * z + PanOffsetX,
+            (control.Y + control.Height / 2) * z + PanOffsetY);
+        return p.Transform(BuildControlTransform(center, control.EffectiveRotation(),
+            control.MirrorX, control.MirrorY));
+    }
+
+    /// <summary>视口坐标 → 手势顶点所在的**模型**坐标（<see cref="AnchorToViewport"/> 的逆）。</summary>
+    private Point AnchorViewportToModel(HmiControl control, Point viewportPoint)
+    {
+        var z = EffectiveZoom;
+        var p = viewportPoint;
+        if (control.HasTransform)
+        {
+            var center = new Point(
+                (control.X + control.Width / 2) * z + PanOffsetX,
+                (control.Y + control.Height / 2) * z + PanOffsetY);
+            var inv = BuildControlTransform(center, control.EffectiveRotation(),
+                control.MirrorX, control.MirrorY).Invert();
+            p = p.Transform(inv);
+        }
+        return new Point((p.X - PanOffsetX) / z, (p.Y - PanOffsetY) / z);
+    }
+
+    /// <summary>
+    /// 命中顶点手柄：返回 (控件, 锚点序号)，未命中返回 null。
+    /// <para>只在**已选中**的图元上找 —— 未选中时先按普通命中选中它，仍可继续拖，不会误抓别人的点。</para>
+    /// </summary>
+    private (HmiControl Control, int Index)? HitTestGeometryAnchor(Point viewportPoint)
+    {
+        if (_selectedControls.Count != 1) return null;
+        var control = _selectedControls[0];
+        var index = HitTestGeometryAnchorOn(control, viewportPoint);
+        return index < 0 ? null : (control, index);
+    }
+
+    /// <summary>某个图元上离该点最近的顶点手柄（没命中返回 -1）。</summary>
+    private int HitTestGeometryAnchorOn(HmiControl control, Point viewportPoint)
+    {
+        if (!FigureGeometry.IsPointFigure(control) || control.IsLocked || !control.IsVisible) return -1;
+
+        var anchors = FigureGeometry.Anchors(control);
+        for (var i = 0; i < anchors.Count; i++)
+        {
+            var p = AnchorToViewport(control, anchors[i]);
+            if (Math.Abs(p.X - viewportPoint.X) <= AnchorHitTolerance &&
+                Math.Abs(p.Y - viewportPoint.Y) <= AnchorHitTolerance)
+                return anchors[i].Index;
+        }
+        return -1;
     }
 
     /// <summary>按 AssetItem.Id 解析位图（带缓存）。加载失败返回 null。</summary>

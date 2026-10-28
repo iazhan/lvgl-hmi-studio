@@ -1170,6 +1170,13 @@
                         <fa:FANumberBox x:Name="InputDecimalsBox" Grid.Row="58" Grid.Column="1"
                                         Value="0" Minimum="0" Maximum="6"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                        <!-- 管道管径（契约 pipe.width）：按点画出来的管道粗细只由它决定 -->
+                        <TextBlock x:Name="LblPipeWidth" Text="{res:Loc prop.param.pipe.width}" Grid.Row="59" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"
+                                   ToolTip.Tip="{res:Loc prop.param.pipe.width.hint}"/>
+                        <fa:FANumberBox x:Name="PipeWidthBox" Grid.Row="59" Grid.Column="1"
+                                        Value="12" Minimum="4" Maximum="200"
+                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
                 </Expander>
 

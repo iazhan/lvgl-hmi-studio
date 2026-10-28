@@ -3512,8 +3512,8 @@ public class HostButtonEffectUiTests
                     + "`OnPointerMoved` 的 `DragMode.Move` 支：`dx = (pos.X - _dragStartPoint.X) / z` ⇒ "
                     + "`ctrl.X = SnapToGrid(_dragStartBounds.X + dx)`。夹具 `SnapStep = 5`（默认）、"
                     + "起点 X=40、dx=+50 ⇒ **40 + 50 = 90 恰好落在栅格上** ⇒「目标控件X」40 → **90**。"
-                    + "⚠ 这里**不按空白**收尾：`OnPointerPressed` 的空白支会 `StartLongPressSelection` **起一个 "
-                    + "`DispatcherTimer`**（长按框选）——那会让读数在后续腿里抖，本层刻意避开（见宿主注释）",
+                    + "⚠ 这里**不按空白**收尾：空白按下会直接进入框选（`_isRubberBanding`），"
+                    + "抬起时按\"没拖出框＝单击空白\"清选中，会让后续腿的读数变，本层刻意避开",
                     ("目标控件X", "90"),
                     // ⚠ 「末位控件X」这一格读的是 `Controls[^1]` —— 而夹具里 `NcCanvasTarget` **正好是最后一个**
                     //   ⇒ 拖动它就会让这一格跟着动（40 → 90）。**必须声明**：不声明就是「未声明分量外溢」。
@@ -3534,7 +3534,8 @@ public class HostButtonEffectUiTests
                     + "「控件数」2 → **3**、「末位控件类型」Button、「末位控件X」**400**"
                     + "（前两条是夹具的 `状态灯` 与 `NcCanvasTarget`；指针打的是空白处）",
                     ("控件数", "3"), ("末位控件类型", "Button"), ("末位控件X", "400")),
-                    c => ((Views.DesignCanvasView)c.Window.Content!).Canvas.DrawTool = HmiControlType.Button),
+                    c => ((Views.DesignCanvasView)c.Window.Content!).Canvas.DrawTool =
+                        CanvasTool.Widget(HmiControlType.Button)),
 
                 // ── ③ 预览开关：Moves（写 IsPreviewMode ＋ **清空选中**）──
                 Moves("PreviewToggleButton",

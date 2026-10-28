@@ -140,6 +140,7 @@ public partial class PropertyPanelView : UserControl
         AlarmScrollMsBox.ValueChanged += OnNumberChanged;
         AlarmScrollCharsBox.ValueChanged += OnNumberChanged;
         PipeWallBox.ValueChanged += OnNumberChanged;
+        PipeWidthBox.ValueChanged += OnNumberChanged;
         HistRowHeightBox.ValueChanged += OnNumberChanged;
         AsciiMaxLenBox.ValueChanged += OnNumberChanged;
 

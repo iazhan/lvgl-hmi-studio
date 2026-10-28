@@ -27,8 +27,15 @@ public static class AppearanceSupport
     /// <c>bg_color</c> 会把灯珠颜色盖掉；<c>QrCode</c> 的底由 <c>light_color</c> 决定。
     /// <c>Switch</c> 特殊：没有独立背景层，<c>bg_color</c> 当"断开时的轨道色"兜底。
     /// </summary>
+    /// <summary>
+    /// 有独立"背景色"这一行的类型。
+    ///
+    /// <para><b>Pipe 不在其列</b>：管道是自己画几何的复合控件（管壁 + 通道 + 流动块），
+    /// 对象本身必须完全透明 —— 给它背景色只会把整个控件矩形刷成一块底色、盖住管壁。
+    /// 同理也不该导出 <c>bg_color</c>（运行时对 pipe 直接忽略，但键留在产物里会误导人）。</para>
+    /// </summary>
     public static bool HasBgColor(HmiControlType type) => type is not
-        (HmiControlType.Led or HmiControlType.QrCode) && IsExported(type);
+        (HmiControlType.Led or HmiControlType.QrCode or HmiControlType.Pipe) && IsExported(type);
 
     /// <summary>
     /// 有矩形框（圆角 / 边框宽度 / 边框颜色）的类型 —— 也是导出器**总是**写

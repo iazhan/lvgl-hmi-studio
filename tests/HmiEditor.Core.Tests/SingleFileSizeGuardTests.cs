@@ -50,7 +50,9 @@ public class SingleFileSizeGuardTests
         // 本表纪律：变大要先想办法拆小，变小必须同步改小基线。
         // +4（真机渲染：属性面板改完要通知设计预览服务；工程就绪处自动挂载。逻辑都在
         //      MainWindow.CanvasHost.cs / DesignHostPreview.cs，主文件只留调用）
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2858 },
+        // -49（绘图工具的选中/取消与工具栏·工具箱高亮移进 Wiring.CanvasTools.cs：
+        //   那是它本来的归属，主文件只留调用点）
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2809 },
     };
 
     /// <summary>

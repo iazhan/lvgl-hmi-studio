@@ -1299,7 +1299,7 @@
           "default": 0,
           "min": 0,
           "max": 200,
-          "desc": "灯珠直径（0 = 按控件尺寸取小者）"
+          "desc": "灯珠直径（0 = 按控件尺寸取小者再扣掉两侧光晕，每边 8px：灯珠带柔和光晕，光晕要完整落在控件框内，溢出会被父容器裁成一圈硬边）"
         },
         "brightness": {
           "type": "int",
@@ -1523,19 +1523,19 @@
         "min": {
           "type": "int",
           "default": null,
-          "desc": "允许最小值；不写该键则不做下限校验（运行时按键存在性判定）"
+          "desc": "允许最小值（仅 mode=num）；不写该键则不做下限校验（运行时按键存在性判定）"
         },
         "max": {
           "type": "int",
           "default": null,
-          "desc": "允许最大值；不写该键则不做上限校验（运行时按键存在性判定）"
+          "desc": "允许最大值（仅 mode=num）；不写该键则不做上限校验（运行时按键存在性判定）"
         },
         "decimals": {
           "type": "int",
           "default": 0,
           "min": 0,
           "max": 6,
-          "desc": "小数位"
+          "desc": "小数位（仅 mode=num；mode 由绑定变量类型决定，文本/密码输入不写量程与小数位）"
         },
         "max_len": {
           "type": "int",
@@ -1909,14 +1909,26 @@
             "forward",
             "reverse"
           ],
-          "desc": "流动方向（与 direction 叠加：h 时 forward 从左到右）"
+          "desc": "流动方向（与 direction 叠加：h 时 forward 从左到右；给了 points 时沿路径正向/反向）"
+        },
+        "points": {
+          "type": "points",
+          "default": null,
+          "desc": "管道走向（相对控件左上角，2..64 点）；给了就按这条折线画管道并沿整条路径流动（直管 2 点 / 弯管 3 点 / 多段 N 点），不给按 direction 画直管"
         },
         "wall": {
           "type": "float",
           "default": 0.2,
           "min": 0.05,
           "max": 0.45,
-          "desc": "管壁厚度比例"
+          "desc": "管壁厚度比例（相对管径）"
+        },
+        "width": {
+          "type": "int",
+          "default": 12,
+          "min": 4,
+          "max": 200,
+          "desc": "管径（外径像素）；给了 points 时粗细由它定，不再按控件框反推"
         },
         "color": {
           "type": "color",

@@ -289,6 +289,13 @@ internal sealed class ChengeWidgetMapper
             case HmiControlType.Line:
                 kind = "line";
                 props["fill_color"] = _colors.ResolveOr(control.BgColor ?? control.BorderColor, _colors.Border, where);
+                // 按点画出来的直线带两端点：运行时按 points 画真线段；没有点则仍是窄矩形（兼容旧工程）。
+                if (control.Points is { Count: >= 2 })
+                {
+                    props["points"] = PointsOf(control, where);
+                    props["border_color"] = _colors.ResolveOr(control.BorderColor ?? control.BgColor, _colors.Border, where);
+                    props["border_width"] = Math.Max(1, control.BorderWidth);
+                }
                 break;
 
             case HmiControlType.Polyline:
@@ -318,7 +325,10 @@ internal sealed class ChengeWidgetMapper
                 if (string.Equals(control.PipeFlowDirection, "Reverse", StringComparison.OrdinalIgnoreCase))
                     props["flow_dir"] = "reverse";
                 props["wall"] = Math.Round(Math.Clamp(control.PipeWall is >= 0.05 and <= 0.45 ? control.PipeWall : 0.2, 0.05, 0.45), 3);
-                props["color"] = _colors.ResolveOr(control.IndicatorColor ?? control.BgColor, "#4EA1FF", where);
+                // 流动色 = 面板「指示器颜色」，**不再回退到背景色**：
+                // 管道是自己画几何的控件，背景色对它没有意义；以前两处共用一条回退链，
+                // 用户一改背景色，管道的流动色和由它派生的通道色就跟着一起变了。
+                props["color"] = _colors.ResolveOr(control.IndicatorColor, "#4EA1FF", where);
                 if (!string.IsNullOrWhiteSpace(control.PipeChannelColor) &&
                     _colors.Resolve(control.PipeChannelColor, where) is { } chan)
                     props["channel_color"] = chan;
@@ -326,6 +336,15 @@ internal sealed class ChengeWidgetMapper
                 props["flow_ms"] = control.PipeFlowSpeed > 0
                     ? Clamp(control.PipeFlowSpeed, 40, 2000)
                     : 0;
+                // 多点管道：整条路径（直管两点、弯管三点、多段 N 点）都由 points 给出，
+                // 流向动画沿这条路径按弧长走，拐点处不重置相位（运行时 pipe 控件的 path 模式）。
+                if (control.Points is { Count: >= 2 })
+                {
+                    props["points"] = PointsOf(control, where);
+                    // 管径只对"按点画"的管道有意义：路径的包围盒里没有粗细信息。
+                    // 没有 points 的老工程仍按 direction 画，框的短边就是管径 —— 不写这个键。
+                    props["width"] = Clamp((int)Math.Round(control.PipeWidth), 4, 200);
+                }
                 _features.Add("pipe");      // 运行时要求 manifest.features 里声明（37 §8）
                 break;
 
@@ -438,6 +457,15 @@ internal sealed class ChengeWidgetMapper
                 MapShapeCommon(props, control, where);
                 if (kind is "polygon" or "polyline")
                     props["points"] = PointsOf(control, where);
+                else if (kind == "line" && control.Points is { Count: >= 2 })
+                    props["points"] = PointsOf(control, where);
+                // 弧/扇的两个端点就是起止角：与 Arc 控件共用 MinValue/MaxValue，
+                // 否则从「通用图元」进来画的弧导出后是缺省 0..360（整圈）。
+                if (kind is "arc" or "pie")
+                {
+                    props["angle_start"] = (int)Math.Round(control.MinValue);
+                    props["angle_end"] = (int)Math.Round(control.MaxValue);
+                }
                 // 容器：子控件递归导进 props.children（坐标相对容器，运行时 flatten_widgets 展开）
                 if (string.Equals(kind, "container", StringComparison.Ordinal))
                     MapContainerChildren(props, control, pageId, widgetId);
@@ -958,8 +986,13 @@ internal sealed class ChengeWidgetMapper
     /// </summary>
     private void ApplyBoxKeys(JsonObject props, HmiControl control, string where)
     {
-        var bg = _colors.Resolve(control.BgColor, where);
-        if (bg != null) props["bg_color"] = bg;
+        // 背景色只在"面板上有这一行"的类型上写（判据表与面板共用 AppearanceSupport）：
+        // 管道这类自己画几何的控件没有底色，写进去的键只会被运行时忽略或误用
+        if (AppearanceSupport.HasBgColor(control.Type))
+        {
+            var bg = _colors.Resolve(control.BgColor, where);
+            if (bg != null) props["bg_color"] = bg;
+        }
         var border = _colors.Resolve(control.BorderColor, where);
         if (border != null) props["border_color"] = border;
         if (AppearanceSupport.HasBoxBorder(control.Type))

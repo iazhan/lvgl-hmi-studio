@@ -121,7 +121,7 @@ public class StaticBusHygieneTests
             ["ResourceLibrary"] = new HmiResourceLibrary(),
             ["Templates"] = new[] { new ControlTemplate { Name = "NcStaleTemplate" } },
             ["ProjectDirectory"] = "/nc/stale",
-            ["ActiveDrawTool"] = HmiControlType.Button,
+            ["ActiveDrawTool"] = CanvasTool.Widget(HmiControlType.Button),
         };
 
         try
@@ -138,7 +138,7 @@ public class StaticBusHygieneTests
             DockLayoutState.ResourceLibrary = (HmiResourceLibrary)stale["ResourceLibrary"]!;
             DockLayoutState.Templates = (IEnumerable<ControlTemplate>)stale["Templates"]!;
             DockLayoutState.ProjectDirectory = (string)stale["ProjectDirectory"]!;
-            DockLayoutState.SetDrawTool(HmiControlType.Button);
+            DockLayoutState.SetDrawTool(CanvasTool.Widget(HmiControlType.Button));
 
             // 前置：污染**真的**摆上了（否则下面的断言是空跑）
             foreach (var (name, expected) in stale)

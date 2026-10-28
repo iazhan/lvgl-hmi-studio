@@ -1320,6 +1320,12 @@ public static class Lang
     public const string TbFigureStar5     = "tb.figure.star5";
     public const string TbFigureStar      = "tb.figure.star";
     public const string TbFigureCross     = "tb.figure.cross";
+    public const string TbFigureArrow      = "tb.figure.arrow";
+    public const string TbFigureArrowThick = "tb.figure.arrow_thick";
+    public const string TbFigureArrowThin  = "tb.figure.arrow_thin";
+    public const string TbPipeStraight     = "tb.pipe.straight";
+    public const string TbPipeElbow        = "tb.pipe.elbow";
+    public const string TbPipeMulti        = "tb.pipe.multi";
     // chenge-runtime 目标新增
     public const string TbValue        = "tb.value";
     public const string TbAlarmList    = "tb.alarmlist";
@@ -1889,6 +1895,7 @@ public static class Lang
     public const string UndoDeleteControlNamed     = "undo.delete.control.named";
     public const string UndoResizeControl          = "undo.resize.control";
     public const string UndoMoveControl            = "undo.move.control";
+    public const string UndoMoveVertex             = "undo.move.vertex";
     public const string UndoAttachContainer        = "undo.attach.container";
     public const string CommSlaveStation           = "comm.slave.station";
     public const string DefaultImagePlaceholder    = "default.image.placeholder";

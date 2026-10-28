@@ -23,6 +23,20 @@ public class SelectionAdorner : Control
     public static readonly StyledProperty<bool> ShowMultiSelectionProperty =
         AvaloniaProperty.Register<SelectionAdorner, bool>(nameof(ShowMultiSelection), false);
 
+    /// <summary>
+    /// 画不画 8 个缩放手柄。按点图元（线/折线/弧/管道）关掉：它们的形状由顶点决定，
+    /// 框只是包围盒 —— 手柄既没用，还会与端点/顶点手柄**叠在同一个像素上**，
+    /// 想拖端点结果拖到了缩放。关掉后只剩一圈虚线框表示"选中了"。
+    /// </summary>
+    public static readonly StyledProperty<bool> ShowHandlesProperty =
+        AvaloniaProperty.Register<SelectionAdorner, bool>(nameof(ShowHandles), true);
+
+    public bool ShowHandles
+    {
+        get => GetValue(ShowHandlesProperty);
+        set => SetValue(ShowHandlesProperty, value);
+    }
+
     /// <summary>选中框的旋转角（度，顺时针为正）。控件设了旋转时框跟着转，否则框和位图对不上。</summary>
     public static readonly StyledProperty<double> SelectionRotationProperty =
         AvaloniaProperty.Register<SelectionAdorner, double>(nameof(SelectionRotation));
@@ -122,8 +136,8 @@ public class SelectionAdorner : Control
     {
         context.DrawRectangle(null, pen, SelectionBounds);
 
-        // 多选模式 → 不绘制手柄
-        if (ShowMultiSelection) return;
+        // 多选 / 按点图元 → 不绘制手柄
+        if (ShowMultiSelection || !ShowHandles) return;
 
         var handleBrush = Brushes.White;
         var handlePen = new Pen(new SolidColorBrush(Color.FromRgb(56, 189, 248)), 1);

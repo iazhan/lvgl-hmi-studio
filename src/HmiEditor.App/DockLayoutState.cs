@@ -24,20 +24,35 @@ public static class DockLayoutState
     // ── I10: 绘图工具栏状态 ──
 
     /// <summary>
-    /// 当前激活的绘图工具（控件类型）。null = 普通选择/编辑模式。
+    /// 当前激活的绘图工具（控件类型 + 图元种类）。null = 普通选择/编辑模式。
     /// Dock 工厂会反复重建画布视图，此静态值保证新画布实例自动恢复工具状态。
     /// </summary>
-    public static HmiControlType? ActiveDrawTool { get; private set; }
+    public static CanvasTool? ActiveDrawTool { get; private set; }
 
     /// <summary>绘图工具变化事件 —— MainWindow（工具栏按钮状态）与画布（光标/交互）订阅。</summary>
-    public static event EventHandler<HmiControlType?>? DrawToolChanged;
+    public static event EventHandler<CanvasTool?>? DrawToolChanged;
 
     /// <summary>设置激活绘图工具并通知所有订阅者（工具栏高亮 + 画布交互同步）。</summary>
-    public static void SetDrawTool(HmiControlType? tool)
+    public static void SetDrawTool(CanvasTool? tool)
     {
-        if (ActiveDrawTool == tool) return;
+        var unchanged = tool is { } next
+            ? ActiveDrawTool is { } current && current.SameTarget(next)
+            : ActiveDrawTool == null;
+        if (unchanged) return;
+
         ActiveDrawTool = tool;
         DrawToolChanged?.Invoke(null, tool);
+    }
+
+    /// <summary>
+    /// 点同一工具项 = 取消：传入目标与当前一致时清空，否则激活它。
+    /// 返回最终状态（供工具栏/工具箱高亮同步）。
+    /// </summary>
+    public static CanvasTool? ToggleDrawTool(CanvasTool tool)
+    {
+        var next = ActiveDrawTool is { } current && current.SameTarget(tool) ? (CanvasTool?)null : tool;
+        SetDrawTool(next);
+        return ActiveDrawTool;
     }
 
     /// <summary>共享 HMI 图库资源库 —— 供 ResourceLibraryView 恢复数据。</summary>

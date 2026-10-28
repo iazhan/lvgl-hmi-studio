@@ -50,6 +50,19 @@ public partial class ToolboxView : UserControl
         SearchBox.SelectAll();
     }
 
+    /// <summary>
+    /// 让列表选中项对上当前工具 —— 工具被 ESC / 右键 / 重复点击取消时清掉高亮，
+    /// 否则"看着还选着某条工具、画布其实已经不画了"。
+    /// </summary>
+    public void SetActiveTool(CanvasTool? tool)
+    {
+        var match = tool is { } armed
+            ? _allItems.FirstOrDefault(i => !i.IsHeader && i.ToTool().SameTarget(armed))
+            : null;
+        if (!ReferenceEquals(ToolboxList.SelectedItem, match))
+            ToolboxList.SelectedItem = match;
+    }
+
     public ToolboxView()
     {
         InitializeComponent();
@@ -174,6 +187,9 @@ public partial class ToolboxView : UserControl
         "star5"          => "M12,3 L14.6,9.6 L21.5,10 L16.2,14.4 L17.9,21 L12,17.4 L6.1,21 L7.8,14.4 L2.5,10 L9.4,9.6 Z",
         "star"           => "M12,2 L14.5,8 L21,8 L16,12.5 L18,19 L12,15.5 L6,19 L8,12.5 L3,8 L9.5,8 Z",
         "cross"          => "M9,3 L15,3 L15,9 L21,9 L21,15 L15,15 L15,21 L9,21 L9,15 L3,15 L3,9 L9,9 Z",
+        "arrow"          => "M4,12 L19,12 M14,7 L20,12 L14,17",
+        "arrow_thick"    => "M4,10 L18,10 L18,6 L22,12 L18,18 L18,14 L4,14 Z",
+        "arrow_thin"     => "M4,12 L19,12 M16,9 L20,12 L16,15",
         _                => ControlIcon(HmiControlType.Shape),
     };
 
@@ -190,9 +206,17 @@ public partial class ToolboxView : UserControl
 
         // 图元按形状逐项列出：拖出来就是这个形状，不必再去属性面板改「种类」。
         // 图标按 kind 逐个画 —— 都用「图元」的三角形会让一列条目看起来一模一样。
+        // 点约束由 kind 决定（线=两点、折线=N 点、多边形=闭合、弧=角度），选中后画布按它取点。
         void Figure(string kind, string displayKey, string category) => _allItems.Add(
             new ToolboxItem(StreamGeometry.Parse(FigureIcon(kind)),
-                AppLocalization.Service[displayKey], category, HmiControlType.Shape, kind));
+                AppLocalization.Service[displayKey], category, HmiControlType.Shape, kind,
+                FigureGeometry.ModeForKind(kind)));
+
+        // 管道三种走向共用同一个控件类型，差别只在"取几个点"和图标：
+        // 直管两点、弯管三点（起点-拐点-终点）、多段任意多点。
+        void Pipe(string displayKey, string icon, FigurePointMode mode, string category) => _allItems.Add(
+            new ToolboxItem(StreamGeometry.Parse(icon),
+                AppLocalization.Service[displayKey], category, HmiControlType.Pipe, null, mode));
 
         var input = AppLocalization.Service[Lang.TbCatInput];
         var display = AppLocalization.Service[Lang.TbCatDisplay];
@@ -247,7 +271,11 @@ public partial class ToolboxView : UserControl
 
         Group(process);
         Add(HmiControlType.Tank, process);
-        Add(HmiControlType.Pipe, process);
+        // 管道按走向分三条工具：直管（两点）/ 弯管（三点）/ 多段（N 点）。
+        // 三者是同一个运行时控件（pipe），差别只有点数 —— 流向动画沿整条路径走。
+        Pipe(Lang.TbPipeStraight, "M4,10 L20,10 M4,15 L20,15", FigurePointMode.TwoPoint, process);
+        Pipe(Lang.TbPipeElbow, "M5,19 L5,8 L19,8", FigurePointMode.ThreePointCorner, process);
+        Pipe(Lang.TbPipeMulti, "M4,18 L9,9 L14,15 L20,6", FigurePointMode.OpenPath, process);
         Add(HmiControlType.Valve, process);
 
         Group(container);
@@ -276,6 +304,10 @@ public partial class ToolboxView : UserControl
         Figure("star5", Lang.TbFigureStar5, draw);
         Figure("star", Lang.TbFigureStar, draw);
         Figure("cross", Lang.TbFigureCross, draw);
+        // 箭头三兄弟：两点定方向与长度，杆宽是 kind 自带的
+        Figure("arrow", Lang.TbFigureArrow, draw);
+        Figure("arrow_thick", Lang.TbFigureArrowThick, draw);
+        Figure("arrow_thin", Lang.TbFigureArrowThin, draw);
     }
 
     // ── 拖拽 ──
@@ -472,8 +504,17 @@ public record ToolboxItem(
     /// </summary>
     string? ShapeKind = null,
     /// <summary>
+    /// 选中这一条之后画布按什么取点：普通控件是拖框，图元按两点/多点/角度。
+    /// 管道靠它区分直管（两点）、弯管（三点）、多段（N 点）—— 三者是同一种控件。
+    /// </summary>
+    FigurePointMode Mode = FigurePointMode.Box,
+    /// <summary>
     /// 分组标题行：只为把列表切开（40 多项平铺时分类只是每项下面那行小字），
     /// 不可拖、不可选、不参与搜索匹配。
     /// </summary>
     bool IsHeader = false
-);
+)
+{
+    /// <summary>这一条对应的绘图工具。</summary>
+    public CanvasTool ToTool() => new(ControlType, ShapeKind, Mode);
+}

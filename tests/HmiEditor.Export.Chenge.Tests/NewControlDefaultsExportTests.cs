@@ -185,6 +185,50 @@ public class NewControlDefaultsExportTests : IDisposable
         Assert.Equal(14, ExportFresh(HmiControlType.Label).GetProperty("font_size").GetInt32());
     }
 
+    /// <summary>
+    /// 按点画出来的管道（points + 管径）必须**原样**写进产物。
+    /// 设计画布画的就是这份 JSON：缺了 points，宿主只会按 direction 画一根直带 ——
+    /// 症状是"模型里有 5 个顶点手柄，画布上却是一条横带"。
+    /// </summary>
+    [Fact]
+    public void Pipe_WithPoints_ExportsPointsAndWidth()
+    {
+        var props = ExportFresh(HmiControlType.Pipe, c =>
+        {
+            c.Width = 677;
+            c.Height = 268;
+            c.Points = new List<PointData>
+            {
+                new(6, 262), new(355, 230), new(457, 64), new(561, 18), new(670, 30),
+            };
+            c.PipeWidth = 12;
+        });
+
+        Assert.True(props.TryGetProperty("points", out var pts),
+            "管道没有 points ⇒ 宿主只会按 direction 画一根直带");
+        Assert.Equal(5, pts.GetArrayLength());
+        Assert.Equal(12, props.GetProperty("width").GetInt32());
+    }
+
+    /// <summary>
+    /// 管道的流动色只认「指示器颜色」，**不回落背景色**，也不导出 bg_color。
+    /// 以前两者共用一条回退链：用户一改背景色，管道的流动色与由它派生的通道色就一起变了。
+    /// </summary>
+    [Fact]
+    public void Pipe_FlowColor_IgnoresBgColor()
+    {
+        // 只给背景色、不给指示器颜色：流动色必须是缺省的蓝，而不是背景色
+        var props = ExportFresh(HmiControlType.Pipe, c =>
+        {
+            c.IndicatorColor = null;
+            c.BgColor = "#FF0000";
+        });
+
+        Assert.Equal("#4EA1FF", props.GetProperty("color").GetString(), ignoreCase: true);
+        Assert.False(props.TryGetProperty("bg_color", out _),
+            "管道没有独立底色，导出不该写 bg_color");
+    }
+
     // ── 端到端：新建控件必须能在**运行时**里真的建出页来 ──────────
 
     /// <summary>

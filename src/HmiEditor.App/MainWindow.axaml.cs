@@ -1645,7 +1645,10 @@ public partial class MainWindow : Window
                 ToolboxPanel.FocusSearch();
                 break;
             case EditorCommand.CancelGesture:
-                CanvasPanel.Canvas.CancelActiveGesture();
+                // ESC：有在途绘制就先结束它（按点图元够点即提交），然后退出工具；
+                // 没有在途绘制时回滚正在进行的移动/缩放，并退出工具。
+                if (!CanvasPanel.Canvas.FinishToolGesture())
+                    CanvasPanel.Canvas.CancelActiveGesture();
                 if (DockLayoutState.ActiveDrawTool != null)
                     SetDrawTool(null);
                 break;
@@ -2243,30 +2246,20 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 工具箱控件选中 → 在当前屏幕中心添加控件。
+    /// 工具箱条目选中 → **选中该条目对应的绘制工具**（不就地落控件）。
     /// </summary>
     /// <remarks>
     /// 由 <c>Wiring.Canvas.cs</c> 从 <c>DockLayoutState.ToolItemSelected</c> 转发进来。
-    /// 工具栏控件快捷按钮同样走此路径。此前这里还兼作 <c>ToolboxPanel.ToolItemSelected</c>
-    /// 实例事件的处理器（共享同一个方法），该直订已随 #46 删除。
+    /// 单击一条工具后，到画布上单击放默认尺寸、拖框/逐点画出形状；再点同一条目即取消工具。
     /// </remarks>
     private void OnToolItemSelected(object? sender, Views.ToolboxItem item)
     {
         var canvas = CanvasPanel.Canvas;
-        // 无当前屏幕（未打开项目 / 画布尚未注入 Screen）时不添加，避免抛异常
+        // 无当前屏幕（未打开项目 / 画布尚未注入 Screen）时没有可绘制的目标
         if (canvas.Screen == null) return;
         if (item.IsHeader) return;
 
-        var (centerX, centerY) = CanvasCenter(canvas);
-
-        var control = canvas.AddControl(item.ControlType, centerX, centerY, item.ShapeKind);
-        var command = new AddControlCommand(_currentScreen.Controls, control);
-        _undoRedoManager.Execute(command);
-
-        // 刷新所有面板（通过 GetActiveView 获取实际显示的实例）
-        RebuildAllPanels();
-        SetUnsavedChanges(true);
-        UpdateStatusBar();
+        ToggleDrawTool(item.ToTool());
     }
 
     private void UpdateStatusBar()
@@ -2605,50 +2598,8 @@ public partial class MainWindow : Window
 
     // ── 对齐工具 ──
 
-    // ── I10: 绘图工具栏 ──
-
-    /// <summary>
-    /// 激活指定绘图工具（null = 返回选择模式）。
-    /// 设置后同步按钮高亮 —— 即使工具状态未变化（点击已激活工具）也恢复按钮选中态，
-    /// 避免 ToggleButton 自动翻转导致高亮与真实状态不一致。
-    /// </summary>
-    private void SetDrawTool(HmiControlType? tool)
-    {
-        DockLayoutState.SetDrawTool(tool);
-        SyncDrawToolbar(DockLayoutState.ActiveDrawTool);
-    }
-
-    /// <summary>
-    /// 控件快捷添加：退出绘图模式并在画布中心添加控件（与工具箱单击行为一致，支持撤销）。
-    /// </summary>
-    private void QuickAddControl(HmiControlType type)
-    {
-        SetDrawTool(null);
-        // 工具栏快捷按钮只关心类型：图标/名称/分类对添加流程没用（null! 是给 Geometry 的占位）
-        OnToolItemSelected(this, new Views.ToolboxItem(null!, string.Empty, string.Empty, type));
-    }
-
-    /// <summary>同步绘图工具栏按钮高亮与提示文本（工具状态变化时调用）。</summary>
-    private void SyncDrawToolbar(HmiControlType? tool)
-    {
-        BtnToolSelect.IsChecked = tool == null;
-        BtnToolRectangle.IsChecked = tool == HmiControlType.Rectangle;
-        BtnToolEllipse.IsChecked = tool == HmiControlType.Ellipse;
-        BtnToolPolyline.IsChecked = tool == HmiControlType.Polyline;
-        BtnToolArc.IsChecked = tool == HmiControlType.Arc;
-        BtnToolLine.IsChecked = tool == HmiControlType.Line;
-        BtnToolText.IsChecked = tool == HmiControlType.Label;
-
-        DrawHintText.IsVisible = tool != null;
-        DrawHintText.Text = tool switch
-        {
-            null => "",
-            // 直线/折线为点击式绘制：提示单击放置起点、再击结束/追加转折点
-            HmiControlType.Line or HmiControlType.Polyline
-                => $"{LocService["draw.hint.click"]} · {LocService["draw.esc.exit"]}",
-            _ => $"{LocService["draw.hint"]} · {LocService["draw.esc.exit"]}",
-        };
-    }
+    // 绘图工具（选中/取消 + 工具栏与工具箱高亮）在 Wiring.CanvasTools.cs ——
+    // 本文件有"行数不许涨"的守卫，接线优先落在 partial 里。
 
     /// <summary>
     /// 处理画布右键菜单操作（通过 DockLayoutState 路由）。

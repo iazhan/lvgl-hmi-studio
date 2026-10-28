@@ -222,6 +222,13 @@ public class HmiControl
     /// <summary>Pipe：管壁厚度比例（契约 wall，0.05~0.45，默认 0.2）。</summary>
     public double PipeWall { get; set; } = 0.2;
 
+    /// <summary>
+    /// Pipe：管径（外径像素，契约 width，默认 12）。
+    /// 给了 <see cref="Points"/> 的管道由它决定粗细 —— 折线的包围盒里没有"粗细"信息，
+    /// 按框推管径会让弯管的腿被压扁（弯管框短边往往就是半条腿长）。
+    /// </summary>
+    public double PipeWidth { get; set; } = 12;
+
     /// <summary>Pipe：通道底色（契约 channel_color，空 = 用流动色的浅色版）。</summary>
     public string? PipeChannelColor { get; set; }
 
