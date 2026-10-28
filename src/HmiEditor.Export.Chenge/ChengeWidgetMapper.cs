@@ -476,8 +476,16 @@ internal sealed class ChengeWidgetMapper
                 var series = ChartSeriesOf(control, where);
                 if (series.Count == 0)
                 {
-                    _issues.Error("chart.series", where, "图表至少要有一条序列（先在系列里填 变量Id:标签）");
-                    return null;
+                    /* 与曲线同一口径：占位序列（expr="0"）让页面能建起来，不然运行时会
+                     * 以"series 必须 1..8 项"拒绝整页，画布直接白。 */
+                    series.Add(new JsonObject
+                    {
+                        ["label"] = "—",
+                        ["value"] = new JsonObject { ["expr"] = "0" },
+                        ["color"] = _colors.Primary,
+                    });
+                    _issues.Warn("chart.series", where,
+                        "图表没有绑定变量：先按 0 画一条占位序列（在系列里填 变量Id:标签 后自动替换）");
                 }
                 props["series"] = series;
                 props["show_legend"] = control.ChartShowLegend;
@@ -494,11 +502,18 @@ internal sealed class ChengeWidgetMapper
                 var tagY = ResolveChartTag(control.XyTagY, where, "xy_curve.y");
                 if (tagX == null || tagY == null)
                 {
-                    _issues.Error("xy_curve.tags", where, "X-Y 曲线要同时指定 X 与 Y 的变量");
-                    return null;
+                    /* 同曲线：两轴都缺时给占位（运行时要 x/y 各一个 {tag|expr}，缺了拒绝整页）。
+                     * 只缺一个也走占位 —— 半张图纸比白屏好排查。 */
+                    props["x"] = new JsonObject { ["expr"] = "0" };
+                    props["y"] = new JsonObject { ["expr"] = "0" };
+                    _issues.Warn("xy_curve.tags", where,
+                        "X-Y 曲线没有指定 X/Y 变量：先按原点画占位（两个都填上变量后自动替换）");
                 }
-                props["x"] = new JsonObject { ["tag"] = tagX.Value };
-                props["y"] = new JsonObject { ["tag"] = tagY.Value };
+                else
+                {
+                    props["x"] = new JsonObject { ["tag"] = tagX.Value };
+                    props["y"] = new JsonObject { ["tag"] = tagY.Value };
+                }
                 props["dot"] = control.XyDot;
                 props["line"] = control.XyLine;
                 props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
@@ -736,8 +751,12 @@ internal sealed class ChengeWidgetMapper
         }
         if (curves.Count == 0)
         {
-            _issues.Error("history_curve.curves", where, "历史曲线至少要有一条通道（37：curves 1..4 条）");
-            return false;
+            /* 同实时曲线：占位通道让页面能建起来（trend 里没数据时就是一条 0 线）。
+             * group 缺了仍然报 Error —— 那个键运行时要拿去 trends.json / savecfg 里对名字，
+             * 编不出来。 */
+            curves.Add(PlaceholderCurve(palette[0]));
+            _issues.Warn("history_curve.curves", where,
+                "历史曲线没有绑定变量：先按 0 画一条占位线（绑上变量后自动替换）");
         }
 
         props["group"] = control.TrendGroup!.Trim();
@@ -784,8 +803,13 @@ internal sealed class ChengeWidgetMapper
         }
         if (curves.Count == 0)
         {
-            _issues.Error("realtime_curve.curves", where, "实时曲线至少要有一条通道（37：curves 1..4 条）");
-            return false;
+            /* 没绑定变量时不拒绝导出：运行时要求 curves 至少 1 条，缺了会**拒绝整页**，
+             * 画布跟着变空白 —— 用户只是想先画个框。这里放一条 expr="0" 的占位通道，
+             * 画面是一条 0 线（网格、坐标轴都在），绑上变量后自动替换。
+             * 不替用户挑一个"真实变量"：那会把工程悄悄绑到别的量上。 */
+            curves.Add(PlaceholderCurve(palette[0]));
+            _issues.Warn("realtime_curve.curves", where,
+                "实时曲线没有绑定变量：先按 0 画一条占位线（画布与板端都能加载，绑上变量后自动替换）");
         }
 
         props["curves"] = curves;
@@ -1211,6 +1235,19 @@ internal sealed class ChengeWidgetMapper
         };
 
     /// <summary>图表序列：每行 <c>变量Id:标签</c> → <c>[{label,value:{tag},color}]</c>（最多 8 条）。</summary>
+    /// <summary>
+    /// 占位通道：<c>{"expr":"0"}</c>。曲线类控件一条通道都没有时用它 ——
+    /// 运行时要 <c>curves</c> 至少 1 条、图表 <c>series</c> 至少 1 项，缺了**拒绝整页**，
+    /// 设计画布跟着变空白。给一条 0 线比白屏好排查，也比替用户挑一个真实变量安全。
+    /// </summary>
+    private static JsonObject PlaceholderCurve(string color) => new()
+    {
+        ["expr"] = "0",
+        ["color"] = color,
+        ["label"] = "",
+        ["axis"] = "left",
+    };
+
     private JsonArray ChartSeriesOf(HmiControl control, string where)
     {
         var arr = new JsonArray();

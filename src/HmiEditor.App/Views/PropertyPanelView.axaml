@@ -420,6 +420,15 @@
                                             SmallChange="5" LargeChange="10"
                                             SpinButtonPlacementMode="Compact"/>
                         </Grid>
+                        <!-- 可见：控件级显隐。运行期还能再叠一条 bind.visible（变量控制），
+                             两者互不覆盖 —— 静态 false 就是永远不出现。 -->
+                        <Grid x:Name="RowVisible" ColumnDefinitions="62,*">
+                            <TextBlock x:Name="LblVisible" Text="{res:Loc prop.visible}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PropVisible" Grid.Column="1"
+                                      Content="{res:Loc prop.visible.hint}"
+                                      IsChecked="True" IsCheckedChanged="OnPropertyChanged"/>
+                        </Grid>
                         <!-- 圆角 -->
                         <Grid x:Name="RowRadius" ColumnDefinitions="62,*">
                             <TextBlock x:Name="LblRadius" Text="{res:Loc prop.radius}" Grid.Column="0"

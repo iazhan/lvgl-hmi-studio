@@ -1195,6 +1195,8 @@
   "prop.param.longmode.clip": "Clip",
   "prop.indicator.color": "Indicator Color",
   "prop.opacity": "Opacity",
+  "prop.visible": "Visible",
+  "prop.visible.hint": "Show",
   "prop.param.image": "Image",
   "prop.param.tank.showscale": "Show Scale",
   "prop.param.tank.tickcount": "Tick Count (Tank)",

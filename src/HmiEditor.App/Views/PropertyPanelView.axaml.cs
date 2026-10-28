@@ -213,6 +213,7 @@ public partial class PropertyPanelView : UserControl
             RowIsChecked.IsVisible = false;
             RowIndicatorColor.IsVisible = false;
             OpacityBox.Value = 100;
+            PropVisible.IsChecked = true;   // 没有选中对象时按"默认可见"重置，别把上次的 false 留着
             FaceplateParamExpander.IsVisible = false;
             VisualStateExpander.IsVisible = false;
             ValueDisplayExpander.IsVisible = false;
@@ -271,6 +272,9 @@ public partial class PropertyPanelView : UserControl
                 or HmiControlType.Switch;
             PropIsChecked.IsChecked = control.IsChecked;
             RowIsChecked.IsVisible = supportsChecked;
+
+            // 控件级显隐（契约 common.visible）：勾掉就恒不显示，导出写 visible:false
+            PropVisible.IsChecked = control.IsVisible;
 
             // 指示器颜色（LV_PART_INDICATOR）—— Slider/Bar/Switch/Gauge/Knob
             // 以及过程图形控件（Tank 液位填充色 / Pipe 流动段色 / Valve 开态色）

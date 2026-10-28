@@ -121,6 +121,7 @@ public partial class PropertyPanelView : UserControl
         ValidateAndWrite(nameof(HmiControl.Radius), PropertyValidator.ClampRadius((int)PropRadius.Value), v => _currentControl.Radius = v);
         ValidateAndWrite(nameof(HmiControl.BorderWidth), PropertyValidator.ClampBorderWidth((int)PropBorderWidth.Value), v => _currentControl.BorderWidth = v);
         ValidateAndWrite(nameof(HmiControl.IsChecked), PropIsChecked.IsChecked ?? false, v => _currentControl.IsChecked = v);
+        ValidateAndWrite(nameof(HmiControl.IsVisible), PropVisible.IsChecked ?? true, v => _currentControl.IsVisible = v);
 
         // 字体 & 对齐
         ValidateAndWrite(nameof(HmiControl.FontSize), (int)PropFontSize.Value, v =>

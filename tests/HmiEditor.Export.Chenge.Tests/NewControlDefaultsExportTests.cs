@@ -269,6 +269,30 @@ public class NewControlDefaultsExportTests : IDisposable
         Assert.DoesNotContain("加载失败", log);
     }
 
+    /// <summary>
+    /// 曲线没绑通道时也必须建得起来：运行时对 <c>curves</c> 是"1..4 条"的硬校验，
+    /// 缺了整页拒绝 —— 表现是设计画布空白。导出器改发 <c>{"expr":"0"}</c> 占位后，
+    /// 这里必须能出图（否则用户先画个框都做不到）。
+    /// </summary>
+    [Fact]
+    public void RealtimeCurve_WithoutChannels_RendersInRuntime()
+    {
+        var (shot, log) = ShootFresh(HmiControlType.RealtimeCurve, c => c.CurveVariableIds = "", 300, 200);
+
+        Assert.True(File.Exists(shot), $"运行时没出截图（建页失败？）\n{log}");
+        Assert.DoesNotContain("加载失败", log);
+    }
+
+    /// <summary>图表没有序列时同理：占位 <c>{"expr":"0"}</c> 让页面能建。</summary>
+    [Fact]
+    public void Chart_WithoutSeries_RendersInRuntime()
+    {
+        var (shot, log) = ShootFresh(HmiControlType.Chart, c => c.ChartSeries = "", 300, 200);
+
+        Assert.True(File.Exists(shot), $"运行时没出截图（建页失败？）\n{log}");
+        Assert.DoesNotContain("加载失败", log);
+    }
+
     /// <summary>新建输入框绑**字符串**变量：文本键盘那一路，整页同样必须建得出来。</summary>
     [Fact]
     public void TextArea_StringBind_RendersInRuntime()

@@ -172,10 +172,10 @@ public class PropertyPanelLayoutTests
 
             foreach (var (type, expectedRows) in new[]
                      {
-                         // 指示器颜色 + 背景/圆角/边框×2 + 不透明度（文字/字号/对齐滑块没有）
-                         (HmiControlType.Slider, 6),
-                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度
-                         (HmiControlType.Label, 9),
+                         // 指示器颜色 + 背景/圆角/边框×2 + 不透明度 + 可见（文字/字号/对齐滑块没有）
+                         (HmiControlType.Slider, 7),
+                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度 + 可见
+                         (HmiControlType.Label, 10),
                      })
             {
                 var screen = new HmiScreen { Id = "s1", Name = "S1", Width = 1024, Height = 600 };

@@ -1195,6 +1195,8 @@
   "prop.param.longmode.clip": "裁剪",
   "prop.indicator.color": "指示器颜色",
   "prop.opacity": "不透明度",
+  "prop.visible": "可见",
+  "prop.visible.hint": "显示",
   "prop.param.image": "图片",
   "prop.param.tank.showscale": "显示刻度",
   "prop.param.tank.tickcount": "刻度数(罐)",
