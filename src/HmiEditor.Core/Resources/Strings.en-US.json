@@ -692,6 +692,8 @@
   "chenge.preview.no_shot": "No screenshot. Check the log: a successful page build prints \"page:\" plus the page id; failures print the reason.",
   "status.chenge.export.ok": "chenge project exported: {0}",
   "status.chenge.export.failed": "Export failed: {0} error(s), see the preview window log",
+  "status.chenge.pkg.ok": "cgpkg written: {0} ({1} KB, copy it to the USB root)",
+  "status.chenge.pkg.failed": "cgpkg packaging failed: {0}",
   "dialog.select.chenge.dir": "Choose the chenge project output folder",
   "audit.chenge.export": "Export chenge project: {0}",
   "chenge.export.no_project": "Create or open a project first",

@@ -1411,7 +1411,21 @@ public partial class MainWindow : Window
             BuildChengeExportOptions(), outputDir);
 
         ReportChengeResult(result, outputDir);
-        if (!result.Success || result.Issues.WarningCount > 0)
+        if (!result.Success)
+        {
+            ShowChengeDiagnostics(result, null);
+            return;
+        }
+
+        // 同一份产物再打一个 cgpkg：U 盘里放这个文件，板端「维护 → 更新组态」直接解包。
+        // 目录留着不动 —— 预览、golden、--shot 读的都是目录，包只是分发形态。
+        var pkg = _chengeExport.ExportPackage(outputDir, outputDir + ".cgpkg");
+        if (pkg.Ok)
+            StatusText.Text += "　" + LocService.Format("status.chenge.pkg.ok", pkg.Path, pkg.PayloadBytes / 1024);
+        else
+            StatusText.Text += "　" + LocService.Format("status.chenge.pkg.failed", pkg.Error);
+
+        if (result.Issues.WarningCount > 0)
             ShowChengeDiagnostics(result, null);
     }
 

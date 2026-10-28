@@ -171,15 +171,5 @@ internal sealed class ChengeAssets
         buf[offset + 3] = (byte)((value >> 24) & 0xFF);
     }
 
-    private static uint Crc32(byte[] data)
-    {
-        var crc = 0xFFFFFFFFu;
-        foreach (var b in data)
-        {
-            crc ^= b;
-            for (var i = 0; i < 8; i++)
-                crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
-        }
-        return crc ^ 0xFFFFFFFFu;
-    }
+    private static uint Crc32(byte[] data) => ChengeCrc32.Compute(data);
 }

@@ -692,6 +692,8 @@
   "chenge.preview.no_shot": "没有截图。请看右侧日志：建页成功应出现「page: <id> 打开」，失败会写明原因。",
   "status.chenge.export.ok": "已导出 chenge 工程：{0}",
   "status.chenge.export.failed": "导出未通过：{0} 个错误（见预览窗口日志）",
+  "status.chenge.pkg.ok": "已打包 cgpkg：{0}（{1} KB，放 U 盘根目录）",
+  "status.chenge.pkg.failed": "打包 cgpkg 失败：{0}",
   "dialog.select.chenge.dir": "选择 chenge 工程导出目录",
   "audit.chenge.export": "导出 chenge 工程：{0}",
   "chenge.export.no_project": "请先新建或打开工程",

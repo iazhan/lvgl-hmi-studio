@@ -54,6 +54,15 @@ public sealed class ChengeExportService
         => _exporter.ExportToMemory(project, assets, options, projectDirectory, out result);
 
     /// <summary>
+    /// 把一个**已导出**的 37 工程目录打成 `.cgpkg`（37 §13）。U 盘里放这个文件即可，
+    /// 板端「维护 → 更新组态」会解包并切为活动工程。
+    ///
+    /// <para>导出目录仍然要留：预览、golden、`--shot` 读的都是目录；包只是分发形态。</para>
+    /// </summary>
+    public ChengePkgResult ExportPackage(string exportedDir, string packagePath)
+        => ChengePkgWriter.WriteDirectory(exportedDir, packagePath, DateTimeOffset.Now);
+
+    /// <summary>
     /// 定位运行时目录：**只认显式配置**（设置项 / 环境变量 / 安装目录内置），
     /// 不向上遍历也不假设平级仓库 —— 编辑器是独立安装的软件，
     /// 猜路径的后果是"在作者机器上能预览、在用户机器上找不到"。
