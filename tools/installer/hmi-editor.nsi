@@ -30,6 +30,16 @@ SetCompressor /SOLID lzma
 !define UNINST_KEY    "Software\HmiStudio"
 
 Name "${APP_NAME}"
+
+; 资源管理器里"属性 → 详细信息"看到的就是这几行：品牌名在这里，不是只有窗口标题
+VIProductVersion "${VERSION}.0"
+VIAddVersionKey "ProductName"     "${APP_NAME}"
+VIAddVersionKey "FileDescription" "${APP_NAME} 安装程序"
+VIAddVersionKey "CompanyName"     "${APP_PUBLISHER}"
+VIAddVersionKey "FileVersion"     "${VERSION}"
+VIAddVersionKey "ProductVersion"  "${VERSION}"
+VIAddVersionKey "LegalCopyright"  "© 2026 ${APP_PUBLISHER}"
+
 OutFile "..\..\dist\Chenge-HMI-Editor-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\HMI Studio"
 InstallDirRegKey HKLM "${UNINST_KEY}" "InstallDir"
