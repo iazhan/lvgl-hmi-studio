@@ -249,7 +249,7 @@
   "anim.val.col": "值",
   "app.about": "基于 .NET 10 + Avalonia 12.1 的 LVGL HMI 可视化编辑器",
   "app.slogan": "为工业 HMI 开发倾心打造 ❤",
-  "app.title": "HMI 编辑器",
+  "app.title": "晨歌 HMI 编辑器",
   "splash.subtitle": "HMI 可视化编辑器",
   "splash.new.project": "新建工程",
   "splash.new.project.hint": "创建一个空白 HMI 工程",

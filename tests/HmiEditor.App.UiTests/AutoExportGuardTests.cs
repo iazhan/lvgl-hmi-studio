@@ -62,13 +62,13 @@ public class AutoExportGuardTests
 
                 svc.AutoExport.SetEnabled(true);
                 svc.AutoExport.SetIntervalMinutes(15);
-                svc.AutoExport.SetDirectory("/tmp/zhishu-auto");
+                svc.AutoExport.SetDirectory("/tmp/chenge-auto");
             }
 
             using var reloaded = new SettingsService(path);
             Assert.True(reloaded.AutoExport.Enabled);
             Assert.Equal(15, reloaded.AutoExport.IntervalMinutes);
-            Assert.Equal("/tmp/zhishu-auto", reloaded.AutoExport.Directory);
+            Assert.Equal("/tmp/chenge-auto", reloaded.AutoExport.Directory);
             Assert.True(reloaded.AutoExport.Options().CanRun);
         }
         finally

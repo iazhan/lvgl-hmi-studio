@@ -52,7 +52,7 @@ public class AutoExportSettingsUiTests
             var depot = new WindowDepot(sandbox.DataRoot);
             depot.Settings.AutoExport.SetEnabled(true);
             depot.Settings.AutoExport.SetIntervalMinutes(15);
-            depot.Settings.AutoExport.SetDirectory("/tmp/zhishu-ui");
+            depot.Settings.AutoExport.SetDirectory("/tmp/chenge-ui");
 
             var dialog = new SettingsDialog(depot.Settings, depot.Theme);
             dialog.Show();
@@ -64,7 +64,7 @@ public class AutoExportSettingsUiTests
                 // 载入方向：控件显示的是设置里已有的值
                 Assert.True(Find<CheckBox>(dialog, "ChkAutoExport").IsChecked);
                 Assert.Equal(15, (int)(Find<NumericUpDown>(dialog, "NumAutoExportInterval").Value ?? 0));
-                Assert.Equal("/tmp/zhishu-ui", Find<TextBox>(dialog, "TxtAutoExportDirectory").Text);
+                Assert.Equal("/tmp/chenge-ui", Find<TextBox>(dialog, "TxtAutoExportDirectory").Text);
 
                 // 回写方向：三条各改一次，设置跟着变
                 Find<CheckBox>(dialog, "ChkAutoExport").IsChecked = false;
@@ -75,13 +75,13 @@ public class AutoExportSettingsUiTests
                 //    "ToggleButton 先翻转 IsChecked 再引发 Click"同一条纪律：判据要把框架会做的事补齐，
                 //    否则驱动出来的不是生产路径。接线缺失时补这一下也不会有人接 ⇒ 判据仍然有效。
                 var directory = Find<TextBox>(dialog, "TxtAutoExportDirectory");
-                directory.Text = "/tmp/zhishu-ui-2";
+                directory.Text = "/tmp/chenge-ui-2";
                 directory.RaiseEvent(new TextChangedEventArgs(TextBox.TextChangedEvent));
                 UiTestHost.Pump(2);
 
                 Assert.False(depot.Settings.AutoExport.Enabled);
                 Assert.Equal(45, depot.Settings.AutoExport.IntervalMinutes);
-                Assert.Equal("/tmp/zhishu-ui-2", depot.Settings.AutoExport.Directory);
+                Assert.Equal("/tmp/chenge-ui-2", depot.Settings.AutoExport.Directory);
 
                 // 闭环：界面改完的设置喂给服务时，"能不能跑"的判断也跟着变
                 Assert.False(depot.Settings.AutoExport.Options().CanRun);   // 开关被关掉了

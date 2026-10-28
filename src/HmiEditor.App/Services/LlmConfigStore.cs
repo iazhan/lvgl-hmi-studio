@@ -11,7 +11,7 @@ namespace HmiEditor.App.Services;
 /// 注意: 文件中包含 API Key, 属机密信息, 仅存本地用户目录, 不进入项目文件/git。
 ///
 /// <para><b>路径由 <see cref="AppPaths"/> 唯一解析</b>（不再自己拼 <c>%APPDATA%</c>）。
-/// 早期版本写在 <c>%APPDATA%/HmiEditor/</c> 下 —— 改名成 <c>zhishu-hmi</c> 时若一刀切，
+/// 早期版本写在 <c>%APPDATA%/HmiEditor/</c> 下 —— 改名成 <c>chenge-hmi</c> 时若一刀切，
 /// 用户已配置的端点/密钥会**静默失效**，所以保留一条**只读**的历史回退（见 <see cref="Load"/>）。</para>
 /// </summary>
 public static class LlmConfigStore
@@ -21,7 +21,7 @@ public static class LlmConfigStore
     /// <summary>文件名。新旧位置由**同一个字面量**推导，避免改名时只改一处。</summary>
     private const string FileName = "ai.config.json";
 
-    /// <summary>配置文件路径（**写侧唯一入口**）: %APPDATA%/zhishu-hmi/ai.config.json</summary>
+    /// <summary>配置文件路径（**写侧唯一入口**）: %APPDATA%/chenge-hmi/ai.config.json</summary>
     public static string ConfigFilePath => AppPaths.DataFile(FileName);
 
     /// <summary>历史配置路径（<b>只读</b>，仅供升级后首次读取）: %APPDATA%/HmiEditor/ai.config.json</summary>

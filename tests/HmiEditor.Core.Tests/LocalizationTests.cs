@@ -12,7 +12,7 @@ public class LocalizationTests
         var svc = new LocalizationService();
         svc.InitializeDefaults();
 
-        Assert.Equal("HMI 编辑器", svc["app.title"]);
+        Assert.Equal("晨歌 HMI 编辑器", svc["app.title"]);
         Assert.Equal("文件", svc["menu.file"]);
     }
 
@@ -22,7 +22,7 @@ public class LocalizationTests
         var svc = new LocalizationService();
         svc.InitializeDefaults();
 
-        Assert.Equal("HMI Editor", svc.GetString("app.title", "en-US"));
+        Assert.Equal("Chenge HMI Editor", svc.GetString("app.title", "en-US"));
         Assert.Equal("_File", svc.GetString("menu.file", "en-US"));
     }
 
@@ -33,11 +33,11 @@ public class LocalizationTests
         svc.InitializeDefaults();
 
         Assert.Equal("zh-CN", svc.CurrentLanguage);
-        Assert.Equal("HMI 编辑器", svc["app.title"]);
+        Assert.Equal("晨歌 HMI 编辑器", svc["app.title"]);
 
         svc.SwitchLanguage("en-US");
         Assert.Equal("en-US", svc.CurrentLanguage);
-        Assert.Equal("HMI Editor", svc["app.title"]);
+        Assert.Equal("Chenge HMI Editor", svc["app.title"]);
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class LocalizationTests
         Assert.Equal("zh-CN", svc.CurrentLanguage);
 
         // 中文已有的 key 正常返回
-        Assert.Equal("HMI 编辑器", svc["app.title"]);
+        Assert.Equal("晨歌 HMI 编辑器", svc["app.title"]);
     }
 
     [Fact]

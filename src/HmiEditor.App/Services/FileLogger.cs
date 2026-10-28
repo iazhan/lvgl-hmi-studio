@@ -11,7 +11,7 @@ namespace HmiEditor.App.Services;
 /// <summary>
 /// 最小文件日志器 —— 把编辑器运行期异常/告警落盘，供现场排障。
 ///
-/// 位置：<c>%APPDATA%/zhishu-hmi/logs/app-yyyyMMdd.log</c>（与 settings.json/theme.json 同目录）。
+/// 位置：<c>%APPDATA%/chenge-hmi/logs/app-yyyyMMdd.log</c>（与 settings.json/theme.json 同目录）。
 /// 设计约束：
 ///   <list type="bullet">
 ///     <item>日志写入失败绝不抛出 —— 日志是诊断手段，不能反过来拖垮编辑器；</item>

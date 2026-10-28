@@ -12,7 +12,7 @@ namespace HmiEditor.Core.Tests;
 ///
 /// <para><b>为什么需要：</b>原有守卫（<c>TestTempDirUsageGuardTests</c>）的扫描面是
 /// <c>FindTestsRoot()</c> —— **只扫 <c>tests/</c>，不扫 <c>src/</c>**。于是产品侧
-/// <c>Path.Combine(Path.GetTempPath(), "zhishu_hmi_comm_config.ini")</c> 这类写法长期无守卫，
+/// <c>Path.Combine(Path.GetTempPath(), "chenge_hmi_comm_config.ini")</c> 这类写法长期无守卫，
 /// 实测后果是：<c>/tmp</c>（10 MB tmpfs）被占满时
 /// <c>File.WriteAllTextAsync</c> 抛 <c>IOException: No space left on device</c>，
 /// 让 <c>DeployAsync_RuntimeConfigText_UploadsCommConfig</c> 间歇红；

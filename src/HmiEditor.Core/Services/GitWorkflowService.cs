@@ -199,7 +199,7 @@ public static class GitWorkflowService
         // 消息使用 -m 参数传递，避免注入风险
         // 工程级提交必须可在没有全局 Git 身份的干净环境中工作；
         // 使用仓库本地命令配置，避免修改用户全局配置，同时保持提交可追溯。
-        var commit = RunGit(projectDirectory, $"-c user.name=zhishu-hmi -c user.email=zhishu-hmi@localhost commit -m \"{EscapeForArg(message)}\"");
+        var commit = RunGit(projectDirectory, $"-c user.name=chenge-hmi -c user.email=chenge-hmi@localhost commit -m \"{EscapeForArg(message)}\"");
         if (commit.ExitCode != 0)
             return (false, commit.StandardError);
 

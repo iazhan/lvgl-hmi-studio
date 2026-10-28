@@ -304,7 +304,7 @@ public class AppPathsSessionTests
 
     /// <summary>
     /// 第十轮～第十一轮之间直接平铺在临时根**直下**的 <c>&lt;prefix&gt;-&lt;guid&gt;</c>
-    /// 目录要被清掉 —— 这就是本机 <c>~/.config/zhishu-hmi/temp/</c> 里那批残留的形态。
+    /// 目录要被清掉 —— 这就是本机 <c>~/.config/chenge-hmi/temp/</c> 里那批残留的形态。
     /// </summary>
     [Fact]
     public void PruneLegacyFlatWorkDirs_RemovesFlatGuidDirs()

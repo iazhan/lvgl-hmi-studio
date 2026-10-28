@@ -343,11 +343,11 @@ class Program
         return files;
     }
 
-    /// <summary>安装文件日志器（写 %APPDATA%/zhishu-hmi/logs）。</summary>
+    /// <summary>安装文件日志器（写 %APPDATA%/chenge-hmi/logs）。</summary>
     private static void InstallLogging()
     {
         AppLog.Current = new FileLogger(FileLogger.DefaultLogDirectory);
-        AppLog.Info($"=== zhishu-hmi 启动 (pid={Environment.ProcessId}, " +
+        AppLog.Info($"=== chenge-hmi 启动 (pid={Environment.ProcessId}, " +
                     $"os={Environment.OSVersion}, clr={Environment.Version}) ===");
     }
 

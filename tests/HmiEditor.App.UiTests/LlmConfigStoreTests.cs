@@ -21,7 +21,7 @@ public sealed class AppDataRootGlobalCollection;
 /// <summary>
 /// <see cref="LlmConfigStore"/> 的行为测试 —— 重点是**升级回退**这条静默失效路径。
 ///
-/// <para><b>为什么必须有行为测试：</b>数据目录名从 <c>HmiEditor</c> 改成 <c>zhishu-hmi</c> 时，
+/// <para><b>为什么必须有行为测试：</b>数据目录名从 <c>HmiEditor</c> 改成 <c>chenge-hmi</c> 时，
 /// 若"读一份、写另一份"的方向写反了，用户**已配置的端点/密钥会静默失效**——
 /// 对话框照常显示、不报错，只是发出去的请求全都不带凭据。源码级守卫
 /// （<c>AppPathsSingleSourceGuardTests</c>）只能证明"路径只有一个来源"，

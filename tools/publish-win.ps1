@@ -95,7 +95,7 @@ Write-Host ("      编辑器 {0:N1} MB + 运行时 {1:N1} MB" -f
 
 # ── 5. 打包：zip（绿色版）+ 安装包（NSIS，可选）──
 if (-not $SkipZip) {
-    $zip = Join-Path $OutRoot "HMI-Studio-$Version-win-x64.zip"
+    $zip = Join-Path $OutRoot "Chenge-HMI-Editor-$Version-win-x64.zip"
     Write-Host "[5/5] 压缩 → $zip"
     if (Test-Path $zip) { Remove-Item -Force $zip }
     Compress-Archive -Path (Join-Path $payload "*") -DestinationPath $zip -CompressionLevel Optimal

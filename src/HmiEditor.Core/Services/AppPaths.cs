@@ -21,7 +21,7 @@ namespace HmiEditor.Core.Services;
 /// <para><b>两个根，两种语义（不要混用）：</b></para>
 /// <list type="bullet">
 ///   <item><see cref="DataRoot"/> —— **持久**。用户配置与生成的产物。默认
-///   <c>%APPDATA%/zhishu-hmi</c>（与 <c>FileLogger</c>/<c>LayoutSerializer</c>/
+///   <c>%APPDATA%/chenge-hmi</c>（与 <c>FileLogger</c>/<c>LayoutSerializer</c>/
 ///   <c>WindowGeometryService</c> 的既有约定一致 —— 它们现在也统一走这里）。</item>
 ///   <item><see cref="TempRoot"/> —— **可清理**。编译/模拟/交叉编译的中间产物。默认
 ///   <c>DataRoot/temp</c>。</item>
@@ -73,13 +73,21 @@ namespace HmiEditor.Core.Services;
 public static class AppPaths
 {
     /// <summary>应用数据目录名（`%APPDATA%` 下的子目录）。</summary>
-    public const string AppFolderName = "zhishu-hmi";
+    public const string AppFolderName = "chenge-hmi";
 
     /// <summary>
-    /// 历史数据目录名（早期版本用的，与 <see cref="AppFolderName"/> 不同）。
+    /// 历史数据目录名（最早期版本用的，与 <see cref="AppFolderName"/> 不同）。
     /// 只用于**读**侧兼容，见 <see cref="LegacyDataRoot"/>。
     /// </summary>
     public const string LegacyAppFolderName = "HmiEditor";
+
+    /// <summary>
+    /// 上一代数据目录名（改名成 <c>chenge-hmi</c> 之前那一版用的）。
+    /// <para>迁移链是 <c>HmiEditor</c> → <c>zhishu-hmi</c> → <c>chenge-hmi</c>：两个旧目录
+    /// 可能同时存在（跨版本升上来），读侧取**最新的那个存在的**，写入一律走
+    /// <see cref="DataRoot"/>，旧文件自然冻结。</para>
+    /// </summary>
+    public const string PreviousAppFolderName = "zhishu-hmi";
 
     /// <summary>数据根覆盖环境变量。设置后 <see cref="DataRoot"/> 完全以它为准。</summary>
     public const string DataRootEnvVar = "HMI_APP_DATA_ROOT";
@@ -90,7 +98,7 @@ public static class AppPaths
     private const string TempFolderName = "temp";
     private const string AssetsFolderName = "assets";
 
-    /// <summary>持久数据根（默认 <c>%APPDATA%/zhishu-hmi</c>）。**不创建目录**。</summary>
+    /// <summary>持久数据根（默认 <c>%APPDATA%/chenge-hmi</c>）。**不创建目录**。</summary>
     public static string DataRoot
     {
         get
@@ -107,7 +115,7 @@ public static class AppPaths
     /// 历史数据根（默认 <c>%APPDATA%/HmiEditor</c>）—— <b>只读</b>。
     ///
     /// <para><b>它为什么还存在：</b>早期版本把 LLM 配置与审计日志写在这个目录名（`HmiEditor`）下。
-    /// 改名成 `zhishu-hmi` 时若一刀切，用户**已配置的 LLM 端点/密钥会失效**、审计历史会读不到。
+    /// 改名成 `chenge-hmi` 时若一刀切，用户**已配置的 LLM 端点/密钥会失效**、审计历史会读不到。
     /// 所以保留这个位置，但只允许**读**：写入一律走 <see cref="DataRoot"/>，旧文件自然冻结。</para>
     ///
     /// <para>收进本类而不是让各调用方自己拼，是为了让"应用路径只有一个来源"这条不变量
@@ -124,8 +132,17 @@ public static class AppPaths
             if (!string.IsNullOrWhiteSpace(overridden))
                 return Path.GetFullPath(overridden);
 
-            return Path.Combine(ResolveUserDataBaseDir(), LegacyAppFolderName);
+            return Path.Combine(ResolveUserDataBaseDir(), LegacyFolderName());
         }
+    }
+
+    /// <summary>读侧该看哪个旧目录：有 <c>zhishu-hmi</c> 就读它，否则退回 <c>HmiEditor</c>。</summary>
+    private static string LegacyFolderName()
+    {
+        var baseDir = ResolveUserDataBaseDir();
+
+        if (Directory.Exists(Path.Combine(baseDir, PreviousAppFolderName))) return PreviousAppFolderName;
+        return LegacyAppFolderName;
     }
 
     /// <summary>数据根下的文件（**写侧**唯一入口）。不创建任何东西。</summary>

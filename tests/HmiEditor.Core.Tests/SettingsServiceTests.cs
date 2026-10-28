@@ -26,7 +26,7 @@ public class SettingsServiceTests
             svc.Interaction.SetShowGrid(false);
             svc.Layout.SetLeftPanelProportion(0.25);
             svc.Display.SetZoomLevel(1.5);
-            svc.RecentProjects.Record("/tmp/zhishu-demo.hmi");
+            svc.RecentProjects.Record("/tmp/chenge-demo.hmi");
         }
 
         Assert.True(File.Exists(path), "设置文件应当落盘");

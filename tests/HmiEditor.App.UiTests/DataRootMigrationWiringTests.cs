@@ -6,7 +6,7 @@ using Xunit;
 namespace HmiEditor.App.UiTests;
 
 /// <summary>
-/// 数据根迁移的**接线**守卫：<c>%APPDATA%/HmiEditor</c> → <c>%APPDATA%/zhishu-hmi</c> 之后，
+/// 数据根迁移的**接线**守卫：<c>%APPDATA%/HmiEditor</c> → <c>%APPDATA%/chenge-hmi</c> 之后，
 /// 两处持久化都必须满足「**读回退、写不回退**」。
 ///
 /// <para><b>为什么用静态扫描：</b>这条是**接线**性质（哪一行用哪个路径），而它的触发点在

@@ -1,5 +1,5 @@
 ; ============================================================================
-; hmi-editor.nsi —— 智枢 HMI 编辑器的 Windows 安装包（NSIS 3 / Unicode）
+; hmi-editor.nsi —— 晨歌 HMI 编辑器的 Windows 安装包（NSIS 3 / Unicode）
 ;
 ; 负载由 tools/publish-win.ps1 产出（编辑器 win-x64 自包含 + 随包运行时）：
 ;   <PAYLOAD>\HmiEditor.App.exe
@@ -23,14 +23,14 @@ SetCompressor /SOLID lzma
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 
-!define APP_NAME      "智枢 HMI 编辑器"
+!define APP_NAME      "晨歌 HMI 编辑器"
 !define APP_EXE       "HmiEditor.App.exe"
-!define APP_PUBLISHER "智枢"
+!define APP_PUBLISHER "晨歌"
 !define APP_KEY       "Software\Microsoft\Windows\CurrentVersion\Uninstall\HmiStudio"
 !define UNINST_KEY    "Software\HmiStudio"
 
 Name "${APP_NAME}"
-OutFile "..\..\dist\HMI-Studio-Setup-${VERSION}.exe"
+OutFile "..\..\dist\Chenge-HMI-Editor-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\HMI Studio"
 InstallDirRegKey HKLM "${UNINST_KEY}" "InstallDir"
 RequestExecutionLevel admin
@@ -41,11 +41,8 @@ RequestExecutionLevel admin
 !define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "启动 ${APP_NAME}"
-!define MUI_FINISHPAGE_SHOWREADME ""
-!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "${NSISDIR}\Docs\Modern UI\License.txt"
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES

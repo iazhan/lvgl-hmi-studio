@@ -217,7 +217,7 @@
                                Foreground="{StaticResource HmiTextMutedBrush}"
                                VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1"
-                               Text="© 2026 zhishu-hmi"
+                               Text="© 2026 chenge-hmi"
                                FontSize="11"
                                Foreground="{StaticResource HmiTextMutedBrush}"
                                VerticalAlignment="Center"/>

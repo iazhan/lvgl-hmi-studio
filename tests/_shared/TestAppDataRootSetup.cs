@@ -10,7 +10,7 @@ namespace HmiEditor.TestSupport;
 /// 不往**真实用户配置目录**写。
 ///
 /// <para><b>为什么需要：</b>产品侧原先的中间产物落在系统临时目录（污染 <c>/tmp</c>）；
-/// 收口到 <c>AppPaths</c> 后，默认根变成 <c>%APPDATA%/zhishu-hmi</c> —— 若不重定向，
+/// 收口到 <c>AppPaths</c> 后，默认根变成 <c>%APPDATA%/chenge-hmi</c> —— 若不重定向，
 /// 测试会把编译/部署的中间产物写进开发者**真实的**配置目录。
 /// 两个根都不该被测试污染，所以测试进程显式接管。</para>
 ///

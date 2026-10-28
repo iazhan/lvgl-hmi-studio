@@ -1,5 +1,5 @@
 <!--
-  zhishu-hmi 应用图标资源字典
+  chenge-hmi 应用图标资源字典
 
   收纳 MainWindow CommandBar 顶栏 + 绘图工具栏 + Toolbox 所有 30+ 个手写 PathIcon。
   目的：消除 XAML 散落的几何字符串，便于视觉统一与维护。
