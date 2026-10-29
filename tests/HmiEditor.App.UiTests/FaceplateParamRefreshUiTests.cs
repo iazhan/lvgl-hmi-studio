@@ -18,7 +18,7 @@ namespace HmiEditor.App.UiTests;
 /// <c>FaceplateParamHost</c>**；刷新只动 Host。所以静态区的子元素个数**恒为 3**，
 /// 与参数个数无关 —— 本条判据把这一点也钉住。</para>
 ///
-/// <para>为什么**不能**只靠静态形状判据（<c>scripts/check-index-based-control-lookup.py</c>）：
+/// <para>为什么**不能**只靠静态形状判据（<c>scripts/13_check_index_based_control_lookup.py</c>）：
 /// 形状判据只认**字面整数**下标，等价改写
 /// （<c>for (var i = X.Children.Count - 1; i &gt;= 2; i--) X.Children.RemoveAt(i);</c>）
 /// 会以**绿**通过而行为照样坏。这里往静态区注入一个探针元素、真驱动一次刷新，

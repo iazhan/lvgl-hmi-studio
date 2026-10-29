@@ -78,7 +78,7 @@ public partial class FaceplateLibraryView : UserControl
         // 注：SearchBox / TemplateListBox / 面板内 4 个按钮的事件接线**只在 .axaml 里声明一次**。
         // 这里曾经再 += 一遍（同一个 handler 接两路）—— Avalonia 的 += 不去重，两路都会执行：
         // AI 模板按钮会因此弹 4 个对话框（双接线 × 双订阅，见 docs 登记表 #43）。
-        // tests 侧有静态守卫 scripts/check-xaml-duplicate-wiring.py 守这条。
+        // tests 侧有静态守卫 scripts/11_check_xaml_duplicate_wiring.py 守这条。
 
         // 拖拽支持 —— 从模板列表拖拽到画布
         AttachDragHandlers(TemplateListBox);

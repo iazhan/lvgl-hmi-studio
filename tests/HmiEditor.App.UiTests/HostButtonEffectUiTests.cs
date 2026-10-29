@@ -3162,7 +3162,7 @@ public class HostButtonEffectUiTests
                     + "（**平台桩**）：确认框的完成时刻不由 `Pump` 决定 ⇒ 读数会抖"
                     + "（与 `UserManagerView.BtnDeleteUser` 同一条理由）"),
                 Moves("BtnAiTemplate",
-                    "OnAiTemplateClicked 只抬 `AiTemplateRequested` ⇒ 载荷空 → 「已抬」。🩸 与上两条同源（构造函数转发到静态总线 → `Wiring.DockAggregate.cs:280` 开 `AiTemplateDialog`）；清总线之后可判。⚠ 本视图是 `#43` 双接线缺陷的现场，静态守卫 `check-xaml-duplicate-wiring.py` 守着它",
+                    "OnAiTemplateClicked 只抬 `AiTemplateRequested` ⇒ 载荷空 → 「已抬」。🩸 与上两条同源（构造函数转发到静态总线 → `Wiring.DockAggregate.cs:280` 开 `AiTemplateDialog`）；清总线之后可判。⚠ 本视图是 `#43` 双接线缺陷的现场，静态守卫 `11_check_xaml_duplicate_wiring.py` 守着它",
                     ("AI模板请求", "已抬")),
             }),
 

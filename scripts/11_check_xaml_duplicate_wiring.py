@@ -11,9 +11,9 @@
    不能反过来判，否则一片假红。
 
 用法：
-    python3 scripts/check-xaml-duplicate-wiring.py             # 判据（门禁用）
-    python3 scripts/check-xaml-duplicate-wiring.py --json      # 机器可读
-    python3 scripts/check-xaml-duplicate-wiring.py --selftest  # 自检：判据两侧都真被读取？
+    python3 scripts/11_check_xaml_duplicate_wiring.py             # 判据（门禁用）
+    python3 scripts/11_check_xaml_duplicate_wiring.py --json      # 机器可读
+    python3 scripts/11_check_xaml_duplicate_wiring.py --selftest  # 自检：判据两侧都真被读取？
 """
 from __future__ import annotations
 

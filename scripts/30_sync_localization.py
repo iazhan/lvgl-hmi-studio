@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync_localization.py - 同步 Lang.cs 常量与 JSON 本地化资源
+30_sync_localization.py - 同步 Lang.cs 常量与 JSON 本地化资源
 
 功能:
     1. 补全 JSON 中缺失的值（Lang.cs 有常量但 JSON 无对应键）
@@ -20,9 +20,9 @@ sync_localization.py - 同步 Lang.cs 常量与 JSON 本地化资源
 映射表中没有的键用键名作为占位值并标记 [TODO]。
 
 用法:
-    python3 scripts/sync_localization.py                      # 干跑：只打印会做什么
-    python3 scripts/sync_localization.py --write              # 只补 JSON 缺失值
-    python3 scripts/sync_localization.py --write --add-consts # 连常量一起生成（先读 #52）
+    python3 scripts/30_sync_localization.py                      # 干跑：只打印会做什么
+    python3 scripts/30_sync_localization.py --write              # 只补 JSON 缺失值
+    python3 scripts/30_sync_localization.py --write --add-consts # 连常量一起生成（先读 #52）
 """
 
 from __future__ import annotations

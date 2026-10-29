@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# check-path-hygiene.sh — 产品/工具代码不得硬编码开发机家目录
+# 10_check_path_hygiene.sh — 产品/工具代码不得硬编码开发机家目录
 #
 # 背景：tools/MockHmiGen 曾在两处写死 /home/<开发者>/...（默认输出目录 +
 # "下一步"提示语）。后果不是"不好看"，而是三条实际故障：
@@ -13,7 +13,7 @@
 # tests/ 有意排除：测试夹具有正当理由构造 /home/user/... 这类**通用占位**
 # 绝对路径（见 ConfigCodeGenConsumptionTests、MockImageLoadingTests）。
 #
-# 用法：bash scripts/check-path-hygiene.sh [--selftest]
+# 用法：bash scripts/10_check_path_hygiene.sh [--selftest]
 # 退出码：0 = 干净；1 = 命中（明细打到 stderr）。
 #
 # 判据是「路径被 ASCII 引号包裹」，不是「路径出现」。这是刻意的：

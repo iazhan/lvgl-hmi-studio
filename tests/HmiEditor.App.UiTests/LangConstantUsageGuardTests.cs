@@ -179,7 +179,7 @@ public class LangConstantUsageGuardTests
     /// 这一族（<c>gen.issue.*</c> / <c>gen.loc.*</c>）已随 C 源码导出路径移除（removed），本集里不再有它们的常量
     /// （面 21 → <b>22</b>，下界同步抬满）。⇒ 「字典 +1 而基线不动」不矛盾，两者数的集合不同。</para>
     /// <para><b>与补键工具的方向冲突（已知陷阱，登记 #52）</b>：
-    /// <c>scripts/sync_localization.py</c> 第 2 步会给「字典里有、<c>Lang.cs</c> 里没有」的键
+    /// <c>scripts/30_sync_localization.py</c> 第 2 步会给「字典里有、<c>Lang.cs</c> 里没有」的键
     /// **生成常量** —— 干跑实测今天有 <b>360</b> 个这样的键，跑一次就会新增 360 个常量
     /// （且**必然**落进本基线）⇒ 本判据红、基线被"顺手改大"。两个方向必须选一个
     /// （常量集合与键集合同构，或常量集合只装"代码真正用到的键"），
@@ -311,7 +311,7 @@ public class LangConstantUsageGuardTests
     /// <para><b>为什么需要它</b>：<see cref="UnusedBaseline"/> 的注释说「清理掉死常量后必须
     /// 同步改小基线」，读起来像"这是一份待清零的清理清单"。但**键的消费方式不止代码**：
     /// 视图用 <c>{res:Loc K}</c> 取键、插件族 / 配置清单 / 脚本诊断码 / 枚举名是**运行时拼**出来的
-    /// —— 这几类的键结构上不需要 C# 读常量。而 <c>scripts/sync_localization.py</c> 还会反过来
+    /// —— 这几类的键结构上不需要 C# 读常量。而 <c>scripts/30_sync_localization.py</c> 还会反过来
     /// 给「字典里有、<c>Lang.cs</c> 里没有」的键**生成常量**（工具的不变量是"每个键都有常量"）
     /// ⇒ 常量集合与键集合**同构**，这个基线**结构上到不了 0**。所以它到底是"待清理"还是
     /// "键空间镜像"，只能靠分桶回答 —— 这就是登记 #35 的分类前提。</para>
@@ -397,7 +397,7 @@ public class LangConstantUsageGuardTests
     [Fact]
     public void SyncTool_DefaultsToDryRunAndGatesConstantGeneration()
     {
-        var path = Path.Combine(SourceScanner.RepoRoot, "scripts", "sync_localization.py");
+        var path = Path.Combine(SourceScanner.RepoRoot, "scripts", "30_sync_localization.py");
         Assert.True(File.Exists(path), $"找不到补键工具：{path}（路径或文件名改了？）");
         var code = File.ReadAllText(path);
         Assert.True(code.Length > 3000, $"补键工具只剩 {code.Length} 字符 —— 面找错了或文件被掏空");
@@ -414,7 +414,7 @@ public class LangConstantUsageGuardTests
         Need("if add_consts:", "闸没被用在生成段上");
 
         Assert.True(missing.Count == 0,
-            "补键工具 `scripts/sync_localization.py` 的默认值/闸门被改动了（登记 #52）：\n   - "
+            "补键工具 `scripts/30_sync_localization.py` 的默认值/闸门被改动了（登记 #52）：\n   - "
             + string.Join("\n   - ", missing));
 
         Assert.False(code.Contains("dry_run = '--dry-run' in sys.argv", StringComparison.Ordinal),

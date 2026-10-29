@@ -16,16 +16,16 @@ namespace HmiEditor.Core.Tests;
 /// 从 <c>1.89</c> 爬到 <c>5.09</c>、UI 段随之从 27 s 飘到 36 s，于是那次「UI 段 141 秒」的异常
 /// **事后无从归因**（登记 `#45` 仍未闭环的那一半）。</para>
 ///
-/// <para><b>规矩不落到工具里就会忘</b>：这条守卫把三件事钉住 —— ① `ci-gate.sh` 必须真的记
-/// （三处：开始 / 测试前 / 测试后）；② `gate-readings.py` 必须把读数显示出来（否则记了也没人看）；
+/// <para><b>规矩不落到工具里就会忘</b>：这条守卫把三件事钉住 —— ① `00_gate.sh` 必须真的记
+/// （三处：开始 / 测试前 / 测试后）；② `21_gate_readings.py` 必须把读数显示出来（否则记了也没人看）；
 /// ③ 用一个**合成日志**端到端跑一遍读数脚本，断言它确实把三个负载值打了出来。</para>
 /// </summary>
 public class GateLoadavgBookkeepingTests
 {
     private static string RepoRoot => SourceScanner.RepoRoot;
 
-    private static string GateScript => File.ReadAllText(Path.Combine(RepoRoot, "scripts", "ci-gate.sh"));
-    private static string ReadingsScript => File.ReadAllText(Path.Combine(RepoRoot, "scripts", "gate-readings.py"));
+    private static string GateScript => File.ReadAllText(Path.Combine(RepoRoot, "scripts", "00_gate.sh"));
+    private static string ReadingsScript => File.ReadAllText(Path.Combine(RepoRoot, "scripts", "21_gate_readings.py"));
 
     [Fact]
     public void GateScript_RecordsLoadAverageAtThreePoints()
@@ -81,7 +81,7 @@ public class GateLoadavgBookkeepingTests
                 RedirectStandardError = true,
                 WorkingDirectory = RepoRoot,
             };
-            psi.ArgumentList.Add("scripts/gate-readings.py");
+            psi.ArgumentList.Add("scripts/21_gate_readings.py");
             psi.ArgumentList.Add(temp);
 
             using var proc = Process.Start(psi)!;

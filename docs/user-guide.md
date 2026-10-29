@@ -315,8 +315,8 @@ chenge-runtime 运行时目录（导出预览用；留空则读环境变量 `CHE
 ## 15. 相关文档
 
 - [README.md](../README.md)（仓库结构与环境要求）
-- [scripts/ci-gate.sh](../scripts/ci-gate.sh)（质量门禁：构建 + 测试 + 脚本语法）
-- `scripts/verify.sh`（端到端验收：导出 → 编译 → 运行自检）
+- [scripts/00_gate.sh](../scripts/00_gate.sh)（质量门禁：构建 + 测试 + 脚本语法）
+- `scripts/00_gate.sh`（阻断门禁：构建 + 全量测试 + 静态守卫）
 - `src/HmiEditor.App/Services/FileLogger.cs`（启动阶段日志的落盘位置）
 - `src/HmiEditor.Core/Services/AppPaths.cs`（数据根与旧目录迁移链）
 - [docs/troubleshooting.md](troubleshooting.md)（故障排查手册）

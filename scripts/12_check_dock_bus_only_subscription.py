@@ -30,9 +30,9 @@ Dock 重建换实例后即失效；视图内部转发随**新实例的构造**�
    因为直订可以写进任何一个 partial 或对话框）。
 
 用法：
-    python3 scripts/check-dock-bus-only-subscription.py             # 判据（门禁用）
-    python3 scripts/check-dock-bus-only-subscription.py --json      # 机器可读
-    python3 scripts/check-dock-bus-only-subscription.py --selftest  # 自检：8 档
+    python3 scripts/12_check_dock_bus_only_subscription.py             # 判据（门禁用）
+    python3 scripts/12_check_dock_bus_only_subscription.py --json      # 机器可读
+    python3 scripts/12_check_dock_bus_only_subscription.py --selftest  # 自检：8 档
 """
 from __future__ import annotations
 

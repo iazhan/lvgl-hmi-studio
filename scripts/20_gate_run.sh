@@ -13,16 +13,16 @@
 #   ⇒ 唯一写法是「**整条**（含重定向与 `echo`）都在同一个 shell 里」。本脚本把这条
 #     固化成一个命令，省得每次都要默念一遍。
 #
-# 产物形态与历史日志**逐字节兼容**：`scripts/ci-gate.sh` 的完整输出 ＋ 最后一行为
+# 产物形态与历史日志**逐字节兼容**：`scripts/00_gate.sh` 的完整输出 ＋ 最后一行为
 #     `GATE_EXIT=<n>`
-#   ⇒ `scripts/gate-readings.py` / `scripts/gate-diff.py` 直接可用，
+#   ⇒ `scripts/21_gate_readings.py` / `scripts/22_gate_diff.py` 直接可用，
 #     也能与旧日志（如 `.workbuddy/tmp/s118-gate*.log`）对拍。
 #
 # 用法：
-#     sh scripts/gate-run.sh <日志路径>
-#     sh scripts/gate-run.sh --selftest          # 自检：3 档
+#     sh scripts/20_gate_run.sh <日志路径>
+#     sh scripts/20_gate_run.sh --selftest          # 自检：3 档
 #
-# ⚠ 自检用 `GATE_CMD` 覆盖被跑的命令（默认 `bash scripts/ci-gate.sh`）。
+# ⚠ 自检用 `GATE_CMD` 覆盖被跑的命令（默认 `bash scripts/00_gate.sh`）。
 #   除了自检**别设它** —— 设了就是拿假命令冒充门禁。
 set -u
 
@@ -59,8 +59,8 @@ fi
 
 LOG="${1:-}"
 if [ -z "$LOG" ]; then
-    echo "用法： sh scripts/gate-run.sh <日志路径>" >&2
-    echo "       sh scripts/gate-run.sh --selftest" >&2
+    echo "用法： sh scripts/20_gate_run.sh <日志路径>" >&2
+    echo "       sh scripts/20_gate_run.sh --selftest" >&2
     exit 2
 fi
 
@@ -68,7 +68,7 @@ REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO" || exit 2
 mkdir -p "$(dirname "$LOG")"
 
-CMD="${GATE_CMD:-bash scripts/ci-gate.sh}"
+CMD="${GATE_CMD:-bash scripts/00_gate.sh}"
 # 整条都在**同一个 shell** 里：重定向 ＋ 取 `$?` ＋ 追加，不留任何东西给外层 shell 解析。
 sh -c "$CMD" > "$LOG" 2>&1
 RC=$?

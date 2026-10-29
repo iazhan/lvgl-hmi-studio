@@ -18,8 +18,8 @@
     （`--selftest` 档 4 就钉这一条 —— 缺一行真内容时，归一后仍然是 2 行）。
 
 用法：
-    python3 scripts/gate-diff.py <旧日志> <新日志> [--all]
-    python3 scripts/gate-diff.py --selftest          # 自检：4 档
+    python3 scripts/22_gate_diff.py <旧日志> <新日志> [--all]
+    python3 scripts/22_gate_diff.py --selftest          # 自检：4 档
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ from pathlib import Path
 # 固定标记行：门禁里 10 次 `dotnet test` 调用各打印一行
 MARKER = "总共 1 个测试文件与指定模式相匹配。"
 
-# 剥墙钟 —— 与 `scripts/gate-readings.py` 无关，但**必须**与历史上用过的口径一致，
+# 剥墙钟 —— 与 `scripts/21_gate_readings.py` 无关，但**必须**与历史上用过的口径一致，
 # 否则「上一阶段报 0 行、这一阶段报 N 行」会被误读成回归。
 STRIP = [
     (re.compile(r"已用时间\s+\d+:\d+:\d+\.\d+"), "已用时间 <墙钟>"),

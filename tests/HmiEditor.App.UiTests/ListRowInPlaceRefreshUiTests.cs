@@ -13,7 +13,7 @@ namespace HmiEditor.App.UiTests;
 /// <summary>
 /// **列表行的「就地刷新」行为**（登记表 #57 的验收面）。
 ///
-/// <para><b>它补的是什么：</b>阶段 76 那条判据（<c>check-index-based-control-lookup.py</c>）
+/// <para><b>它补的是什么：</b>阶段 76 那条判据（<c>13_check_index_based_control_lookup.py</c>）
 /// 管的是**源码形状** —— 「不许按位置钻进项的 <c>Children</c> 找控件」。它能保证以后不再这么写，
 /// **不保证**「已经改成持引用的那些行在改字段之后真的还刷新」。阶段 77 把三份视图的列表行
 /// 从「按 <c>Children[i]</c> 反查」改成「构造时捕获控件的行类型」（<c>AlarmGroupRow</c> /

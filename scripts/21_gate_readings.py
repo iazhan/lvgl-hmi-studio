@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""门禁读数摘要：从一跑 `scripts/ci-gate.sh` 的日志里抽出**收口表格要用的每一个数**。
+"""门禁读数摘要：从一跑 `scripts/00_gate.sh` 的日志里抽出**收口表格要用的每一个数**。
 
 为什么它该在仓里（而不是某个临时目录）：
     收口的每条读数都要能指回**日志正文**，而**量具自己是最容易读错的一环**。阶段 118 实测
@@ -13,7 +13,7 @@
       ① 行数一律 `splitlines()`；
       ② 关键项**匹配不到就报警并以非零退出** —— 绝不静默产出 `0` / 空。
 
-⚠ 本脚本是**只读探针**：不判定、不写任何文件。门禁本身在 `scripts/ci-gate.sh`。
+⚠ 本脚本是**只读探针**：不判定、不写任何文件。门禁本身在 `scripts/00_gate.sh`。
 
 ⚠ 「被并发挤行的固定标记行」：门禁有 9 次 `dotnet test` 调用（8 个项目 ＋ 1 次 git 专用段；
 阶段 148 起 `DockPanelInvocationUiTests` 回到大队 ⇒ 少一次），各自打印一行
@@ -22,8 +22,8 @@
     这是**结构性**的、不是内容差（阶段 115 立的规矩：先归一 ＋ 再比多重集）。
 
 用法：
-    python3 scripts/gate-readings.py <日志> [<日志> …]    # 逐份摘要
-    python3 scripts/gate-readings.py --selftest            # 自检：3 档
+    python3 scripts/21_gate_readings.py <日志> [<日志> …]    # 逐份摘要
+    python3 scripts/21_gate_readings.py --selftest            # 自检：3 档
 """
 from __future__ import annotations
 

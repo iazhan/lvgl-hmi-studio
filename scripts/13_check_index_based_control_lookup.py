@@ -63,10 +63,10 @@
    判据会被**它自己的说明**满足/污染。
 
 用法：
-    python3 scripts/check-index-based-control-lookup.py             # 判据（门禁用）
-    python3 scripts/check-index-based-control-lookup.py --json      # 机器可读
-    python3 scripts/check-index-based-control-lookup.py --dump      # 打印基线表条目（生成/更新基线用）
-    python3 scripts/check-index-based-control-lookup.py --selftest  # 自检：14 档
+    python3 scripts/13_check_index_based_control_lookup.py             # 判据（门禁用）
+    python3 scripts/13_check_index_based_control_lookup.py --json      # 机器可读
+    python3 scripts/13_check_index_based_control_lookup.py --dump      # 打印基线表条目（生成/更新基线用）
+    python3 scripts/13_check_index_based_control_lookup.py --selftest  # 自检：14 档
 """
 from __future__ import annotations
 
@@ -136,7 +136,7 @@ BASELINE: dict[str, tuple[str, str]] = {}
 def strip_noise(text: str) -> str:
     """把注释与字符串/字符字面量的内容替换成等长空白（保留行列位置）。
 
-    与 scripts/check-dock-bus-only-subscription.py 同源：本判据的 docstring、以及产品代码里
+    与 scripts/12_check_dock_bus_only_subscription.py 同源：本判据的 docstring、以及产品代码里
     **解释这段历史**的注释都原样引用着被禁的写法（`Children[2]`、`OfType<…>().First()`），
     不剥就会把自己的说明判红 / 或让说明替真违规做担保。
     """

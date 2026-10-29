@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# ci-gate.sh — 仓库质量门禁（提交前本地执行）
+# 00_gate.sh — 仓库质量门禁（提交前本地执行）
 #
-# 与 verify.sh 的分工：
-#   ci-gate.sh   —— 快速、无外部依赖的阻断门禁（脚本语法 / 构建 / 全量测试 / 路径卫生）
+# 步骤：脚本语法 → dotnet build（警告即失败）→ 全量测试（大队 / 需独占的 git 用例两段）
+#       → 静态守卫（路径卫生等）→ 收口工具自检。
+# 各检查器在 1x / 2x 组，见同目录 README.md。
 #
 # 退出码：0 = 全部通过；非 0 = 首个失败步骤的退出码。
 # ============================================================
@@ -64,7 +65,7 @@ echo "✅ ${script_count} 个脚本语法正确"
 #   这不是可以忽略的细节：「门禁跑在代码落盘之后、提交之前」这句纪律里，
 #   「落盘」对**新文件**而言 ＝ **进索引**，不是「文件存在于磁盘上」。
 banner "路径卫生（无硬编码开发机家目录）"
-bash scripts/check-path-hygiene.sh
+bash scripts/10_check_path_hygiene.sh
 
 # ── [1d] 控件事件不得"XAML 声明 + code-behind 再 += 一遍" ──
 #
@@ -88,7 +89,7 @@ bash scripts/check-path-hygiene.sh
 #     （code-behind 接了、XAML 没声明）是**合法且常见**的（代码构建的控件只能这么接），
 #     所以不能把它反过来判，否则一片假红。
 command -v python3 >/dev/null 2>&1 || die "本步需要 python3（重复接线静态检查），未找到"
-if ! python3 scripts/check-xaml-duplicate-wiring.py; then
+if ! python3 scripts/11_check_xaml_duplicate_wiring.py; then
     die "存在重复接线：同一控件事件既在 .axaml 里声明、又在 .axaml.cs 里 += 了一次"
 fi
 
@@ -118,7 +119,7 @@ fi
 #   ② 脚本内置 `MIN_VIEW_MEMBERS` 下限 —— 声明格式一变、正则失效，推导出的成员集合会塌掉，
 #      那会让判据退化成"永远 0 违规"的假门禁，所以**成员太少直接判失败**。
 #   自带 `--selftest`（8 档：3 档该红 + 5 档该绿，含白名单与"名字碰巧同缀"两类误报）。
-if ! python3 scripts/check-dock-bus-only-subscription.py; then
+if ! python3 scripts/12_check_dock_bus_only_subscription.py; then
     die "存在宿主直订面板视图事件：面板事件只能经 DockLayoutState 消费（缺陷 #46）"
 fi
 
@@ -170,7 +171,7 @@ fi
 #   ⚠ `--selftest` 14 档：7 档该红（3 档 wire 形态 + 读取类"表外新增" + **F4 位置写入**
 #     + 元判据自身的负控 + 基线内条目"表内失效"）、7 档该绿（持引用 / FindControl / 初始化器 /
 #     `Items.OfType` 范围外 / 注释里的反例 / 基线内 read / **按身份 IndexOf→RemoveAt(i)**）。
-if ! python3 scripts/check-index-based-control-lookup.py; then
+if ! python3 scripts/13_check_index_based_control_lookup.py; then
     die "存在「按位置在 .Children 里定位控件」的写法（下标读 / RemoveAt 字面下标写）：改为构造时持有引用，或 FindControl（#57 / 阶段 78）"
 fi
 
@@ -185,7 +186,7 @@ fi
 #   而"把局部量地址交出去"是随手就能写出来的。判据 = 第 4 个实参不得是
 #   `&<标识符>`（除非该标识符是文件级 static）或"裸的当前函数形参"。
 #   自带 `--selftest` 7 档（3 红 4 绿），并已实测能点名修复前的那一行（`soft_keyboard.c:342`）。
-if ! python3 scripts/check-lvgl-userdata-lifetime.py; then
+if ! python3 scripts/14_check_lvgl_userdata_lifetime.py; then
     die "存在把栈上局部量/形参当 LVGL event user_data 的写法：改为静态池等稳定存储（阶段 120）"
 fi
 
@@ -194,7 +195,7 @@ fi
 # 背景（阶段 119）：**收口**这一整套纪律（跑门禁并把退出码写进日志、跨版本日志对拍、
 #   从日志抽读数、量动作面残余）原先靠 `.workbuddy/tmp/` 里的一次性脚本，**不在版本库里** ——
 #   于是「上一阶段那条 0 行差异」事后**不可复算**：工具已经没了。本阶段把它们收进
-#   `scripts/`：`gate-run.sh` / `gate-diff.py` / `gate-readings.py` / `face-residual.py`。
+#   `scripts/`：`20_gate_run.sh` / `22_gate_diff.py` / `21_gate_readings.py` / `23_face_residual.py`。
 #
 # 为什么必须进门禁（本文件 [1f] 那句的老话）：**不加进门的判据等于没有判据**。
 #   这四个工具自己带 `--selftest`，而 `--selftest` 要是没人跑，它就会随工具一起腐烂 ——
@@ -204,15 +205,15 @@ fi
 #
 # ⚠ 刻意**放进步 [1] 之内**、不新开 banner：步数是日志的一条**口径**（`===== [N]` 的个数），
 #   18 份历史日志都是 `7 步`；新开一步会让「读数对拍」当场失去可比性。放进步 [1] 则
-#   步数仍是 7，只有行数增加（可由 `gate-readings.py` 逐项读出）。
-for tool in scripts/gate-readings.py scripts/gate-diff.py scripts/face-residual.py; do
+#   步数仍是 7，只有行数增加（可由 `21_gate_readings.py` 逐项读出）。
+for tool in scripts/21_gate_readings.py scripts/22_gate_diff.py scripts/23_face_residual.py; do
     command -v python3 >/dev/null 2>&1 || die "本步需要 python3（收口工具自检），未找到"
     if ! python3 "$tool" --selftest; then
         die "收口工具自检失败: $tool（量具坏了 ⇒ 它给出的读数一个都不许用）"
     fi
 done
-if ! sh scripts/gate-run.sh --selftest; then
-    die "收口工具自检失败: scripts/gate-run.sh（退出码没落进日志 ⇒ 那一跑不算证据）"
+if ! sh scripts/20_gate_run.sh --selftest; then
+    die "收口工具自检失败: scripts/20_gate_run.sh（退出码没落进日志 ⇒ 那一跑不算证据）"
 fi
 
 # ⚠ 同一族缺陷的**另一批**（阶段 120 补）：[1d]/[1e]/[1f] 三个静态守卫**早就自带
@@ -220,18 +221,18 @@ fi
 #   收口工具同病：**自检没人跑就会腐烂**，而它们判的正是"接线写错一维就静默失效"。
 #   实测三个自检都是毫秒级、不碰仓库（在临时目录里造最小树），所以直接挂进来。
 #   仍放进步 [1] 之内（**步数保持 7**，历史日志仍可比）。
-for tool in scripts/check-xaml-duplicate-wiring.py \
-            scripts/check-dock-bus-only-subscription.py \
-            scripts/check-index-based-control-lookup.py \
-            scripts/check-lvgl-userdata-lifetime.py; do
+for tool in scripts/11_check_xaml_duplicate_wiring.py \
+            scripts/12_check_dock_bus_only_subscription.py \
+            scripts/13_check_index_based_control_lookup.py \
+            scripts/14_check_lvgl_userdata_lifetime.py; do
     command -v python3 >/dev/null 2>&1 || die "本步需要 python3（静态守卫自检），未找到"
     if ! python3 "$tool" --selftest; then
         die "静态守卫自检失败: $tool（守卫坏了 ⇒ 它的『0 违规』一个都不许信）"
     fi
 done
 # 路径卫生也补了自检（阶段 121）：正控（引号内的家目录必须命中）+ 负控（注释里裸写不命中）
-if ! bash scripts/check-path-hygiene.sh --selftest; then
-    die "静态守卫自检失败: scripts/check-path-hygiene.sh"
+if ! bash scripts/10_check_path_hygiene.sh --selftest; then
+    die "静态守卫自检失败: scripts/10_check_path_hygiene.sh"
 fi
 
 # ── [2] 构建（0 error / 0 warning） ──
@@ -324,7 +325,7 @@ echo "✅ 构建通过（0 警告 / 0 错误）"
 #     渲染类 5~6s ⇒ 180s ≈ 最慢的 12 倍，不会误伤正常的慢用例；而那次挂死是 18 分钟。
 #   · `--blame-hang-dump-type none`：**不写 dump** —— 沙箱 /tmp 可能只有 10 MB，
 #     写 dump 会把"挂死"换成另一种红（还是门禁自己造成的）。
-#   · 负控（把等待压到 30s 再注入一个挂死用例）：`TEST_HANG_TIMEOUT=30s bash scripts/ci-gate.sh`。
+#   · 负控（把等待压到 30s 再注入一个挂死用例）：`TEST_HANG_TIMEOUT=30s bash scripts/00_gate.sh`。
 TEST_HANG_TIMEOUT="${TEST_HANG_TIMEOUT:-180s}"
 BLAME_HANG=(--blame-hang --blame-hang-timeout "$TEST_HANG_TIMEOUT" --blame-hang-dump-type none)
 

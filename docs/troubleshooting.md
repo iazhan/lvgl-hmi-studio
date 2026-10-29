@@ -25,18 +25,18 @@
 
 ### 1.3 门禁怎么跑
 
-- **阻断门禁**（脚本语法 → 构建，警告即失败 → 全量测试 → 路径卫生）：`bash scripts/ci-gate.sh`
-- **只查一项**：例如只看路径卫生 `bash scripts/check-path-hygiene.sh`
-- **依据**：`scripts/ci-gate.sh` 的步骤注释。
+- **阻断门禁**（脚本语法 → 构建，警告即失败 → 全量测试 → 路径卫生）：`bash scripts/00_gate.sh`
+- **只查一项**：例如只看路径卫生 `bash scripts/10_check_path_hygiene.sh`
+- **依据**：`scripts/00_gate.sh` 的步骤注释。
 
-### 1.4 `scripts/ci-gate.sh` 报 `/dev/fd/63: 没有那个文件或目录`
+### 1.4 `scripts/00_gate.sh` 报 `/dev/fd/63: 没有那个文件或目录`
 
 - **症状**：门禁在「bash -n 脚本语法检查」前报 `/dev/fd/63` / `/dev/fd/62` 打不开。
 - **原因**：这是**历史问题**——旧版脚本用进程替换 + `mapfile` 收集脚本清单，依赖 bash 的 `/dev/fd`；
   受限沙箱里会静默拿到空清单（假门禁）。现行脚本已改为 `mktemp` 临时文件 + 清单非空校验。
-- **处置**：若仍复现，说明跑的是旧脚本或改动被回退：核对 `scripts/ci-gate.sh` 第 [1] 步是否为
+- **处置**：若仍复现，说明跑的是旧脚本或改动被回退：核对 `scripts/00_gate.sh` 第 [1] 步是否为
   「临时文件收集 + `script_count -gt 0` 校验」；不要用「手工展开这一步」绕过门禁。
-- **依据**：`scripts/ci-gate.sh` 第 [1] 步注释、`README.md`「常见问题」。
+- **依据**：`scripts/00_gate.sh` 第 [1] 步注释、`README.md`「常见问题」。
 
 ### 1.5 路径卫生门禁失败（硬编码开发机家目录）
 
@@ -44,7 +44,7 @@
 - **原因**：产品/工具代码不得硬编码开发机家目录（会在他人机器上越界写盘、产物路径漂移、
   提示语复制粘贴即失败）。
 - **处置**：改为相对路径 / 命令行参数 / 环境变量 / 从仓库相对定位；注释与文档里裸写路径允许。
-- **依据**：`scripts/check-path-hygiene.sh`。
+- **依据**：`scripts/10_check_path_hygiene.sh`。
 
 ### 1.6 应用启动即崩且没有日志 / `AppBuilder` 报重复键
 
@@ -131,16 +131,15 @@
   「测试主机进程崩溃」；单独跑该项目却恒定全绿。
 - **原因**：已定性为「进全量就出事」的间歇缺陷（复现率约 2/3），成因未定位；同一沙箱还存在一条
   与 headless 会话无关的失败入口（测试宿主根本起不来）。
-- **处置**：门禁与端到端验收**只认 Release**（`scripts/ci-gate.sh` 与 `scripts/verify.sh`
-  默认 `CONFIG=Release`）；不要拿 Debug 全量读数下结论。需要当场点名挂死测试时可加
+- **处置**：门禁**只认 Release**（`scripts/00_gate.sh` 默认 `CONFIG=Release`）；不要拿 Debug 全量读数下结论。需要当场点名挂死测试时可加
   `--blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none`（注意 blame 本身是混淆变量）。
-- **依据**：`scripts/ci-gate.sh` / `scripts/verify.sh` 里"只认 Release"的注释与默认值。
+- **依据**：`scripts/00_gate.sh` 里 `CONFIG` 的默认值与注释。
 
 ### 4.2 其余已知限制
 
 | 说明（原因） | 处置 | 依据 |
 | --- | --- | --- |
-| Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/ci-gate.sh` 第 [6] 步注释；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
+| Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/00_gate.sh` 第 [6] 步注释；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
 | `RuntimeConfig` 部分字段不走设备：`HistoryStoragePath`/`HeartbeatIntervalMs`/`MaxRuntimeTasks`/`EnableCrashDump`/`CrashDumpSector` 未下发，`EnableTamperDetection` 零消费，`WatchdogTimeoutMs`/`EnableHmiReboot` 是死字段（保留为老工程 JSON 兼容） | 在工程设置改这些项不会改变设备行为，闭环需先立机制 | — |
 | 出安装包：`bash tools/package.sh`（Linux 出 `.deb` 与 tar.gz，Windows 出 NSIS Setup 与 zip，随包内置运行时） | 用 `--linux` / `--windows` 只出一个平台；产物在 `dist/` | `tools/package.sh`、`tools/publish-linux.sh`、`tools/publish-win.sh` |
 | 极端迟到的设备回包仍可能串帧（晚于首字节宽限窗口） | 避免通道繁忙时下发超长命令；失败重试 | — |

@@ -18,7 +18,7 @@
 | `src/` | **11** 个 C# 项目：`HmiEditor.App`（Avalonia 界面）、`HmiEditor.Core`（模型 / 服务 / 导出契约）、`HmiEditor.Export.Chenge`（工程写出）、`HmiEditor.Simulator`、`HmiEditor.AI`，以及硬件与通讯各三件 `Contracts` / `Builtin` / `Loader` |
 | `tests/` | **8** 个测试项目（Core、headless UI、导出、渲染、模拟器、AI、硬件、通讯）+ `HmiEditor.TestSupport`（含契约语料与字体夹具） |
 | `tools/` | 出包（`package.sh` 入口 + `publish-linux.sh` / `publish-win.sh` / `sync-runtime.sh` / `installer/`）、`MockHmiGen`（Golden 夹具工程）、SDK 打包、若干一次性探针 |
-| `scripts/` | 门禁与检查脚本，入口 `ci-gate.sh` |
+| `scripts/` | 门禁与检查脚本，入口 `00_gate.sh` |
 | `runtime/` | 出包用的运行时兜底副本（`chenge-preview-host` 等），见 `runtime/README.md` |
 | `docs/` | 三份在用文档 + 地图（`docs/README.md`） |
 | `design-previews/` | 设计 token 的 CSS 与页面原型，`DesignTokenCatalogTests` 读它 |
@@ -67,7 +67,7 @@ bash tools/package.sh --all --build-runtime <chenge-runtime 目录>   # 现编�
 ## 门禁
 
 ```bash
-bash scripts/ci-gate.sh
+bash scripts/00_gate.sh
 # 脚本语法 → dotnet build（警告即失败）→ 全量测试（大队 + 需独占的 git 用例分两段）→ 路径卫生
 ```
 

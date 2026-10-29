@@ -38,7 +38,7 @@ internal static class GitDialogService
         // 两个按钮先建成局部变量，接线时**直接用实例** —— 不再构造完再从 Children 里按下标回找。
         // 「按下标回找」有一条静默失效面：往外层 StackPanel 里插一个 StackPanel，取"第一个
         // StackPanel 行"就会拿到错的那一行，取消/提交会**悄悄互换**；插一个别的控件则硬转直接抛。
-        // 同族缺陷与判据见 scripts/check-index-based-control-lookup.py（阶段 76）。
+        // 同族缺陷与判据见 scripts/13_check_index_based_control_lookup.py（阶段 76）。
         var cancelBtn = new Button
         {
             Content = Loc["gen.cancel"],
@@ -131,7 +131,7 @@ internal static class GitDialogService
 
         // 关闭按钮先建成局部变量，接线时直接用实例 —— 不再 `p2.Children[2]` 按下标 + 硬转。
         // 那条路有一条静默失效面：往面板里插一个控件就把 Close 挂到**错的按钮**上，真关闭按钮点不动；
-        // 插进去的若不是 Button 则硬转直接抛。同族缺陷与判据见 scripts/check-index-based-control-lookup.py。
+        // 插进去的若不是 Button 则硬转直接抛。同族缺陷与判据见 scripts/13_check_index_based_control_lookup.py。
         var closeBtn = new Button
         {
             Content = Loc["gen.close"],

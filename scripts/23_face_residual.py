@@ -42,9 +42,9 @@
     与本书其他检查同源：**先确认你在读的东西真的是你要的那个信号**。
 
 用法：
-    python3 scripts/face-residual.py                # 全局汇总 ＋ 残余最多的 20 个视图
-    python3 scripts/face-residual.py --top 40
-    python3 scripts/face-residual.py --selftest     # 自检：3 档
+    python3 scripts/23_face_residual.py                # 全局汇总 ＋ 残余最多的 20 个视图
+    python3 scripts/23_face_residual.py --top 40
+    python3 scripts/23_face_residual.py --selftest     # 自检：3 档
 """
 from __future__ import annotations
 

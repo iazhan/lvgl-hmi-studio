@@ -135,7 +135,7 @@ def scan(root: Path):
 
 
 def selftest() -> int:
-    print("=== check-lvgl-userdata-lifetime.py --selftest ===")
+    print("=== 14_check_lvgl_userdata_lifetime.py --selftest ===")
     fixtures = [
         ("栈上局部量取地址（该红）", """\
 static void kb_make(int accent) {

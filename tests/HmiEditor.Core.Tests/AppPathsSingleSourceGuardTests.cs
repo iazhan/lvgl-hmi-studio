@@ -53,7 +53,7 @@ public class AppPathsSingleSourceGuardTests
     /// <summary>
     /// 历史目录名字面量：带引号的形式不得出现在唯一来源之外。
     /// 不带引号的 `HmiEditor` 是**命名空间前缀**（`HmiEditor.Core` 等），不该被误报 ——
-    /// 判据取「引号包裹的字符串字面量」，与 `check-path-hygiene.sh` 的思路一致。
+    /// 判据取「引号包裹的字符串字面量」，与 `10_check_path_hygiene.sh` 的思路一致。
     /// </summary>
     private const string LegacyFolderLiteral = "\"HmiEditor\"";
 

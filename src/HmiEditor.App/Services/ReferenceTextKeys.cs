@@ -6,7 +6,7 @@ using HmiEditor.Core.Services;
 //    · 下面的 switch 是**全覆盖 + 无默认支** ⇒ 编译器报 CS8524，举例是**未命名值**
 //      （(ReferenceDescriptionKind)99 —— 枚举永远可能持有一个未声明值），与本文件要挡的事无关；
 //    · 一旦**新增具名取值**而没人接文案 ⇒ 报 CS8509，举例是那个具名成员
-//      ⇒ ci-gate.sh（按 ": warning " 行判红）当场红。
+//      ⇒ 00_gate.sh（按 ": warning " 行判红）当场红。
 //    ⇒ 抑制噪声、留住信号。⚠ 替代写法（写成 `_ =>` 默认支）**刻意不用**：
 //      默认支会把新取值静默吞掉，用户看到的是**假文案**（阶段 92 的 #61j 实测）。
 #pragma warning disable CS8524
