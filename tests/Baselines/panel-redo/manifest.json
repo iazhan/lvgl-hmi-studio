@@ -11,6 +11,10 @@
   },
   "start_page": "home",
   "default_language": "zh",
+  "idle_min": 30,
+  "max_login_attempts": 5,
+  "lockout_min": 15,
+  "password_min_len": 6,
   "features": [
     "alarm",
     "curves",

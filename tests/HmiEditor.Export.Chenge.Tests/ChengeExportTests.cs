@@ -42,6 +42,29 @@ public class ChengeExportTests : IDisposable
     }
 
     /// <summary>
+    /// 会话/登录策略要写进 manifest：编辑器里改的「会话超时」在板上生效靠的就是 <c>idle_min</c>，
+    /// 不写的话运行时走自己的缺省（idle 10 分钟 / 3 次 / 锁 1 分钟 / 4 位），界面显示与板上不一致。
+    /// </summary>
+    [Fact]
+    public void Export_WritesLoginPolicyToManifest()
+    {
+        var project = ExportFixture.Build();
+        project.SecurityConfig.SessionTimeoutMin = 45;
+        project.SecurityConfig.MaxLoginAttempts = 7;
+        project.SecurityConfig.LockoutDurationMin = 20;
+        project.SecurityConfig.PasswordMinLength = 8;
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "manifest.json"))).RootElement;
+        Assert.Equal(45, manifest.GetProperty("idle_min").GetInt32());
+        Assert.Equal(7, manifest.GetProperty("max_login_attempts").GetInt32());
+        Assert.Equal(20, manifest.GetProperty("lockout_min").GetInt32());
+        Assert.Equal(8, manifest.GetProperty("password_min_len").GetInt32());
+    }
+
+    /// <summary>
     /// <c>manifest.name</c> 是板端工程 id（/data 下的目录名 + active 内容），板端导入只收
     /// <c>[a-z0-9_]</c>、1~32 位。中文工程名直接写进去 = "导出成功、插上板子导入失败"，
     /// 所以必须推导成合法 id，原名另存 <c>title</c>。

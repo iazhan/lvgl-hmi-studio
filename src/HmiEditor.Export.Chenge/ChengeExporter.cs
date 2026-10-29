@@ -227,6 +227,13 @@ public sealed class ChengeExporter
             ["screen"] = new JsonObject { ["width"] = screenWidth, ["height"] = screenHeight },
             ["start_page"] = startPage ?? "",
             ["default_language"] = options.DefaultLanguage,
+            // 会话与登录策略：运行时对这几项是**钳制**而不是拒载（loader.c 里各自 clamp），
+            // 所以这里按它的区间收口，保证 manifest 写的就是板上实际生效的值。
+            // SessionTimeoutMin 是"无操作多久登出"，对应 idle_min；不是 session_timeout_min（登录后总时长）。
+            ["idle_min"] = Math.Clamp(project.SecurityConfig.SessionTimeoutMin, 0, 240),
+            ["max_login_attempts"] = Math.Clamp(project.SecurityConfig.MaxLoginAttempts, 1, 10),
+            ["lockout_min"] = Math.Clamp(project.SecurityConfig.LockoutDurationMin, 0, 60),
+            ["password_min_len"] = Math.Clamp(project.SecurityConfig.PasswordMinLength, 4, 16),
             ["features"] = FeatureArray(features),
             ["font_sizes"] = new JsonArray(fontSizes.OrderBy(x => x).Select(x => (JsonNode)x).ToArray()),
             ["counts"] = new JsonObject
