@@ -598,13 +598,11 @@ public class CoreVisibleTextInventoryGuardTests
         var sum = VisibleChannels.Sum(c => c.Count);
         Assert.Equal(75, sum);
 
-        // ── 文档里的**两个**数字（通道数 / 条数）都必须等于算出来的值（阶段 99 补）──
-        // 两处都手抄 ⇒ 必须由判据看着，否则阶段 98 那种「把 +1 通道写成通道数不变」会再发生。
+        // ── 本文件摘要句里的**两个**数字（通道数 / 条数）必须等于算出来的值（阶段 99 补）──
+        // 手抄的数字必须由判据看着，否则阶段 98 那种「把 +1 通道写成通道数不变」会再发生。
         var problems = new List<string>();
 
-        // ⚠ 两处的**语序不同**（本文件是「通道 / 条数」、盘点专题是「条数 / 通道」）
-        //   ⇒ 用**具名组**取值，不靠位置 —— 位置一错这条判据会自己报出一堆假异常
-        //   （落地时就踩过：先按位置写，盘点专题那处立刻假红一次）。
+        // 用**具名组**取值，不靠位置 —— 位置一错这条判据会自己报出一堆假异常。
         void Check(string what, string text, string pattern)
         {
             var m = Regex.Match(text, pattern);
@@ -641,10 +639,6 @@ public class CoreVisibleTextInventoryGuardTests
                 problems.Add($"本文件 · 归位链末段（{last.Value}）：写的是 {docCount} / {docSum}，"
                     + $"实测 {count} / {sum}（通道数 / 条数）");
         }
-
-        var inventory = File.ReadAllText(Path.Combine(SourceScanner.RepoRoot, "docs",
-            "2026-09-20-core-visible-text-inventory.md"));
-        Check("盘点专题 · §0 摘要句", inventory, @"已核实的真缺口 (?<n>\d+) 条 / (?<c>\d+) 条通道");
 
         Assert.True(problems.Count == 0,
             "文档里的通道数 / 条数与 VisibleChannels 对不上（改了表就要回来改这两处、反之亦然）：\n"

@@ -28,7 +28,7 @@
 - **原因**：Golden 工程（含字体资源）与 LVGL 全量编译产物（数百 MB）都落在临时目录下。
 - **处置**：脚本第 [6] 步自带早失败检查；按提示把 `TMPDIR` 指到仓库外 ≥1 GB 的目录：
   `TMPDIR=$HOME/.cache/zhishu-hmi-verify LVGL_DIR=~/Git/lvgl bash scripts/verify.sh`。
-- **依据**：`scripts/verify.sh`；`docs/project-status.md`「复现命令」。
+- **依据**：`scripts/verify.sh`。
 
 ### 1.4 `scripts/ci-gate.sh` 报 `/dev/fd/63: 没有那个文件或目录`
 
@@ -55,18 +55,9 @@
   默认 glob 的 `AvaloniaXaml`）；增量构建把 XAML 编译步骤错开时可能残留。
 - **处置**：对整个解决方案做一次干净构建（`dotnet build HmiEditor.slnx -c Release`），
   不要单独增量构建 `HmiEditor.App` 工程。
-- **依据**：`src/HmiEditor.App/HmiEditor.App.csproj` 注释、
-  `docs/2026-09-17-avalonia-resource-duplicate-key.md`；
+- **依据**：`src/HmiEditor.App/HmiEditor.App.csproj` 的注释（重复键的成因与判据都写在那里）；
   启动阶段日志位置见 `src/HmiEditor.App/Services/FileLogger.cs`（数据根下 `logs/`，
   数据根可用 `HMI_APP_DATA_ROOT` 覆盖，见 `src/HmiEditor.Core/Services/AppPaths.cs`）。
-
-### 1.7 固件主机侧测试被跳过或失败
-
-- **原因**：`run_host_tests.sh` 用 `gcc` 编译/运行 **9** 个主机侧步骤（前 8 步是 host 测试，
-  第 9 步是 `lv_conf.h` 配置守卫）；无 gcc 时门禁默认跳过，
-  CI 用 `CI_REQUIRE_FIRMWARE_TESTS=1` 转成失败。
-- **处置**：安装 `gcc`；单独验证：`bash firmware/t113/tests/run_host_tests.sh`。
-- **依据**：`README.md`、`scripts/ci-gate.sh` 第 **[7]** 步、`firmware/t113/tests/run_host_tests.sh`。
 
 ## 2. 导出与预览
 
@@ -90,7 +81,7 @@
   报警/趋势组引用了不存在的名字、文本占位符写法不对）。
 - **处置**：导出时会先给一份问题清单（`ChengeIssues`），按条目改；改完再来一次导出。
   回归可用运行时自带的 `chenge-runtime/tools/golden.sh`（54 例）。
-- **依据**：`src/HmiEditor.Export.Chenge/ChengeExporter.cs`、`docs/chenge-export-format.md`。
+- **依据**：`src/HmiEditor.Export.Chenge/ChengeExporter.cs`（格式 0.6 的唯一写出方）。
 
 ### 2.4 导出的动作点了没反应
 
@@ -124,19 +115,14 @@
 
 ### 3.3 触摸、通讯与固件烧录类
 
-这三类一律按固件文档排查，不在本文发明步骤：
+这三类按板级文档排查，不在本文发明步骤（板级事实源在主仓库 `f1c100s-project` 的 kinseal 文档与
+`f1c100s-os/chenge-bsp/`，本文不复制）：
 
-- 触摸无反应 / 边缘点不到：`firmware/t113/docs/touch-hardware-diagnosis.md`、
-  `firmware/t113/docs/flashing-guide.md` 第 7 节、`firmware/t113/docs/version-info.md`
-  （触摸量程与 DTS 必须一致）、`firmware/t113/tina/dts/README.md`。
-- Modbus / RS485 不通：先看 `firmware/t113/docs/flashing-guide.md` 第 7 节；连接参数可在编辑器
-  「通讯配置」改完经「下载到 HMI」下发 `comm_config.ini` 免重编固件（格式与优先级见
-  `firmware/t113/README.md`）。
-- 固件烧录失败：`firmware/t113/docs/flashing-guide.md`（openixcli「Boot1 not found in firmware」
-  的成因与 Boot0/Boot1 的 (maintype, subtype) 查找键、图像归一/自检脚本
-  `tools/patch_image_boottype.py`（`--check`）、NAND 线刷、TF 卡启动、快捷部署
-  `firmware/t113/scripts/deploy.sh`）、`firmware/t113/docs/wavepi-s6-flash-guide.md`
-  （供电不足致 USB 传输超时、`Device reconnect failed`、刷回官方镜像 `flash_wavepi.sh --factory`）。
+- 触摸无反应 / 边缘点不到：触摸量程与 DTS 必须一致；编辑器侧的触点换算由目标类与
+  `/etc/hmi-cal` 决定，不要在这里手工改系数。
+- Modbus / RS485 不通：连接参数在编辑器「通讯配置」里改；板端串口映射是编译期固定的，
+  换端口要重编运行时。
+- 固件 / 系统烧录失败：按主仓库的写卡入口脚本与其「入口脚本使用手册」排查。
 
 ## 4. 已知限制（不要当成新缺陷反复排查）
 
@@ -149,15 +135,13 @@
 - **处置**：门禁与端到端验收**只认 Release**（`scripts/ci-gate.sh` 与 `scripts/verify.sh`
   默认 `CONFIG=Release`）；不要拿 Debug 全量读数下结论。需要当场点名挂死测试时可加
   `--blame-hang --blame-hang-timeout 90s --blame-hang-dump-type none`（注意 blame 本身是混淆变量）。
-- **依据**：`docs/project-status.md`「当前阻断项」第 12 条、
-  `docs/2026-09-17-open-items-register.md` §5 第 27 项、
-  `docs/2026-09-17-verify-end-to-end-revalidation.md`。
+- **依据**：`scripts/ci-gate.sh` / `scripts/verify.sh` 里"只认 Release"的注释与默认值。
 
 ### 4.2 其余已知限制
 
 | 说明（原因） | 处置 | 依据 |
 | --- | --- | --- |
-| Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/ci-gate.sh` 第 [6] 步注释、`docs/2026-09-17-sandbox-newpath-serialization.md`；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
-| `RuntimeConfig` 部分字段不走设备：`HistoryStoragePath`/`HeartbeatIntervalMs`/`MaxRuntimeTasks`/`EnableCrashDump`/`CrashDumpSector` 未下发，`EnableTamperDetection` 零消费，`WatchdogTimeoutMs`/`EnableHmiReboot` 是死字段（保留为老工程 JSON 兼容） | 在工程设置改这些项不会改变设备行为，闭环需先立机制 | `docs/2026-09-17-open-items-register.md` §3 第 9–11 项、`docs/2026-09-16-runtime-config-sinking.md` |
-| 编辑器侧一键出发布包：`bash scripts/package-release.sh`（发布编辑器 + 生成版本清单与校验和）；出包后 `bash scripts/package-release.sh --verify <包目录>` 复核 | 出包步骤见包内 `UPGRADE.md` | `scripts/package-release.sh`、`docs/2026-09-18-release-packaging.md` |
-| 极端迟到的设备回包仍可能串帧（晚于首字节宽限窗口） | 避免通道繁忙时下发超长命令；失败重试 | `docs/2026-09-17-open-items-register.md` §3 第 14 项、`docs/2026-09-16-channel-frame-completion-contract.md` |
+| Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/ci-gate.sh` 第 [6] 步注释；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
+| `RuntimeConfig` 部分字段不走设备：`HistoryStoragePath`/`HeartbeatIntervalMs`/`MaxRuntimeTasks`/`EnableCrashDump`/`CrashDumpSector` 未下发，`EnableTamperDetection` 零消费，`WatchdogTimeoutMs`/`EnableHmiReboot` 是死字段（保留为老工程 JSON 兼容） | 在工程设置改这些项不会改变设备行为，闭环需先立机制 | — |
+| 编辑器侧一键出发布包：`bash scripts/package-release.sh`（发布编辑器 + 生成版本清单与校验和）；出包后 `bash scripts/package-release.sh --verify <包目录>` 复核 | 出包步骤见包内 `UPGRADE.md` | `scripts/package-release.sh` |
+| 极端迟到的设备回包仍可能串帧（晚于首字节宽限窗口） | 避免通道繁忙时下发超长命令；失败重试 | — |

@@ -4,14 +4,14 @@
 本文只描述仓库里已经存在的功能与命令，每条关键说法都标注了事实源文件，便于核对。
 
 > 易漂移的数字不在本文写死：编辑器版本见 `src/HmiEditor.Core/VersionInfo.cs`，
-> 固件版本见 `firmware/t113/docs/version-info.md`，SDK 版本见 `global.json`。
+> 目标板的运行时契约版本见 `src/Hmi.Hardware.Builtin/AllwinnerF1C100STarget.cs`，SDK 版本见 `global.json`。
 
 ## 1. 这个软件是什么
 
 在 PC 上可视化设计 HMI 画面、一键生成 LVGL C 代码；同一份工程既能在 PC 上以
-LVGL + SDL2 模拟器预览，也能交叉编译成 `libhmi_ui.so` 下发到全志 T113-S3 设备运行。
+LVGL + SDL2 模拟器预览，也能交叉编译成 `libhmi_ui.so` 下发到全志 F1C100S（kinseal）设备运行。
 编辑器为 .NET 10 + Avalonia 12.1；目标运行时 LVGL 9.5 + FreeType。
-依据：`README.md`、`firmware/t113/docs/version-info.md`。
+依据：`README.md`、`src/Hmi.Hardware.Builtin/AllwinnerF1C100STarget.cs`。
 
 ## 2. 工作流总览
 
@@ -225,7 +225,7 @@ Endpoint、Model、API Key、保存配置）；**智能体模式**开关（默�
 
 ## 9. 导出并预览（宿主 chenge-runtime）
 
-导出产物只有一种：**chenge-runtime JSON 工程**（格式 0.6，见 `docs/chenge-export-format.md`）。
+导出产物只有一种：**chenge-runtime JSON 工程**（格式 0.6，写出方是 `src/HmiEditor.Export.Chenge/ChengeExporter.cs`）。
 C 源码 / `.so` 那两条旧路径**已移除**（removed）：仓库里没有 C 代码生成器、没有 `.so`
 模拟器、没有「下载到 HMI」与设备管理窗口；它们留在 `f1c100s-lvgl8` 分支，不在本分支维护。
 
@@ -315,8 +315,8 @@ chenge-runtime 运行时目录（导出预览用；留空则读环境变量 `CHE
 ## 15. 相关文档
 
 - [README.md](../README.md)（仓库结构与环境要求）
-- [docs/project-status.md](project-status.md)（状态基线与复现命令）
-- [docs/2026-09-17-open-items-register.md](2026-09-17-open-items-register.md)（未闭环项与已知限制）
-- [firmware/t113/README.md](../firmware/t113/README.md)（固件结构与连接配置）
+- [scripts/ci-gate.sh](../scripts/ci-gate.sh)（质量门禁：构建 + 测试 + 脚本语法）
+- `scripts/verify.sh`（端到端验收：导出 → 编译 → 运行自检）
+- `src/HmiEditor.App/Services/FileLogger.cs`（启动阶段日志的落盘位置）
+- `src/HmiEditor.Core/Services/AppPaths.cs`（数据根与旧目录迁移链）
 - [docs/troubleshooting.md](troubleshooting.md)（故障排查手册）
-- [firmware/t113/docs/flashing-guide.md](../firmware/t113/docs/flashing-guide.md)（固件烧录指南）
