@@ -663,6 +663,7 @@
   "live.state": "{0}×{1} · {2}",
   "live.backend.isolated": "隔离进程（崩溃不影响编辑器）",
   "live.backend.inproc": "进程内（更快，但崩了会带走编辑器）",
+  "live.host.exited": "预览宿主已退出（退出码 {0}），画面不会再更新；下方是它最后几行日志",
   "live.fps": "渲染 {0} 帧/秒 · tick {1} · 界面 {2} ms",
   "live.shot.saved": "截图已保存：{0}",
   "live.shot.failed": "截图保存失败",

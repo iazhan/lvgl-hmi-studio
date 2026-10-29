@@ -331,7 +331,11 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                     }
                     _pixelOffset = (int)_view.ReadUInt32(HeaderBytesOffset);
                     if (Width > 0 && Height > 0 && Stride >= Width * 4 &&
-                        _pixelOffset > 0 && _pixelOffset < 4096) return true;
+                        _pixelOffset > 0 && _pixelOffset < 4096)
+                    {
+                        MarkAlive();   // 刚建好，心跳从现在起算
+                        return true;
+                    }
                     LastError = AppLocalization.Service.Format("live.err.shm_header", $"{Width}x{Height}", Stride.ToString());
                     return false;
                 }
@@ -384,6 +388,31 @@ public sealed class ChengeProcessSession : IChengePreviewSession
         { IsBackground = true, Name = "chenge-host-fps" }.Start();
     }
 
+    /// <summary>
+    /// 宿主最近一次回应（任何一行 stdout）的时刻。判活用它而不是"帧序号有没有推进"：
+    /// 画面静止时宿主本来就不产新帧，按帧判会把正常空闲当成卡死。
+    /// </summary>
+    private long _lastReplyMs;
+
+    public long LastReplyMs => Interlocked.Read(ref _lastReplyMs);
+
+    private void MarkAlive() => Interlocked.Exchange(ref _lastReplyMs, Environment.TickCount64);
+
+    /// <summary>心跳：问一句宿主还在不在（H 命令，宿主回一行 A）。</summary>
+    public bool Ping()
+    {
+        if (_proc is not { HasExited: false }) return false;
+        try
+        {
+            WriteStdin(Encoding.UTF8.GetBytes("H\n"));
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>标准输出只承载变量回报：`V <名字> <值> <质量>`。</summary>
     private void ReadValues()
     {
@@ -393,6 +422,7 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             {
                 var line = _proc.StandardOutput.ReadLine();
                 if (line == null) break;
+                MarkAlive();   // 任何一行都算"宿主还活着"
                 if (line.Length < 3 || line[0] != 'V' || line[1] != ' ') continue;
 
                 var parts = line[2..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -436,6 +466,26 @@ public sealed class ChengeProcessSession : IChengePreviewSession
 
     private void ReadLog()
     {
+        // 诊断开关：HMI_HOST_LOG=<目录> 时把宿主 stderr 全量落盘（一行一条）。
+        // 内存里只留最后 400 行、UI 又只显示最后一行，所以"宿主为什么拒了这份页面"
+        // 这类问题不落盘就只能猜。默认不写 —— 编辑器是独立安装的软件，不乱建文件。
+        StreamWriter? sink = null;
+        var logDir = Environment.GetEnvironmentVariable("HMI_HOST_LOG");
+        if (!string.IsNullOrWhiteSpace(logDir))
+        {
+            try
+            {
+                Directory.CreateDirectory(logDir);
+                var name = Path.GetFileName(_shmName.TrimEnd('/'));
+                var path = Path.Combine(logDir, $"host-{name}-{Environment.ProcessId}.log");
+                sink = new StreamWriter(path, append: true) { AutoFlush = true };
+            }
+            catch
+            {
+                sink = null;
+            }
+        }
+
         try
         {
             while (_proc != null && !_proc.StandardError.EndOfStream)
@@ -447,16 +497,37 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                     _log.Add(line);
                     if (_log.Count > 400) _log.RemoveAt(0);
                 }
+                try { sink?.WriteLine(line); } catch { /* 磁盘满/被删：诊断不能拖垮预览 */ }
             }
         }
         catch
         {
             // 进程退出时流会断，正常
         }
+        finally
+        {
+            sink?.Dispose();
+        }
     }
 
     /// <summary>宿主最后一行日志（启动失败时贴出来：它自己会说"工程加载失败：…"）。</summary>
     public string LogTail => LastLog();
+
+    /// <summary>
+    /// 宿主进程是否已经退出。预览页每拍都查：进程死了还继续泵命令的话，界面表现为
+    /// "隔离进程无响应"——其实进程早没了，日志也没人贴出来。
+    /// </summary>
+    public bool HostExited => _proc is { HasExited: true };
+
+    /// <summary>宿主退出码（<see cref="HostExited"/> 为真时才有意义）。</summary>
+    public int HostExitCode
+    {
+        get
+        {
+            try { return _proc is { HasExited: true } p ? p.ExitCode : 0; }
+            catch { return -1; }
+        }
+    }
 
     private string LastLog()
     {

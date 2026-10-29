@@ -54,6 +54,7 @@ public partial class ChengeLivePreviewView : ChromeWindow
     private long _verCount;       /* 诊断：宿主每秒推进了几帧 */
     private long _uiTicks;
     private long _fpsWarnedMs;    /* 帧率告警的节流时刻（每 5s 最多一行） */
+    private long _exitWarnedMs;   /* "宿主已退出"提示的节流时刻 */
     private long _fpsMark = Environment.TickCount64;
 
     // ── 心跳（见 Services/PreviewHealth.cs）──
@@ -328,6 +329,15 @@ public partial class ChengeLivePreviewView : ChromeWindow
         _uiTicks = 0;
         _fpsMark = nowMs;
 
+        // 宿主进程退出后画面不会再更新，但"泵命令"还在跑 —— 不点破的话用户看到的是
+        // "隔离进程无响应"，而真正的原因（崩溃退出码 + 最后一行日志）就在手边。
+        if (_session is ChengeProcessSession proc && proc.HostExited && nowMs - _exitWarnedMs >= 2000)
+        {
+            _exitWarnedMs = nowMs;
+            FpsText.Text = AppLocalization.Service.Format("live.host.exited",
+                proc.HostExitCode.ToString());
+        }
+
         // 宿主日志：隔离模式下这是唯一能看到运行时说法的窗口
         // （比如 "keypad: 文本键盘" / "input: 键盘打不开"）。
         var log = _session!.Log;
@@ -384,19 +394,29 @@ public partial class ChengeLivePreviewView : ChromeWindow
     }
 
     /// <summary>
-    /// 心跳：每 500ms 看一次"帧序号还在不在动"。只有隔离模式有进程可判死；
-    /// 进程内模式崩的是编辑器自己，谈不上重启。
+    /// 心跳：每 500ms 问一句宿主还在不在（S 命令，宿主回一行 A）。
+    /// 只有隔离模式有进程可判死；进程内模式崩的是编辑器自己，谈不上重启。
+    ///
+    /// <para><b>为什么不用"帧序号有没有推进"</b>：静止页面本来就不产新帧
+    /// （宿主只在有变化/命令后 publish），按帧判会把正常空闲当成卡死 ——
+    /// 现象是拖完滑块一停手 3 秒就被重启，连续 3 次后直接放弃。</para>
     /// </summary>
     private void CheckHealth(long nowMs)
     {
-        if (_session is not ChengeProcessSession || _restarting) return;
+        if (_session is not ChengeProcessSession proc || _restarting) return;
         if (nowMs - _heartbeatMark < 500) return;
         _heartbeatMark = nowMs;
 
-        if (!PreviewHealth.IsStalled(_session.IsOpen, _lastFrameChangeMs, nowMs)) return;
+        if (!proc.IsOpen)
+        {
+            _ = HandleCrashAsync(proc.LastError);
+            return;
+        }
 
-        var why = _session.IsOpen ? "" : _session.LastError;
-        _ = HandleCrashAsync(why);
+        proc.Ping();
+        if (nowMs - proc.LastReplyMs <= PreviewHealth.StallTimeoutMs) return;
+
+        _ = HandleCrashAsync("");
     }
 
     /// <summary>

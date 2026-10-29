@@ -663,6 +663,7 @@
   "live.state": "{0}x{1} · {2}",
   "live.backend.isolated": "isolated process (a crash cannot take the editor down)",
   "live.backend.inproc": "in-process (faster, but a crash takes the editor down)",
+  "live.host.exited": "Preview host exited (code {0}); the view will not update. Its last log lines are below.",
   "live.fps": "{0} fps rendered · tick {1} · UI {2} ms",
   "live.shot.saved": "Screenshot saved: {0}",
   "live.shot.failed": "Failed to save the screenshot",

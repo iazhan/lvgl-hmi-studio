@@ -338,6 +338,15 @@ public sealed class DesignHostPreview : IDisposable
                                        || verdict.Contains("rc=-", StringComparison.Ordinal)
                                        || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase)))
                 Console.WriteLine($"[design] host says: {verdict}");
+
+            // 宿主拒了这份 JSON 就把"已发送"的记账作废：否则内容相同的下一次刷新会被
+            // "J skip" 挡掉，页面永远停在坏状态（现象是白屏且怎么动都不恢复）。
+            if (verdict.Contains("rc=-", StringComparison.Ordinal)
+                || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase))
+            {
+                _lastPayload = null;
+                Console.WriteLine("[design] 宿主拒了这次页面快照，已作废缓存（下次强制重发）");
+            }
         }
         catch (Exception ex)
         {
