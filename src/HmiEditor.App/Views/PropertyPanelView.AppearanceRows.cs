@@ -62,6 +62,17 @@ public partial class PropertyPanelView
         any |= SetRow(RowSwitchColorOff, isSwitch);
         any |= SetRow(RowSwitchKnob, isSwitch);
 
+        // 曲线的六个颜色：曲线「画成什么样」是外观；「显示什么」（网格/图例/坐标轴/轴划分）
+        // 仍在数据与显示，两批不混。
+        var isCurve = type is HmiControlType.RealtimeCurve or HmiControlType.HistoryCurve
+            or HmiControlType.XyCurve;
+        any |= SetRow(RowCurveAxisColor, isCurve);
+        any |= SetRow(RowCurveBgColor, isCurve);
+        any |= SetRow(RowCurveBorderColor, isCurve);
+        any |= SetRow(RowCurveGridColor, isCurve);
+        any |= SetRow(RowCurveTickColor, isCurve);
+        any |= SetRow(RowCurveLabelColor, isCurve);
+
         // 不透明度：props.opacity 由建页收口统一应用（0..255）。
         any |= SetRow(RowOpacity, AppearanceSupport.IsExported(type));
 

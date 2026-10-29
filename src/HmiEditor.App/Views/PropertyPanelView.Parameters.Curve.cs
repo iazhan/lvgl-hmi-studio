@@ -6,21 +6,16 @@ using HmiEditor.Core.Models;
 /// 属性面板的**曲线设置**（history_curve / realtime_curve 共用）。
 ///
 /// <para>抽成独立分部文件有两个原因：一是 <c>PropertyPanelView.Parameters.cs</c> 有 500 行上限
-/// （<c>SingleFileSizeGuardTests</c>），二是曲线那 24 项与其它控件的「功能参数」不是一类东西 ——
-/// 它整块显隐、整块回填，放在一起反而更难读。</para>
+/// （<c>SingleFileSizeGuardTests</c>），二是曲线这一批与其它控件的「功能参数」不是一类东西 ——
+/// 它整块显隐、整块回填，放在一起反而更难读。六个颜色行不在此列（见外观样式组）。</para>
 /// </summary>
 public partial class PropertyPanelView
 {
-    /// <summary>曲线设置那一整块 Expander 的显隐（连带清掉所有行的可见性）。</summary>
+    /// <summary>曲线设置那一整块 Expander 的显隐（连带清掉本块所有行的可见性）。</summary>
     private void ShowCurveRows(bool visible)
     {
-        // 批次 2：曲线外观与刻度
-        SetParamRow(LblCurveAxis, CurveAxisColorBox, visible);
-        SetParamRow(LblCurveBg, CurveBgColorBox, visible);
-        SetParamRow(LblCurveBorder, CurveBorderColorBox, visible);
-        SetParamRow(LblCurveGrid, CurveGridColorBox, visible);
-        SetParamRow(LblCurveTick, CurveTickColorBox, visible);
-        SetParamRow(LblCurveLabel, CurveLabelColorBox, visible);
+        // 六个颜色行（轴线/底色/外框/网格/刻度/标签）不在本块里：它们是外观，
+        // 显隐由 ShowAppearanceRows 的 isCurve 判据负责。
         SetParamRow(LblCurveShowGrid, CurveGridCheck, visible);
         SetParamRow(LblCurveLegend, CurveLegendCheck, visible);
         SetParamRow(LblCurveShowAxis, CurveShowAxisCheck, visible);

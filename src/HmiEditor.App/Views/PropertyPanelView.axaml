@@ -635,6 +635,50 @@
                                      Text="" TextChanged="OnPropertyChanged"
                                      PlaceholderText="{res:Loc prop.color.hint}"/>
                         </Grid>
+                        <!-- 曲线的六个颜色（仅 3 类曲线）：轴线 / 底色 / 外框 / 网格 / 刻度 / 标签。
+                             纯外观，归这里；曲线的「显示什么」（网格、图例、坐标轴、轴划分）仍在数据区。 -->
+                        <Grid x:Name="RowCurveAxisColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveAxis" Text="{res:Loc prop.curve.axis}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveAxisColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowCurveBgColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveBg" Text="{res:Loc prop.curve.bg}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveBgColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowCurveBorderColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveBorder" Text="{res:Loc prop.curve.border}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveBorderColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowCurveGridColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveGrid" Text="{res:Loc prop.curve.grid}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveGridColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowCurveTickColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveTick" Text="{res:Loc prop.curve.tick}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveTickColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowCurveLabelColor" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblCurveLabel" Text="{res:Loc prop.curve.label}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="CurveLabelColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Expander>
@@ -1738,42 +1782,6 @@
                             <TextBlock Text="{res:Loc prop.trend.title}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
-                        <TextBlock x:Name="LblCurveAxis" Text="{res:Loc prop.curve.axis}" Grid.Row="0" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveAxisColorBox" Grid.Row="0" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblCurveBg" Text="{res:Loc prop.curve.bg}" Grid.Row="1" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveBgColorBox" Grid.Row="1" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblCurveBorder" Text="{res:Loc prop.curve.border}" Grid.Row="2" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveBorderColorBox" Grid.Row="2" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblCurveGrid" Text="{res:Loc prop.curve.grid}" Grid.Row="3" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveGridColorBox" Grid.Row="3" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblCurveTick" Text="{res:Loc prop.curve.tick}" Grid.Row="4" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveTickColorBox" Grid.Row="4" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblCurveLabel" Text="{res:Loc prop.curve.label}" Grid.Row="5" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="CurveLabelColorBox" Grid.Row="5" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
                         <TextBlock x:Name="LblCurveShowGrid" Text="{res:Loc prop.curve.showgrid}" Grid.Row="6" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <CheckBox x:Name="CurveGridCheck" Grid.Row="6" Grid.Column="1"

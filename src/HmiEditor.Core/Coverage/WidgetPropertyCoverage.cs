@@ -350,7 +350,14 @@ public static class WidgetPropertyCoverage
         ["history_curve.border_color"] = "CurveBorderColorBox",
     };
 
-    private static readonly Dictionary<string, string> SectionOf = new(StringComparer.Ordinal)
+    /// <summary>
+    /// 属性 → 面板分区（同一个键在不同类型上落到同一处的情形）。
+    /// 分区名与面板的顶层区一一对应：geometry(位置与大小) / content(内容与文字·内容) /
+    /// appearance(内容与文字·外观样式) / behavior(绑定与状态·交互行为) / data(数据与显示) /
+    /// advanced(动作与高级)。行被搬到别的区而这里没跟着改时，
+    /// <c>PropertyPanelSectionPlacementTests</c> 会点名。
+    /// </summary>
+    private static readonly Dictionary<string, string> SectionDefault = new(StringComparer.Ordinal)
     {
         ["x"] = "geometry", ["y"] = "geometry", ["w"] = "geometry", ["h"] = "geometry",
         ["visible"] = "geometry", ["rotation"] = "geometry", ["mirror_x"] = "geometry",
@@ -360,12 +367,41 @@ public static class WidgetPropertyCoverage
         ["valign"] = "appearance", ["font_style"] = "appearance", ["letter_spacing"] = "appearance",
         ["line_spacing"] = "appearance", ["long_mode"] = "appearance",
         ["color_on"] = "appearance", ["color_off"] = "appearance", ["knob_color"] = "appearance",
+        // 曲线的六个颜色（axis_color / grid_color / tick_color / label_color 与 bg/border）同处外观组
+        ["axis_color"] = "appearance", ["grid_color"] = "appearance",
+        ["tick_color"] = "appearance", ["label_color"] = "appearance",
+        // 文本内容：控件自己的那段字（开关的开/关两段也在「内容与文字」里）
+        ["text"] = "content", ["text_on"] = "content", ["text_off"] = "content",
         // 可用与可见同处「位置与大小」：两者都是静态显隐，且「绑定与状态」整区在部分类型上不出现
         ["enabled"] = "geometry", ["tooltip"] = "advanced",
         ["checked"] = "behavior", ["pressed"] = "behavior", ["confirm"] = "behavior",
         ["hold_ms"] = "behavior", ["long_press_ms"] = "behavior", ["off_style"] = "behavior",
         ["commit"] = "behavior",
     };
+
+    /// <summary>
+    /// 同一属性在不同类型上落到不同分区（键为 <c>type.prop</c>）。
+    ///
+    /// <para>成因是行本身的位置：文本类的 <c>text</c> 画在「内容与文字」，而消息条 / 二维码 /
+    /// 枚举文本的文本行跟它们各自那组参数（等级、前景背景色、映射）一起在「数据与显示」。
+    /// 只按属性名登记就会在其中一侧说谎。</para>
+    /// </summary>
+    private static readonly Dictionary<string, string> SectionOverrides = new(StringComparer.Ordinal)
+    {
+        ["message.text"] = "data",
+        ["qrcode.text"] = "data",
+        ["enum_text.text"] = "data",
+        // xy 曲线的 x / y 是**变量轴**（props.x / props.y），不是控件几何：行在「数据与显示」里
+        // 跟量程、小数位一起，几何那两格由节点根的 x/y 承担（公共属性那条已跳过）。
+        ["xy_curve.x"] = "data",
+        ["xy_curve.y"] = "data",
+    };
+
+    /// <summary>属性在某个类型上的分区：类型级覆盖 → 全局缺省 → 调用方给的兜底。</summary>
+    private static string Section(string type, string prop, string fallback) =>
+        SectionOverrides.TryGetValue($"{type}.{prop}", out var byType) ? byType
+        : SectionDefault.TryGetValue(prop, out var byProp) ? byProp
+        : fallback;
 
     /// <summary>公共属性（widgets 的 common）。图元另有一套 figure_common，见 <see cref="FigureCommon"/>。</summary>
     private static readonly (string Key, string Editor, string Model, CoverageDecision Decision, string Evidence)[] CommonProps =
@@ -489,7 +525,7 @@ public static class WidgetPropertyCoverage
                     ? EditorOverrides.GetValueOrDefault($"{type}.{key}", editor)
                     : null;
                 var (m2, e2) = Resolve(type, key);
-                list.Add(new PropertyCoverage(type, key, SectionOf.GetValueOrDefault(key, "appearance"),
+                list.Add(new PropertyCoverage(type, key, Section(type, key, "appearance"),
                     actualEditor, m2 ?? model, e2, decision, why));
             }
         }
@@ -535,7 +571,7 @@ public static class WidgetPropertyCoverage
                         CoverageDecision.Structural, "与 figure_common.fill_color 同一字段，面板只有一行"));
                     continue;
                 }
-                list.Add(new PropertyCoverage(type, key, SectionOf.GetValueOrDefault(key, "appearance"),
+                list.Add(new PropertyCoverage(type, key, Section(type, key, "appearance"),
                     editor, model, key, decision, evidence));
             }
         }
@@ -574,21 +610,21 @@ public static class WidgetPropertyCoverage
         var (model, export) = Resolve(type, prop);
 
         if (NotConsumable.TryGetValue(key, out var blocked))
-            return new PropertyCoverage(type, prop, SectionOf.GetValueOrDefault(prop, "data"),
+            return new PropertyCoverage(type, prop, Section(type, prop, "data"),
                 null, model, export, CoverageDecision.ContractToDelete, blocked);
 
         if (editor == "-")
         {
             if (NoEditor.TryGetValue(key, out var gap))
-                return new PropertyCoverage(type, prop, SectionOf.GetValueOrDefault(prop, "data"),
+                return new PropertyCoverage(type, prop, Section(type, prop, "data"),
                     null, model, export, gap.Decision, gap.Reason);
 
-            return new PropertyCoverage(type, prop, SectionOf.GetValueOrDefault(prop, "data"),
+            return new PropertyCoverage(type, prop, Section(type, prop, "data"),
                 null, model, export, CoverageDecision.PanelToAdd,
                 "未登记结论：契约有该属性，面板没有入口，运行时的读取点待核");
         }
 
-        return new PropertyCoverage(type, prop, SectionOf.GetValueOrDefault(prop, "data"),
+        return new PropertyCoverage(type, prop, Section(type, prop, "data"),
             editor, model, export, CoverageDecision.Closed, "见 docs/chenge-rt/52 的读取位置表");
     }
 
