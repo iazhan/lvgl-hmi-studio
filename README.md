@@ -17,7 +17,7 @@
 |---|---|
 | `src/` | **11** 个 C# 项目：`HmiEditor.App`（Avalonia 界面）、`HmiEditor.Core`（模型 / 服务 / 导出契约）、`HmiEditor.Export.Chenge`（工程写出）、`HmiEditor.Simulator`、`HmiEditor.AI`，以及硬件与通讯各三件 `Contracts` / `Builtin` / `Loader` |
 | `tests/` | **8** 个测试项目（Core、headless UI、导出、渲染、模拟器、AI、硬件、通讯）+ `HmiEditor.TestSupport`（含契约语料与字体夹具） |
-| `tools/` | 出包（`package.sh` 入口 + `publish-linux.sh` / `publish-win.sh` / `sync-runtime.sh` / `installer/`）、`build-lua.sh`（编 `third_party/lua-5.4.7` 的原生库）；`probe-*` 是一次性探针，是若干码表结论的取证依据（不作为构建输入） |
+| `tools/` | 开发：`dev-run.sh` / `dev-run.ps1`（编译 + 启动）；出包：`package.sh` 入口 + `publish-linux.sh` / `publish-win.sh` / `sync-runtime.sh` / `installer/`；`build-lua.sh`（编 `third_party/lua-5.4.7` 的原生库）；`probe-*` 是一次性探针，是若干码表结论的取证依据（不作为构建输入） |
 | `scripts/` | 门禁与检查脚本，入口 `00_gate.sh` |
 | `runtime/` | 出包用的运行时兜底副本（`chenge-preview-host` 等），见 `runtime/README.md` |
 | `third_party/lua-5.4.7/` | 官方 Lua 源码（与设备侧同一份）与编好的 `.so`/`.dll`；脚本编辑器的语法校验用的就是它，重编见 `tools/build-lua.sh` |
