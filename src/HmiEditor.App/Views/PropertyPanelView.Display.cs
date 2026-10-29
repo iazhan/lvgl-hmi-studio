@@ -36,12 +36,12 @@ public partial class PropertyPanelView : UserControl
         LoadVisualStateFields(control, _currentEditingState);
     }
 
-    // ── 值显示配置（Label 等显示型控件）──
+    // ── 值显示配置 ──
 
-    /// <summary>加载控件的值显示配置：值类型下拉、缩放比例、前后缀。</summary>
+    /// <summary>加载控件的值显示配置：小数位下拉、前后缀，并按类型定各行的显隐。</summary>
     private void LoadValueDisplayFields(HmiControl control)
     {
-        // 值类型下拉（按 Tag 匹配）
+        // 值类型下拉仍按模型回填（旧工程里存着这个字段），但这一行不再显示，见 ShowValueDisplayRows
         var displayTag = control.ValueDisplayType.ToString();
         foreach (var item in ValueDisplayTypeCombo.Items.OfType<ComboBoxItem>())
         {
@@ -66,28 +66,39 @@ public partial class PropertyPanelView : UserControl
                 break;
             }
         }
-        UpdateValueDecimalsVisibility();
+
+        ShowValueDisplayRows(control.Type);
     }
 
     /// <summary>
-    /// 小数位数行在 Float 与 Auto 下显示。Auto = 按变量类型自己判断，f32 变量同样按这一位
-    /// 格式化 —— 只在 Float 下显示会让默认的 Auto 藏着一个"板上真的生效、面板看不见"的值。
-    /// Integer / Text 下它确实不参与格式化，才隐藏。
+    /// 值显示组各行的显隐，判据是**导出器 / 绑定格式化真的读不读这个字段**，不是"这类控件看起来
+    /// 会不会显示数字"：
+    /// <list type="bullet">
+    /// <item><b>值类型</b>（<c>ValueDisplayType</c>）：导出器不写、画布不读 —— 只有
+    /// <c>PreviewValueResolver</c> 的 <c>BindingSemantics</c> 用它，而那个 API 生产上没有调用方
+    /// （只剩测试）⇒ 面板不再给入口，字段留在模型里兼容旧工程；</item>
+    /// <item><b>缩放比例</b>（<c>ValueScaleFactor</c>）：同上，同样不给入口；</item>
+    /// <item><b>小数位</b>：<c>value/gauge/knob</c> 写 <c>props.decimals</c>；<c>label</c> 绑变量时
+    /// 喂 <c>bind[text].fmt</c>（输入框的小数位在「控件功能参数」里另有一行，不在这里重复）；</item>
+    /// <item><b>前缀 / 后缀</b>：<c>value</c> 写 <c>props.prefix/suffix</c>；<c>label</c> 绑变量时
+    /// 折成 <c>{tag:…}</c> 占位符；</item>
+    /// <item><b>单位</b>：只有 <c>value</c> 有 <c>unit</c> 键。</item>
+    /// </list>
+    ///
+    /// <para>滑块 / 指示灯 / 下拉框 / 罐形 / 管道 / 阀门这些类型四条键一个都没有，整组收起 ——
+    /// 以前它们照样显示「小数位数 / 前缀 / 后缀」，填了既不进导出也不进画布。</para>
     /// </summary>
-    private void UpdateValueDecimalsVisibility()
+    private void ShowValueDisplayRows(HmiControlType type)
     {
-        var type = ParseValueDisplayType(ValueDisplayTypeCombo.SelectedItem as ComboBoxItem);
-        var used = type is ValueDisplayType.Float or ValueDisplayType.Auto;
-        LblValueDecimals.IsVisible = used;
-        ValueDecimalsCombo.IsVisible = used;
-    }
+        RowValueType.IsVisible = false;
+        RowValueScale.IsVisible = false;
 
-    /// <summary>值类型切换时联动小数位数行的可见性。</summary>
-    private void OnValueDisplayTypeChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        // XAML 初始化期 SelectedIndex 赋值会先于后续控件创建触发本事件，需判空
-        if (LblValueDecimals == null || ValueDecimalsCombo == null) return;
-        UpdateValueDecimalsVisibility();
+        var usesTextFormat = type is HmiControlType.Label or HmiControlType.Value;
+        RowValueDecimals.IsVisible = usesTextFormat
+            || type is HmiControlType.Gauge or HmiControlType.Knob;
+        RowValuePrefix.IsVisible = usesTextFormat;
+        RowValueSuffix.IsVisible = usesTextFormat;
+        RowValueUnit.IsVisible = type == HmiControlType.Value;
     }
 
     /// <summary>解析小数位数下拉的选中项。</summary>

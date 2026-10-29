@@ -348,17 +348,18 @@ public partial class PropertyPanelView : UserControl
             // 加载状态样式（Button/Switch/CheckBox 可见）
             LoadVisualStates(control);
 
-            // 加载值显示配置（Label 等显示型控件可见）
-            // 过程图形控件也支持：Tank 液位 / Valve 开度 / Pipe 流量百分比
-            // 开关/复选不在其列：它们绑的是布尔（IsChecked），值类型/比例/小数位/前后缀
-            // 一个都不参与格式化 —— 留着只会让面板多出一组改了没反应的控件。
+            // 加载值显示配置（小数位 / 前后缀 / 单位）
+            // 只给报表里真的会用到这些键的类型（判据逐行写在 Display.cs 的 ShowValueDisplayRows）：
+            // value 写 props.decimals/prefix/suffix/unit；gauge / knob 写 props.decimals；
+            // label 绑变量时用小数位与前后缀拼 bind[text].fmt。滑块 / 指示灯 / 下拉框 / 罐形 /
+            // 管道 / 阀门四条键一个都没有，整组不显示。
             bool supportsValueDisplay = control.Type is HmiControlType.Label
                 or HmiControlType.Value
-                or HmiControlType.Gauge or HmiControlType.Bar or HmiControlType.Knob
-                or HmiControlType.Led or HmiControlType.Slider
-                or HmiControlType.Dropdown
-                or HmiControlType.Tank or HmiControlType.Pipe or HmiControlType.Valve;
+                or HmiControlType.Gauge or HmiControlType.Knob;
             ValueDisplayExpander.IsVisible = supportsValueDisplay;
+            // 行的显隐**每个类型都要复算**：本组对多数类型是隐藏的，不复位就会把上一个控件的
+            // 行留在可见状态 —— 而写回是按行可见性判的，等于把旧控件的小数位灌进新控件。
+            ShowValueDisplayRows(control.Type);
             if (supportsValueDisplay)
                 LoadValueDisplayFields(control);
 

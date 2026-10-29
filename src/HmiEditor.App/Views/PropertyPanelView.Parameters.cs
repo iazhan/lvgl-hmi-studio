@@ -65,8 +65,7 @@ public partial class PropertyPanelView : UserControl
         ShowMediaRows(false);
         ShowContentRows(false);
         SetParamRow(LblValveType, ValveTypeCombo, false);
-        // chenge-runtime 数据控件参数
-        SetParamRow(LblUnit, UnitBox, false);
+        // chenge-runtime 数据控件参数（单位行由「值显示」组的 ShowValueDisplayRows 管，不在这里）
         SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, false);
         SetParamRow(LblCgAlarmMode, CgAlarmModeCombo, false);
         SetParamRow(LblCgAlarmRows, CgAlarmRowsBox, false);
@@ -250,8 +249,7 @@ public partial class PropertyPanelView : UserControl
             // chenge-runtime 目标新增
             case HmiControlType.Value:
                 // 值显示是只读的：量程由绑定变量的 min/max 决定，导出器也不写，
-                // 面板上不再显示「量程下限/上限」。
-                SetParamRow(LblUnit, UnitBox, true);
+                // 面板上不再显示「量程下限/上限」；「单位」在值显示组里（见 Display.cs）。
                 break;
             case HmiControlType.AlarmBar:
                 SetParamRow(LblCgAlarmGroup, CgAlarmGroupBox, true);

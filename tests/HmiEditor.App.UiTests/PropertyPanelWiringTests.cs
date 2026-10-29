@@ -174,9 +174,10 @@ public class PropertyPanelWiringTests
         // 以下两个不是「改了就落盘」的编辑器，本身就不该用「改值 → 看模型变更」判定。
         ["CboVisualState"] = "语义是「切换正在编辑哪个视觉状态」（OnVisualStateChanged 先保存旧态再切态载入字段），" +
                              "不直接写模型字段；状态值本身由 Vs* 一列编辑器写入",
-        ["ValueDisplayTypeCombo"] = "改它只切换小数位数下拉的可见性（OnValueDisplayTypeChanged），" +
-                                    "真正写回 HmiControl.ValueDisplayType 在批量 SaveProperties 里 —— " +
-                                    "即单独改这一项不会立即落盘（见 project-status 记录）",
+        ["ValueDisplayTypeCombo"] = "这一行恒隐藏：导出器不写 ValueDisplayType、画布也不读（值格式化链" +
+                                    "PreviewValueResolver.FormatDisplayValue 生产上没有调用方）⇒ 面板不给入口，字段留在模型里兼容旧工程",
+        ["ValueScaleBox"] = "这一行恒隐藏：ValueScaleFactor 没有生产消费者（同上那条值格式化链）⇒ 面板不给入口，" +
+                            "字段留在模型里兼容旧工程",
 
         // P1-1：换的是「正在编辑哪个属性的绑定」这个视角，OnTargetPropertyChanged 只回填界面，
         // 不写任何模型字段 —— 绑定本身由变量选择器/表达式框写入（PropertyName 取当前目标属性）。

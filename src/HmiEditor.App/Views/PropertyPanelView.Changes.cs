@@ -130,18 +130,17 @@ public partial class PropertyPanelView : UserControl
         ValidateAndWrite(nameof(HmiControl.IsEnabled), PropEnabled.IsChecked ?? true, v => _currentControl.IsEnabled = v);
         ValidateAndWrite(nameof(HmiControl.Tooltip), string.IsNullOrWhiteSpace(TooltipBox.Text) ? null : TooltipBox.Text.Trim(), v => _currentControl.Tooltip = v);
 
-        // 值显示配置（仅显示型控件加载，面板可见时保存）
-        if (ValueDisplayExpander.IsVisible)
-        {
-            ValidateAndWrite(nameof(HmiControl.ValueDisplayType), ParseValueDisplayType( ValueDisplayTypeCombo.SelectedItem as ComboBoxItem), v => _currentControl.ValueDisplayType = v);
-            ValidateAndWrite(nameof(HmiControl.ValueScaleFactor), ValueScaleBox.Value, v => _currentControl.ValueScaleFactor = v);
-            // 小数位下拉在部分类型上被 Display.cs 隐藏（值类型不是 Float/Auto）：
-            // 隐藏时它的选中项是上一次控件的，写回会覆盖本类型真正的小数位。
-            if (ValueDecimalsCombo.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ValueDecimalPlaces), ParseValueDecimalPlaces( ValueDecimalsCombo.SelectedItem as ComboBoxItem), v => _currentControl.ValueDecimalPlaces = v);
+        // 值显示配置：逐行判自己的可见性（隐藏行里是上一个控件的值）。
+        // 值类型 / 缩放比例两行恒隐藏（导出器与画布都不读它们），所以不再写回 ——
+        // 字段留在模型里兼容旧工程，面板不给入口。
+        if (RowValueDecimals.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.ValueDecimalPlaces), ParseValueDecimalPlaces(ValueDecimalsCombo.SelectedItem as ComboBoxItem), v => _currentControl.ValueDecimalPlaces = v);
+        if (RowValuePrefix.IsVisible)
             ValidateAndWrite(nameof(HmiControl.ValuePrefix), string.IsNullOrEmpty(ValuePrefixBox.Text) ? null : ValuePrefixBox.Text, v => _currentControl.ValuePrefix = v);
+        if (RowValueSuffix.IsVisible)
             ValidateAndWrite(nameof(HmiControl.ValueSuffix), string.IsNullOrEmpty(ValueSuffixBox.Text) ? null : ValueSuffixBox.Text, v => _currentControl.ValueSuffix = v);
-        }
+        if (RowValueUnit.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.Unit), string.IsNullOrWhiteSpace(UnitBox.Text) ? null : UnitBox.Text.Trim(), v => _currentControl.Unit = v);
 
         // 「数据与显示」区各行的写回。闸门是**这一区是否显示**，区内的每个字段仍逐行判自己
         // 的可见性（隐藏行里留的是上一个控件的值）。不能只挂「控件功能参数」那一个分组的可见性：
@@ -347,8 +346,7 @@ public partial class PropertyPanelView : UserControl
             ValidateAndWrite(nameof(HmiControl.MirrorX), MirrorHCheck.IsChecked ?? false, v => _currentControl.MirrorX = v);
             ValidateAndWrite(nameof(HmiControl.MirrorY), MirrorVCheck.IsChecked ?? false, v => _currentControl.MirrorY = v);
         }
-        if (UnitBox.IsVisible)
-            ValidateAndWrite(nameof(HmiControl.Unit), string.IsNullOrWhiteSpace(UnitBox.Text) ? null : UnitBox.Text.Trim(), v => _currentControl.Unit = v);
+
 
         // 专属参数区：同样按行可见性写回（不可见不写）
         SaveExclusiveRows();
