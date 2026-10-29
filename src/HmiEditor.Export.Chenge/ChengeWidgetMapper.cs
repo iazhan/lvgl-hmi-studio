@@ -835,7 +835,17 @@ internal sealed class ChengeWidgetMapper
                 "历史曲线没有绑定变量：先按 0 画一条占位线（绑上变量后自动替换）");
         }
 
-        props["group"] = control.TrendGroup!.Trim();
+        // group 必须写**导出后的存盘组名**：运行时拿它去 savecfg.json 里对名字，
+        // 写编辑器原值（中文/大写/空格）时组名已被 Slug，对不上就整页建不起来。
+        var group = _maps.SaveCfgGroupOf(control.TrendGroup);
+        if (group == null)
+        {
+            _issues.Error("history_curve.group", where,
+                $"历史曲线的采集组 {control.TrendGroup!.Trim()} 不是本工程的存盘组" +
+                "（运行时拿这个名字去 savecfg.json 里找）；请改选一个存盘组，或先新建存盘组");
+            return false;
+        }
+        props["group"] = group;
         var lastMin = control.CurveRangeLastMin > 0 ? control.CurveRangeLastMin : (int)control.SpanMin;
         props["range"] = new JsonObject { ["last_min"] = Clamp(lastMin, 1, 1440) };
         props["refresh_ms"] = Clamp(control.RefreshMs, 0, 60000);

@@ -90,6 +90,7 @@ public sealed class ChengeExporter
         BuildPages(maps, screens, issues);
         BuildDevices(project, maps, new JsonArray(), new JsonArray(), features, issues);
         _ = BuildTags(project, maps, issues);   // 建好 tag 映射，mapper 解析 bind 要用
+        BuildSaveCfgGroupNames(project, maps);  // 历史曲线的 group 要用导出后的组名
 
         widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
         result = new ChengeExportResult
@@ -153,6 +154,7 @@ public sealed class ChengeExporter
         BuildDevices(project, maps, ports, devices, features, issues);
 
         var tags = BuildTags(project, maps, issues);
+        BuildSaveCfgGroupNames(project, maps);   // 必须在写页面之前：页面里的 group 用导出后的名字
 
         // 控件 Id → 导出 widget id：设计画布的几何补丁要靠它寻址（两种 id 不是一回事）
         var widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -869,14 +871,31 @@ public sealed class ChengeExporter
         };
     }
 
-    private JsonNode? BuildSaveCfg(HmiProject project, ChengeMaps maps, ChengeIssueBag issues)
+    /// <summary>
+    /// 先定下存盘组的导出名（Slug + 去重），供历史曲线写 <c>props.group</c>。
+    ///
+    /// <para>必须在 <c>BuildPage</c> 之前跑：运行时拿 group 去 savecfg.json 里对名字，
+    /// 页面先按原值写完、savecfg 再 Slug 一遍，两边就对不上（中文组名一定对不上）。</para>
+    /// </summary>
+    private static void BuildSaveCfgGroupNames(HmiProject project, ChengeMaps maps)
     {
-        var groups = new JsonArray();
         var used = new HashSet<string>(StringComparer.Ordinal);
         foreach (var log in project.DataLogConfigs.Where(l => l.IsEnabled))
         {
-            var name = ChengeNames.Slug(string.IsNullOrWhiteSpace(log.Name) ? "log" : log.Name, "log");
-            name = ChengeNames.Unique(name, used);
+            var editorName = string.IsNullOrWhiteSpace(log.Name) ? "log" : log.Name.Trim();
+            if (maps.SaveCfgGroupByEditorName.ContainsKey(editorName)) continue;
+            maps.SaveCfgGroupByEditorName[editorName] =
+                ChengeNames.Unique(ChengeNames.Slug(editorName, "log"), used);
+        }
+    }
+
+    private JsonNode? BuildSaveCfg(HmiProject project, ChengeMaps maps, ChengeIssueBag issues)
+    {
+        var groups = new JsonArray();
+        foreach (var log in project.DataLogConfigs.Where(l => l.IsEnabled))
+        {
+            // 组名与页面里的 group 共用同一份映射（见 BuildSaveCfgGroupNames），这里不再自己 Slug。
+            var name = maps.SaveCfgGroupOf(log.Name) ?? ChengeNames.Slug(log.Name, "log");
             var tagIds = new JsonArray();
             var missing = 0;
             foreach (var varId in log.VariableIds)

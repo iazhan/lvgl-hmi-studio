@@ -33,6 +33,22 @@ internal sealed class ChengeMaps
     public Dictionary<string, string> SlaveDeviceIdBySlaveId { get; } = new(StringComparer.Ordinal);
     public Dictionary<string, HmiScript> ScriptById { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// 编辑器里的存盘组名 → 导出后的 savecfg 组名（Slug + 去重）。
+    ///
+    /// <para><b>为什么要有这张表</b>：历史曲线的 <c>props.group</c> 由运行时拿去 savecfg.json
+    /// 里对名字。写编辑器原值（中文/大写/空格）时组名是 Slug 过的，两边对不上 → 建页失败；
+    /// 组名必须在写任何页面之前先定下来，页面与 savecfg.json 才用的是同一个。</para>
+    /// </summary>
+    public Dictionary<string, string> SaveCfgGroupByEditorName { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>编辑器组名 → 导出组名；不是存盘组时返回 null。</summary>
+    public string? SaveCfgGroupOf(string? editorName)
+    {
+        if (string.IsNullOrWhiteSpace(editorName)) return null;
+        return SaveCfgGroupByEditorName.TryGetValue(editorName.Trim(), out var name) ? name : null;
+    }
+
     /// <summary>按变量 Id（优先）或变量名解析 tag id；系统变量按编辑器 id 解析。</summary>
     public int? ResolveTag(string? variableRef)
     {

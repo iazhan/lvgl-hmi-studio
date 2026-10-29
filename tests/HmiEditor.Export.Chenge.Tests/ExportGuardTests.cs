@@ -462,4 +462,41 @@ public class ExportGuardTests : IDisposable
         Assert.False(result.Success);
         Assert.Contains(result.Issues.Items, i => i.Code == "tag.unsupported_type");
     }
+
+    /// <summary>
+    /// 历史曲线的 group 必须与 savecfg.json 里的组名逐字相同：运行时拿它去对名字，
+    /// 对不上就整页建不起来。中文组名 Slug 之后与原值不同，正是最容易踩的一种。
+    /// </summary>
+    [Fact]
+    public void Export_ChineseSaveCfgGroupName_CurveGroupMatchesSaveCfg()
+    {
+        var project = ExportFixture.Build();
+        project.DataLogConfigs[0].Name = "温度记录";
+        var curve = project.Screens[0].Controls.First(c => c.Type == HmiControlType.HistoryCurve);
+        curve.TrendGroup = "温度记录";
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        var pageGroup = FirstOfType("history_curve").GetProperty("props").GetProperty("group").GetString();
+        var savecfg = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "savecfg.json"))).RootElement;
+        var groups = savecfg.GetProperty("groups").EnumerateArray()
+            .Select(g => g.GetProperty("name").GetString()).ToList();
+
+        Assert.Contains(pageGroup, groups);
+    }
+
+    /// <summary>曲线引用了不存在的采集组：运行时会拒整页，导出期先报错。</summary>
+    [Fact]
+    public void Export_CurveGroupNotASaveCfgGroup_ReportsError()
+    {
+        var project = ExportFixture.Build();
+        var curve = project.Screens[0].Controls.First(c => c.Type == HmiControlType.HistoryCurve);
+        curve.TrendGroup = "不存在的组";
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "history_curve.group");
+    }
 }
