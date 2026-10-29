@@ -343,7 +343,14 @@ public class LocalizationKeyReachabilityGuardTests
         ("M2-axaml res:Loc", 900),
         ("M3-插件族派生", 25),   // 组成：驱动名 4 + 驱动描述 4 + 配置字段 16 + 硬件校验码 2
         ("M4-cfg.note 清单", 20),
-        ("M5-脚本诊断码", 15),
+        // 14 = LuaSyntaxValidator 的 9 个 `*Code` 常量（8 条语法码前缀族 + 校验不可用）
+        //      + LuaDialect 的 2 个 + Core 源码里的 3 个 `Code = "…"` 字面量
+        //      （EMPTY_NAME / EMPTY_CODE / NO_FUNCTION）。
+        // 由 15 降到 14 的原因：Lua 校验改用官方 5.4 原生库后，方言误报改写表只剩
+        // "5.4 视角"那一半，6 个「5.3 才需要」的 SyntaxOp*Code 常量随之删除、只加回
+        // 1 个 LuaCheckUnavailableCode。这批码仍要由本机制担保（它们在字典里，而
+        // M2 只能看见 axaml 里的整键字面量），所以只调下界，不动机制。
+        ("M5-脚本诊断码", 14),
         // 阶段 70 新增：AiIssueCodes 的 41 个码（29 条校验 + 12 条布局建议）。
         // 下界取满值 —— 每少一个码，AiIssueLocalizationGuardTests 的
         // 「声明了但产出不到」那一半会先点名；这里再掉下去说明整条机制没接上。

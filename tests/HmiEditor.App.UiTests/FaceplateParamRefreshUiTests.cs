@@ -92,8 +92,9 @@ public class FaceplateParamRefreshUiTests
     /// </summary>
     private static void AssertRefreshActuallyRan(PropertyPanelView panel)
     {
-        Assert.True(Find<Expander>(panel, "FaceplateParamExpander").IsVisible,
-            "探针自检失败：扩展区块没显示 ⇒ 这次绑定没走进 faceplate 分支，下面的断言不成立");
+        // Faceplate 参数自「动作与高级」重排后是一段子块（StackPanel），不再自带折叠外壳
+        Assert.True(Find<StackPanel>(panel, "FaceplateParamExpander").IsVisible,
+            "探针自检失败：参数区块没显示 ⇒ 这次绑定没走进 faceplate 分支，下面的断言不成立");
         var title = Find<TextBlock>(panel, "FaceplateTemplateName").Text;
         Assert.NotNull(title);
         Assert.Contains("泵模板", title!);

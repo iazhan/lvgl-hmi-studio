@@ -206,6 +206,31 @@ public class AppXamlAttributeWiringFaceTests
         new("PropertyPanelView.axaml", "VsText", "OnVisualStateChanged",
             "enumerated@PropertyPanelWiringTests.cs",
             "枚举驱动：`PropertyPanelWiringTests` 逐**控件类型**枚举面板里**全部**编辑器（阶段 201 起含 TextBox），`uncovered == 0` 是它自己的穷尽见证（与阶段 118/195 的 `enumerated` 同口径）"),
+
+        // ── 「专属参数」区的几个文本框（图元 kind 级行与 chenge 数据控件的专属项）──
+        // 夹具里这些类型都已就位（PropertyPanelWiringTests 的场景表含 AlarmList / AlarmBar /
+        // Keyboard / CheckBox / Pipe / Shape 与 40 个图元 kind），所以同属枚举驱动。
+        new("PropertyPanelView.axaml", "AlarmLevelFilterBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：报警列表的等级过滤（AlarmList 场景），改文字 → AlarmLevelFilter 变化"),
+        new("PropertyPanelView.axaml", "AlarmColumnsBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：报警列表的列定义（AlarmList 场景），改文字 → AlarmColumns 变化"),
+        new("PropertyPanelView.axaml", "BoxColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：勾选框的方框色（CheckBox 场景），改文字 → BoxColor 变化"),
+        new("PropertyPanelView.axaml", "PipeWallColorBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：管道的管壁色（Pipe 场景），改文字 → PipeWallColor 变化"),
+        new("PropertyPanelView.axaml", "KeyboardTargetBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：键盘的目标控件 id（Keyboard 场景），改文字 → KeyboardTarget 变化"),
+        new("PropertyPanelView.axaml", "FigurePointsBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：图元的顶点表（Shape 及各 kind 场景），改文字 → Points 变化"),
+        new("PropertyPanelView.axaml", "TooltipBox", "OnPropertyChanged",
+            "enumerated@PropertyPanelWiringTests.cs",
+            "枚举驱动：长按提示（所有类型都显示），改文字 → Tooltip 变化"),
     };
 
     /// <summary>一扫描的读数：视图 ⇒ （控件名 ⇒ 处理器）。</summary>
@@ -318,7 +343,9 @@ public class AppXamlAttributeWiringFaceTests
         // 🎯 棘轮：属性面板的每一条 `TextChanged="OnPropertyChanged"` 都必须有判据（枚举驱动或
         //   在 PropertyPanelWiringTests 里带理由豁免），`pending` 必须是 0。
         //   加一条属性式接线就要同步加 1 并给它一个场景/豁免 —— 只改这个数不算数。
-        Assert.Equal(65, driven);
+        // 72 = 65 + 7（「专属参数」那批：AlarmLevelFilter / AlarmColumns / BoxColor /
+        //      PipeWallColor / KeyboardTarget / FigurePoints / Tooltip）。
+        Assert.Equal(72, driven);
         Assert.True(pending == 0,
             $"有 {pending} 条属性式接线还挂在「待驱动」里 —— 本面登记的全部条目都该有判据");
     }
