@@ -22,6 +22,12 @@
 *.zip binary
 *.exe binary
 *.dll binary
+*.so binary
+
+# 运行时兜底副本：Linux 的宿主没有扩展名，靠 * text=auto 的内容探测不够保险
+# （行尾归一化一旦碰它，装出来的宿主就是坏的）
+runtime/linux-x64/chenge-preview-host binary
+runtime/linux-x64/chenge-runtime binary
 
 # JS libs (vendored, don't normalize)
 *.min.js binary

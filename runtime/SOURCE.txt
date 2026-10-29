@@ -1,0 +1,12 @@
+来源目录：/home/chenge/f1c100s-project/chenge-hmi/chenge-runtime
+运行时版本：0.59.0
+取用时间：2026-10-29 09:29:23
+来源提交：bffbabc chenge-common: 板端解包 cgpkg，U 盘导入从"只收目录"扩到"包或目录"（运行时 0.59.0 / config 0.2）
+
+更新方式（在主仓库里先编出产物，再取一份过来）：
+  make -C <主仓库>/chenge-hmi/chenge-runtime PREVIEW=1 HOST=1    # 画布宿主
+  make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1              # 截图预览的进程版
+  make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1 WINDOWS=1    # Windows 宿主（mingw-w64）
+  bash tools/sync-runtime.sh --from <主仓库>/chenge-hmi/chenge-runtime
+
+注意：runtime/src 依赖主仓库的 chenge-common 与 LVGL 源码树，不能在本仓库单独编译。

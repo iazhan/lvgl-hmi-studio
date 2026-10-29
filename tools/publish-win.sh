@@ -11,9 +11,9 @@
 #                             [--out dist] [--no-installer] [--zip-only]
 #
 # 产物：
-#   <out>/win-x64/                            自包含负载（编辑器 264 文件 + 运行时子目录）
-#   <out>/HMI-Studio-<ver>-win-x64.zip        绿色版
-#   <out>/HMI-Studio-Setup-<ver>.exe          NSIS 安装包（有 makensis 时）
+#   <out>/win-x64/                                  自包含负载（编辑器 + 运行时子目录）
+#   <out>/Chenge-HMI-Editor-<ver>-win-x64.zip       绿色版
+#   <out>/Chenge-HMI-Editor-Setup-<ver>.exe         NSIS 安装包（有 makensis 时）
 # ============================================================================
 set -euo pipefail
 
@@ -32,14 +32,19 @@ while [ $# -gt 0 ]; do
         --out)           OUT="${2:-}"; shift ;;
         --no-installer)  MAKE_INSTALLER=0 ;;
         --zip-only)      MAKE_INSTALLER=0 ;;
-        -h|--help)       sed -n '2,20p' "$0"; exit 0 ;;
+        -h|--help)       sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
         *) echo "未知参数：$1" >&2; exit 2 ;;
     esac
     shift
 done
 
-if [ -z "$RUNTIME_DIR" ] || [ ! -d "$RUNTIME_DIR" ]; then
-    echo "缺 --runtime <目录>：Windows 版运行时目录（含 chenge-preview-host.exe）" >&2
+# 不传 --runtime 就用仓库里自带的兜底副本（tools/sync-runtime.sh 取的）
+if [ -z "$RUNTIME_DIR" ]; then
+    RUNTIME_DIR="$ROOT/runtime/win-x64"
+    echo "运行时：$RUNTIME_DIR（仓库内兜底；要换成自己编的用 --runtime <目录>）"
+fi
+if [ ! -d "$RUNTIME_DIR" ]; then
+    echo "运行时目录不存在：$RUNTIME_DIR" >&2
     exit 2
 fi
 
@@ -66,9 +71,13 @@ dotnet publish "$ROOT/src/HmiEditor.App/HmiEditor.App.csproj" \
 
 step "3/4 拷运行时"
 mkdir -p "$RT_TARGET"
-cp -a "$RUNTIME_DIR"/. "$RT_TARGET"/
-# 构建中间物不进安装包（源码/目标文件会把包撑大，也容易让人以为"源码随包"）
-find "$RT_TARGET" -maxdepth 2 -type f \( -name '*.o' -o -name '*.d' -o -name '*.c' -o -name '*.h' \) -delete
+# 白名单拷贝：--runtime 常指向 chenge-runtime 源码目录，那里还有 objs*/src/third_party
+# （实测 150 MB 构建中间物）。全拷会把安装包撑大三倍，编辑器却只需要二进制与 sample
+# （sample 是 --selftest-host 的默认工程）。
+for f in chenge-preview-host.exe chenge-runtime.exe SDL2.dll; do
+    if [ -s "$RUNTIME_DIR/$f" ]; then cp -a "$RUNTIME_DIR/$f" "$RT_TARGET/"; fi
+done
+if [ -d "$RUNTIME_DIR/sample" ]; then cp -a "$RUNTIME_DIR/sample" "$RT_TARGET/"; fi
 bash "$HERE/verify-win-payload.sh" "$PAYLOAD"
 
 step "4/4 打包"
@@ -81,9 +90,11 @@ fi
 
 if [ "$MAKE_INSTALLER" = 1 ]; then
     if command -v makensis >/dev/null 2>&1; then
-        ( cd "$HERE/installer" && makensis -V2 -DVERSION="$VERSION" -DPAYLOAD="$PAYLOAD" hmi-editor.nsi )
-        printf '  setup %s（%.1f MB）\n' "$OUT/Chenge-HMI-Editor-Setup-$VERSION.exe" \
-            "$(stat -c%s "$OUT/Chenge-HMI-Editor-Setup-$VERSION.exe" | awk '{print $1/1048576}')"
+        SETUP="$OUT/Chenge-HMI-Editor-Setup-$VERSION.exe"
+        rm -f "$SETUP"
+        ( cd "$HERE/installer" && makensis -V2 -DVERSION="$VERSION" -DPAYLOAD="$PAYLOAD" -DOUTDIR="$OUT" hmi-editor.nsi )
+        printf '  setup %s（%.1f MB）\n' "$SETUP" \
+            "$(stat -c%s "$SETUP" | awk '{print $1/1048576}')"
     else
         echo "  跳过安装包：没有 makensis（apt install nsis / 或 Windows 上装 NSIS）" >&2
     fi

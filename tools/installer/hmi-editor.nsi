@@ -6,7 +6,7 @@
 ;   <PAYLOAD>\chenge-runtime\chenge-runtime.exe | chenge-preview-host.exe | SDL2.dll
 ;
 ; 用法（在 Windows 上，或 Git Bash 里若有 makensis）：
-;   makensis -DVERSION=2.22.1 -DPAYLOAD=D:\dist\win-x64 hmi-editor.nsi
+;   makensis -DVERSION=2.22.1 -DPAYLOAD=D:\dist\win-x64 -DOUTDIR=D:\dist hmi-editor.nsi
 ; 不传参时用下面的默认值，适合从仓库根直接跑。
 ; ============================================================================
 
@@ -15,6 +15,11 @@
 !endif
 !ifndef PAYLOAD
   !define PAYLOAD "..\..\dist\win-x64"
+!endif
+; 安装包的落地目录。与 PAYLOAD 分开是因为 tools/package.sh 允许 --out 换目录，
+; 而 OutFile 相对路径是相对 .nsi 所在目录解析的，写死会把包丢进 dist 之外的地方。
+!ifndef OUTDIR
+  !define OUTDIR "..\..\dist"
 !endif
 
 Unicode true
@@ -40,7 +45,7 @@ VIAddVersionKey "FileVersion"     "${VERSION}"
 VIAddVersionKey "ProductVersion"  "${VERSION}"
 VIAddVersionKey "LegalCopyright"  "© 2026 ${APP_PUBLISHER}"
 
-OutFile "..\..\dist\Chenge-HMI-Editor-Setup-${VERSION}.exe"
+OutFile "${OUTDIR}\Chenge-HMI-Editor-Setup-${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\HMI Studio"
 InstallDirRegKey HKLM "${UNINST_KEY}" "InstallDir"
 RequestExecutionLevel admin

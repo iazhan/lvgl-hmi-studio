@@ -1,0 +1,41 @@
+{
+ "id": "home",
+ "title": "smoke",
+ "bg_color": "#101820",
+ "widgets": [
+  {
+   "id": "t1",
+   "type": "label",
+   "x": 40,
+   "y": 40,
+   "w": 400,
+   "h": 40,
+   "props": {
+    "text": "HMI Studio smoke test"
+   }
+  },
+  {
+   "id": "b1",
+   "type": "button",
+   "x": 40,
+   "y": 110,
+   "w": 160,
+   "h": 48,
+   "props": {
+    "text": "OK"
+   }
+  },
+  {
+   "id": "r1",
+   "type": "shape",
+   "x": 40,
+   "y": 190,
+   "w": 200,
+   "h": 120,
+   "props": {
+    "kind": "rect",
+    "fill_color": "#2E7D32"
+   }
+  }
+ ]
+}
