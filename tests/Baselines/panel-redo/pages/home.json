@@ -1,0 +1,658 @@
+{
+  "id": "home",
+  "title": "home",
+  "bg_color": "#101820",
+  "widgets": [
+    {
+      "id": "w1",
+      "type": "label",
+      "x": 20,
+      "y": 16,
+      "w": 200,
+      "h": 32,
+      "props": {
+        "text": "炉温监控",
+        "font_size": 24,
+        "color": "#FFFFFF",
+        "align": "center",
+        "valign": "middle",
+        "letter_spacing": 2,
+        "line_spacing": 6,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w2",
+      "type": "value",
+      "x": 240,
+      "y": 16,
+      "w": 160,
+      "h": 32,
+      "props": {
+        "decimals": 1,
+        "unit": "℃",
+        "align": "center",
+        "valign": "middle",
+        "font_size": 24,
+        "color": "#00E676",
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w3",
+      "type": "button",
+      "x": 40,
+      "y": 80,
+      "w": 140,
+      "h": 56,
+      "props": {
+        "text": "启动",
+        "font_size": 20,
+        "color": "#FFFFFF",
+        "bg_color": "#2F70D0",
+        "border_width": 0,
+        "radius": 8,
+        "hold_ms": 100,
+        "long_press_ms": 1200,
+        "off_style": "hide"
+      },
+      "events": {
+        "click": {
+          "actions": [
+            {
+              "do": "write_tag",
+              "tag": 1,
+              "value": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "w4",
+      "type": "lamp",
+      "x": 220,
+      "y": 88,
+      "w": 40,
+      "h": 40,
+      "props": {
+        "color": "#38C172",
+        "size": 32,
+        "brightness": 255,
+        "ranges": [
+          {
+            "lt": 50,
+            "color": "#38C172"
+          },
+          {
+            "lt": 80,
+            "color": "#F5A524"
+          },
+          {
+            "color": "#E5484D"
+          }
+        ]
+      }
+    },
+    {
+      "id": "w5",
+      "type": "gauge",
+      "x": 220,
+      "y": 140,
+      "w": 120,
+      "h": 120,
+      "props": {
+        "style": "pointer",
+        "min": 0,
+        "max": 100,
+        "color": "#2563EB",
+        "ticks": 6,
+        "decimals": 0,
+        "show_value": true,
+        "arc_width": 12,
+        "tick_len": 8,
+        "needle_width": 5,
+        "center_radius": 8,
+        "needle_len": 0.7,
+        "ranges": [
+          {
+            "lt": 60,
+            "color": "#38C172"
+          },
+          {
+            "color": "#E5484D"
+          }
+        ],
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w6",
+      "type": "switch",
+      "x": 300,
+      "y": 88,
+      "w": 100,
+      "h": 40,
+      "props": {
+        "color_on": "#22AA55",
+        "color_off": "#334155",
+        "text_on": "运行",
+        "text_off": "",
+        "knob_color": "#FFCC00",
+        "border_width": 0,
+        "radius": 0
+      },
+      "bind": {
+        "checked": {
+          "tag": 1
+        }
+      }
+    },
+    {
+      "id": "w7",
+      "type": "slider",
+      "x": 40,
+      "y": 180,
+      "w": 300,
+      "h": 40,
+      "props": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "color": "#2563EB",
+        "border_width": 0,
+        "radius": 0
+      },
+      "bind": {
+        "value": {
+          "tag": 2
+        }
+      }
+    },
+    {
+      "id": "w8",
+      "type": "bar",
+      "x": 40,
+      "y": 240,
+      "w": 300,
+      "h": 24,
+      "props": {
+        "min": 0,
+        "max": 500,
+        "direction": "v",
+        "color": "#4EA1FF",
+        "show_percent": true,
+        "ranges": [
+          {
+            "lt": 200,
+            "color": "#38C172"
+          },
+          {
+            "color": "#E5484D"
+          }
+        ],
+        "border_width": 0,
+        "radius": 0
+      },
+      "bind": {
+        "value": {
+          "tag": 0
+        }
+      }
+    },
+    {
+      "id": "w9",
+      "type": "spinner",
+      "x": 620,
+      "y": 16,
+      "w": 60,
+      "h": 60,
+      "props": {
+        "color": "#2F70D0",
+        "speed_ms": 800,
+        "arc_len": 240,
+        "arc_width": 6,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w10",
+      "type": "knob",
+      "x": 620,
+      "y": 96,
+      "w": 120,
+      "h": 120,
+      "props": {
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "color": "#2563EB",
+        "decimals": 0,
+        "show_value": true,
+        "arc_width": 14,
+        "border_width": 0,
+        "radius": 0
+      },
+      "bind": {
+        "value": {
+          "tag": 2
+        }
+      }
+    },
+    {
+      "id": "w11",
+      "type": "input",
+      "x": 40,
+      "y": 300,
+      "w": 200,
+      "h": 44,
+      "props": {
+        "mode": "num",
+        "min": 0,
+        "max": 100,
+        "decimals": 0,
+        "max_len": 8,
+        "font_size": 14,
+        "align": "center",
+        "commit": "blur",
+        "border_width": 0,
+        "radius": 0
+      },
+      "bind": {
+        "value": {
+          "tag": 2
+        }
+      }
+    },
+    {
+      "id": "w12",
+      "type": "alarm_list",
+      "x": 380,
+      "y": 80,
+      "w": 400,
+      "h": 180,
+      "props": {
+        "source": {
+          "alarm_group": "温度"
+        },
+        "mode": "active",
+        "filter": {
+          "level": "1~4"
+        },
+        "columns": [
+          {
+            "key": "time"
+          },
+          {
+            "key": "level"
+          },
+          {
+            "key": "name"
+          },
+          {
+            "key": "text"
+          },
+          {
+            "key": "state"
+          },
+          {
+            "key": "ack"
+          }
+        ],
+        "max_rows": 10,
+        "order": "newest_last",
+        "ack_on": "dblclick",
+        "grid": "rows",
+        "blink": false,
+        "blink_ms": 600,
+        "scrollbar": true,
+        "refresh_ms": 1000,
+        "date_format": "yyyy-MM-dd",
+        "time_format": "HH:mm",
+        "row_height": 30,
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w13",
+      "type": "chart",
+      "x": 20,
+      "y": 330,
+      "w": 240,
+      "h": 140,
+      "props": {
+        "kind": "pie",
+        "series": [
+          {
+            "label": "炉温",
+            "value": {
+              "tag": 0
+            },
+            "color": "#2563EB"
+          }
+        ],
+        "show_legend": false,
+        "show_value": true,
+        "y_min": 0,
+        "y_max": 100,
+        "y_decimals": 0,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w14",
+      "type": "xy_curve",
+      "x": 270,
+      "y": 330,
+      "w": 240,
+      "h": 140,
+      "props": {
+        "x": {
+          "tag": 2
+        },
+        "y": {
+          "tag": 0
+        },
+        "dot": true,
+        "line": true,
+        "sample_ms": 1000,
+        "span_s": 1800,
+        "x_min": 0,
+        "x_max": 100,
+        "y_min": 0,
+        "y_max": 100,
+        "x_div": 4,
+        "y_div": 4,
+        "x_minor": 0,
+        "y_minor": 0,
+        "x_decimals": 0,
+        "y_decimals": 0,
+        "grid": true,
+        "axis_color": "#4A5A6A",
+        "grid_color": "#2F3D4C",
+        "tick_color": "#9AA7B5",
+        "label_color": "#C8D2DC",
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w15",
+      "type": "history_table",
+      "x": 520,
+      "y": 20,
+      "w": 260,
+      "h": 140,
+      "props": {
+        "columns": [
+          {
+            "key": "time",
+            "label": "时间"
+          },
+          {
+            "key": 0,
+            "label": "炉温"
+          }
+        ],
+        "source": {
+          "group": "temp"
+        },
+        "max_rows": 500,
+        "refresh_ms": 5000,
+        "row_height": 30,
+        "scrollbar": true,
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w16",
+      "type": "ascii_display",
+      "x": 20,
+      "y": 400,
+      "w": 200,
+      "h": 32,
+      "props": {
+        "encoding": "utf8",
+        "max_len": 16,
+        "color": "#E2E8F0",
+        "align": "center",
+        "valign": "middle",
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w17",
+      "type": "shape",
+      "x": 660,
+      "y": 330,
+      "w": 100,
+      "h": 100,
+      "props": {
+        "fill_color": "#38C172",
+        "border_color": "#1F7A45",
+        "border_width": 2,
+        "bg_color": "#38C172",
+        "radius": 0,
+        "kind": "star5"
+      }
+    },
+    {
+      "id": "w18",
+      "type": "qrcode",
+      "x": 640,
+      "y": 300,
+      "w": 120,
+      "h": 120,
+      "props": {
+        "text": "https://example.com/hmi",
+        "dark_color": "#102030",
+        "light_color": "#F0F0F0"
+      }
+    },
+    {
+      "id": "w19",
+      "type": "message",
+      "x": 20,
+      "y": 350,
+      "w": 400,
+      "h": 44,
+      "props": {
+        "text": "温度偏高",
+        "level": "warn",
+        "align": "center",
+        "marquee": true,
+        "auto_hide_ms": 5000,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w20",
+      "type": "enum_text",
+      "x": 440,
+      "y": 350,
+      "w": 160,
+      "h": 32,
+      "props": {
+        "text": "运行中",
+        "font_size": 14,
+        "color": "#E2E8F0",
+        "align": "center",
+        "valign": "middle",
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w21",
+      "type": "roller",
+      "x": 620,
+      "y": 350,
+      "w": 160,
+      "h": 120,
+      "props": {
+        "options": [
+          "白班",
+          "中班",
+          "夜班"
+        ],
+        "visible_rows": 5,
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w22",
+      "type": "pipe",
+      "x": 20,
+      "y": 380,
+      "w": 260,
+      "h": 24,
+      "props": {
+        "direction": "v",
+        "wall": 0.3,
+        "color": "#4EA1FF",
+        "channel_color": "#223344",
+        "flow_ms": 500
+      }
+    },
+    {
+      "id": "w23",
+      "type": "alarm_bar",
+      "x": 20,
+      "y": 420,
+      "w": 400,
+      "h": 32,
+      "props": {
+        "source": {
+          "alarm_group": "温度"
+        },
+        "order": "newest_last",
+        "color": "#E2E8F0",
+        "blink": true,
+        "blink_ms": 600,
+        "only_unacked": false,
+        "scroll_ms": 2000,
+        "scroll_chars": 8,
+        "show_date": false,
+        "show_time": true,
+        "normal_text": "系统正常",
+        "time_format": "HH:mm:ss",
+        "font_size": 14,
+        "border_width": 0,
+        "radius": 0
+      }
+    },
+    {
+      "id": "w24",
+      "type": "realtime_curve",
+      "x": 380,
+      "y": 300,
+      "w": 400,
+      "h": 160,
+      "props": {
+        "curves": [
+          {
+            "tag": 0,
+            "color": "#2563EB",
+            "label": "炉温",
+            "axis": "left"
+          }
+        ],
+        "sample_ms": 500,
+        "history_s": 60,
+        "span_s": 300,
+        "y_min": 0,
+        "y_max": 100,
+        "grid": true,
+        "legend": true,
+        "show_axis": true,
+        "show_ticks": false,
+        "show_labels": true,
+        "direction": "lr",
+        "x_format": "clock",
+        "x_div": 4,
+        "x_minor": 0,
+        "x_label_step": 0,
+        "y_div": 4,
+        "y_minor": 0,
+        "y_decimals": 0,
+        "y_digits": 0,
+        "y2_min": 0,
+        "y2_max": 100,
+        "y2_decimals": 0,
+        "y2_digits": 0,
+        "axis_color": "#4A5A6A",
+        "bg_color": "#141C26",
+        "border_color": "#3A4A5A",
+        "grid_color": "#2F3D4C",
+        "tick_color": "#9AA7B5",
+        "label_color": "#C8D2DC",
+        "font_size": 14
+      }
+    },
+    {
+      "id": "w25",
+      "type": "history_curve",
+      "x": 380,
+      "y": 280,
+      "w": 400,
+      "h": 180,
+      "props": {
+        "group": "temp",
+        "range": {
+          "last_min": 30
+        },
+        "refresh_ms": 5000,
+        "curves": [
+          {
+            "tag": 0,
+            "color": "#2563EB",
+            "label": "炉温",
+            "axis": "left"
+          }
+        ],
+        "y_min": 0,
+        "y_max": 500,
+        "grid": true,
+        "legend": true,
+        "show_axis": true,
+        "show_ticks": false,
+        "show_labels": true,
+        "direction": "lr",
+        "x_format": "clock",
+        "x_div": 4,
+        "x_minor": 0,
+        "x_label_step": 0,
+        "y_div": 4,
+        "y_minor": 0,
+        "y_decimals": 0,
+        "y_digits": 0,
+        "y2_min": 0,
+        "y2_max": 100,
+        "y2_decimals": 0,
+        "y2_digits": 0,
+        "axis_color": "#4A5A6A",
+        "bg_color": "#141C26",
+        "border_color": "#3A4A5A",
+        "grid_color": "#2F3D4C",
+        "tick_color": "#9AA7B5",
+        "label_color": "#C8D2DC",
+        "font_size": 14
+      }
+    }
+  ]
+}

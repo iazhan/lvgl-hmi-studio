@@ -336,6 +336,8 @@ public sealed class ChengeExporter
             AppendWidget(widgets, control, pageId, "w", ref seq, maps, mapper, features, fontSizes,
                 issues, ref widgetCount);
         }
+        // 键盘控件可能排在目标前面：整页建完再回填 props.target
+        mapper.ApplyPendingKeyboardTargets();
         page["widgets"] = widgets;
         return page;
     }

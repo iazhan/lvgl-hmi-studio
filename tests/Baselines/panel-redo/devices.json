@@ -1,0 +1,13 @@
+[
+  {
+    "id": "plc1",
+    "name": "plc1",
+    "protocol": "modbus_rtu",
+    "port": "com1",
+    "slave": 1,
+    "timeout_ms": 300,
+    "retries": 2,
+    "poll_ms": 200,
+    "default_order": "ABCD"
+  }
+]

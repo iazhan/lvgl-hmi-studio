@@ -328,10 +328,10 @@
                 </StackPanel>
                 </Border>
 
-                <!-- ═══ 位置与大小 ═══ -->
-                <Expander Header="{res:Loc prop.pos.size}" IsExpanded="True"
+                <!-- ═══ 几何与层级：位置、尺寸和静态可见性 ═══ -->
+                <Expander x:Name="GeometryExpander" Header="{res:Loc prop.pos.size}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" Margin="0,4,0,0">
                         <TextBlock Text="{res:Loc prop.x}" Grid.Row="0" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
@@ -357,13 +357,58 @@
                                       Value="40" Minimum="10" SmallChange="1" LargeChange="10"
                                       SpinButtonPlacementMode="Compact"
                                       Margin="0,2"/>
+                        <Grid x:Name="RowVisible" Grid.Row="4" Grid.ColumnSpan="2" ColumnDefinitions="70,*">
+                            <TextBlock x:Name="LblVisible" Text="{res:Loc prop.visible}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PropVisible" Grid.Column="1"
+                                      Content="{res:Loc prop.visible.hint}"
+                                      IsChecked="True" IsCheckedChanged="OnPropertyChanged"/>
+                        </Grid>
+                        <TextBlock x:Name="LblRotation" Text="{res:Loc prop.param.rotation}" Grid.Row="5" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <Grid Grid.Row="5" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                            <fa:FANumberBox x:Name="RotationBox" Minimum="0" Maximum="360"
+                                            SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
+                            <Button x:Name="BtnResetRotation" Grid.Column="1"
+                                    Content="{res:Loc prop.param.rotation.reset}"
+                                    Background="{StaticResource HmiBgSelectedBrush}" Foreground="{StaticResource HmiLinkBrush}"
+                                    BorderThickness="0" Padding="8,2" FontSize="11" Margin="0,2" IsVisible="False"
+                                    Click="OnResetRotationClicked"/>
+                        </Grid>
+                        <TextBlock x:Name="LblRotationDir" Text="{res:Loc prop.param.rotation.dir}" Grid.Row="6" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <ComboBox x:Name="RotationDirCombo" Grid.Row="6" Grid.Column="1"
+                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13" SelectedIndex="0"
+                                  IsVisible="False" SelectionChanged="OnPropertyChanged">
+                            <ComboBoxItem Content="{res:Loc prop.param.rotation.cw}" Tag="CW"/>
+                            <ComboBoxItem Content="{res:Loc prop.param.rotation.ccw}" Tag="CCW"/>
+                        </ComboBox>
+                        <TextBlock x:Name="LblMirrorH" Text="{res:Loc prop.param.mirror.h}" Grid.Row="7" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="MirrorHCheck" Grid.Row="7" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock x:Name="LblMirrorV" Text="{res:Loc prop.param.mirror.v}" Grid.Row="8" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
+                        <CheckBox x:Name="MirrorVCheck" Grid.Row="8" Grid.Column="1"
+                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
+                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
+                                  IsCheckedChanged="OnPropertyChanged"/>
+                        <TextBlock Text="{res:Loc prop.enabled}" Grid.Row="9" Grid.Column="0"
+                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="PropEnabled" Grid.Row="9" Grid.Column="1"
+                                  Content="{res:Loc prop.enabled.hint}"
+                                  IsChecked="True" IsCheckedChanged="OnPropertyChanged"/>
                     </Grid>
                 </Expander>
 
-                <!-- ═══ 基本信息（仅身份/内容字段，不含视觉属性） ═══ -->
-                <Expander Header="{res:Loc prop.content}" IsExpanded="True"
+                <Expander x:Name="ContentAppearanceSection" Header="{res:Loc prop.section.content.text}" IsExpanded="True"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
                     <StackPanel Margin="0,4,0,0" Spacing="6">
+                        <!-- 内容字段 -->
+                        <StackPanel x:Name="BasicContentPanel" Spacing="6">
                         <Grid ColumnDefinitions="62,*">
                             <TextBlock Text="{res:Loc prop.name}" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
@@ -388,15 +433,11 @@
                             <TextBox x:Name="SwitchTextOffBox" Grid.Column="1"
                                      Text="" TextChanged="OnPropertyChanged"/>
                         </Grid>
-                    </StackPanel>
-                </Expander>
+                        </StackPanel>
+                        <!-- 外观属性 -->
+                        <StackPanel x:Name="AppearanceExpander" Spacing="6" VerticalAlignment="Top">
+                            <TextBlock Text="{res:Loc prop.appearance}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
 
-                <!-- ═══ 外观样式（颜色 → 边框 → 文本 → 控件相关属性） ═══
-                     一行一个 Grid + StackPanel：这些行按控件类型显隐，用固定行数的 Grid 会让
-                     隐藏行照样占 RowSpacing（顶部一大片空白），StackPanel 则整行塌掉。 -->
-                <Expander x:Name="AppearanceExpander" Header="{res:Loc prop.appearance}" IsExpanded="True"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <StackPanel Spacing="6" Margin="0,4,0,0" VerticalAlignment="Top">
                         <!-- 背景色（含色板） -->
                         <Grid x:Name="RowBgColor" ColumnDefinitions="62,*,28">
                             <TextBlock x:Name="LblBgColor" Text="{res:Loc prop.bg.color}" Grid.Column="0"
@@ -419,15 +460,6 @@
                                             Value="100" Minimum="0" Maximum="100"
                                             SmallChange="5" LargeChange="10"
                                             SpinButtonPlacementMode="Compact"/>
-                        </Grid>
-                        <!-- 可见：控件级显隐。运行期还能再叠一条 bind.visible（变量控制），
-                             两者互不覆盖 —— 静态 false 就是永远不出现。 -->
-                        <Grid x:Name="RowVisible" ColumnDefinitions="62,*">
-                            <TextBlock x:Name="LblVisible" Text="{res:Loc prop.visible}" Grid.Column="0"
-                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="PropVisible" Grid.Column="1"
-                                      Content="{res:Loc prop.visible.hint}"
-                                      IsChecked="True" IsCheckedChanged="OnPropertyChanged"/>
                         </Grid>
                         <!-- 圆角 -->
                         <Grid x:Name="RowRadius" ColumnDefinitions="62,*">
@@ -543,14 +575,17 @@
                             <CheckBox x:Name="PropIsChecked" Grid.Column="1"
                                       IsCheckedChanged="OnPropertyChanged"/>
                         </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </Expander>
 
-                <!-- ═══ 状态样式（仅 Button/Switch/CheckBox 显示）═══ -->
-                <Expander x:Name="VisualStateExpander" Header="{res:Loc prop.visual.states}" IsExpanded="False"
+                <!-- ═══ 绑定与状态 ═══ -->
+                <Expander x:Name="BindingStateSection" Header="{res:Loc prop.section.binding.state}" IsExpanded="False"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
                     <StackPanel Margin="0,4,0,0" Spacing="6">
+                        <StackPanel x:Name="VisualStateExpander" Spacing="6" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.visual.states}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
                         <!-- 状态选择 + 继承提示 -->
                         <StackPanel Spacing="2">
                             <TextBlock Text="{res:Loc prop.visual.state.select}"
@@ -610,17 +645,21 @@
                                     Tag="VsBorderColor" Cursor="Hand"/>
                         </Grid>
 
-                        <!-- 子标题：内容属性 -->
+                        <!-- 子标题：状态覆盖内容；默认态文本统一在“内容与文字”中编辑 -->
                         <TextBlock Text="{res:Loc prop.section.content}"
                                    Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"
                                    Margin="0,6,0,0"/>
+                        <TextBlock x:Name="VsTextDefaultHint"
+                                   Text="{res:Loc prop.visual.state.normal.text.hint}"
+                                   Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"
+                                   TextWrapping="Wrap" IsVisible="False"/>
                         <TextBox x:Name="VsText"
                                  Text="" TextChanged="OnVisualStateChanged"
                                  ToolTip.Tip="{res:Loc prop.visual.state.export.hint.text}"
                                  PlaceholderText="{res:Loc prop.visual.state.inherit.hint}"
                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12" Padding="8,4"/>
-                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="62,*" RowSpacing="6" Margin="0,2,0,0">
+                        <Grid x:Name="RowVsTextAlignment" RowDefinitions="Auto,Auto" ColumnDefinitions="62,*" RowSpacing="6" Margin="0,2">
                             <TextBlock Text="{res:Loc prop.visual.state.text.align}" Grid.Row="0" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" FontSize="12"/>
                             <ComboBox x:Name="VsTextAlign" Grid.Row="0" Grid.Column="1"
@@ -656,12 +695,8 @@
                                     Click="OnVsImageClearClicked"/>
                         </StackPanel>
                     </StackPanel>
-                </Expander>
+                        <StackPanel x:Name="VariableBindingExpander" Spacing="4">
 
-                <!-- ═══ 变量绑定 ═══ -->
-                <Expander x:Name="VariableBindingExpander" Header="{res:Loc prop.var.binding}" IsExpanded="False"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <StackPanel Margin="0,4,0,0" Spacing="4">
                         <!-- 目标属性：值属性（Text/Value）走值通路，视觉属性（颜色/可见性）走视觉通路。
                              P1-1：表达式可驱动颜色/可见性，生成代码里由同一套刷新器按属性名派发。 -->
                         <TextBlock Text="{res:Loc prop.bind.target}" Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"/>
@@ -708,14 +743,17 @@
                         <TextBlock x:Name="BindingHint" Text=""
                                    Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"
                                    TextWrapping="Wrap"/>
+                        </StackPanel>
                     </StackPanel>
                 </Expander>
 
-                <!-- ═══ 值显示（Label 等显示型控件：绑定变量后的格式化） ═══ -->
-                <Expander x:Name="ValueDisplayExpander" Header="{res:Loc prop.value.display}" IsExpanded="False"
+                <!-- ═══ 数据与显示 ═══ -->
+                <Expander x:Name="DataDisplaySection" Header="{res:Loc prop.param.title}" IsExpanded="False"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
-                    <StackPanel Margin="0,4,0,0" Spacing="4">
+                    <StackPanel Margin="0,4,0,0" Spacing="6">
+                        <StackPanel x:Name="ValueDisplayExpander" Spacing="4" IsVisible="False">
+
                         <TextBlock Text="{res:Loc prop.value.display.type}" Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"/>
                         <ComboBox x:Name="ValueDisplayTypeCombo"
                                   Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
@@ -770,12 +808,8 @@
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
                                  TextChanged="OnPropertyChanged"/>
                     </StackPanel>
-                </Expander>
-
-                <!-- ═══ 控件功能参数（按控件类型显隐） ═══ -->
-                <Expander x:Name="ControlParamExpander" Header="{res:Loc prop.param.title}" IsExpanded="False"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
-                          IsVisible="False">
+                        <!-- 控件专属数据参数 -->
+                        <StackPanel x:Name="ControlParamExpander" Spacing="4" IsVisible="False">
                     <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
@@ -878,39 +912,6 @@
                         <fa:FANumberBox x:Name="SpinSpeedBox" Grid.Row="15" Grid.Column="1"
                                         Value="1000" Minimum="100" Maximum="10000"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblLineCap" Text="{res:Loc prop.param.linecap}" Grid.Row="16" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="LineCapCombo" Grid.Row="16" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="Butt" Tag="Butt"/>
-                            <ComboBoxItem Content="Round" Tag="Round"/>
-                            <ComboBoxItem Content="Square" Tag="Square"/>
-                        </ComboBox>
-                        <TextBlock x:Name="LblKeyboardMode" Text="{res:Loc prop.param.keyboard}" Grid.Row="17" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="KeyboardModeCombo" Grid.Row="17" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="Default" Tag="Default"/>
-                            <ComboBoxItem Content="Number" Tag="Number"/>
-                            <ComboBoxItem Content="Special" Tag="Special"/>
-                        </ComboBox>
-                        <TextBlock x:Name="LblValueMode" Text="{res:Loc prop.param.valmode}" Grid.Row="18" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="ValueModeCombo" Grid.Row="18" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.param.valmode.normal}" Tag="Normal"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.valmode.sym}" Tag="Symmetrical"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.valmode.range}" Tag="Range"/>
-                        </ComboBox>
                         <TextBlock x:Name="LblLongMode" Text="{res:Loc prop.param.longmode}" Grid.Row="19" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <ComboBox x:Name="LongModeCombo" Grid.Row="19" Grid.Column="1"
@@ -924,18 +925,6 @@
                             <ComboBoxItem Content="{res:Loc prop.param.longmode.scrollcirc}" Tag="ScrollCircular"/>
                             <ComboBoxItem Content="{res:Loc prop.param.longmode.clip}" Tag="Clip"/>
                         </ComboBox>
-                        <!-- I7: 过程图形控件专属参数 -->
-                        <TextBlock x:Name="LblTankShowScale" Text="{res:Loc prop.param.tank.showscale}" Grid.Row="20" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <CheckBox x:Name="TankShowScaleCheck" Grid.Row="20" Grid.Column="1"
-                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
-                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
-                                  IsCheckedChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblTankTickCount" Text="{res:Loc prop.param.tank.tickcount}" Grid.Row="21" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="TankTickCountBox" Grid.Row="21" Grid.Column="1"
-                                        Value="5" Minimum="2" Maximum="50"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                         <TextBlock x:Name="LblPipeDirection" Text="{res:Loc prop.param.pipe.direction}" Grid.Row="22" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <ComboBox x:Name="PipeDirectionCombo" Grid.Row="22" Grid.Column="1"
@@ -1013,39 +1002,6 @@
                         <TextBlock x:Name="LblShowPointer" Text="{res:Loc prop.param.showpointer}" Grid.Row="32" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <CheckBox x:Name="ShowPointerCheck" Grid.Row="32" Grid.Column="1"
-                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
-                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
-                                  IsCheckedChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblRotation" Text="{res:Loc prop.param.rotation}" Grid.Row="33" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <Grid Grid.Row="33" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                            <fa:FANumberBox x:Name="RotationBox" Minimum="0" Maximum="360"
-                                            SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                            <Button x:Name="BtnResetRotation" Grid.Column="1"
-                                    Content="{res:Loc prop.param.rotation.reset}"
-                                    Background="{StaticResource HmiBgSelectedBrush}" Foreground="{StaticResource HmiLinkBrush}"
-                                    BorderThickness="0" Padding="8,2" FontSize="11" Margin="0,2" IsVisible="False"
-                                    Click="OnResetRotationClicked"/>
-                        </Grid>
-                        <TextBlock x:Name="LblRotationDir" Text="{res:Loc prop.param.rotation.dir}" Grid.Row="34" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="RotationDirCombo" Grid.Row="34" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.param.rotation.cw}" Tag="CW"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.rotation.ccw}" Tag="CCW"/>
-                        </ComboBox>
-                        <TextBlock x:Name="LblMirrorH" Text="{res:Loc prop.param.mirror.h}" Grid.Row="35" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <CheckBox x:Name="MirrorHCheck" Grid.Row="35" Grid.Column="1"
-                                  Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
-                                  VerticalAlignment="Center" Margin="0,2" IsVisible="False"
-                                  IsCheckedChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblMirrorV" Text="{res:Loc prop.param.mirror.v}" Grid.Row="36" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <CheckBox x:Name="MirrorVCheck" Grid.Row="36" Grid.Column="1"
                                   Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="13"
                                   VerticalAlignment="Center" Margin="0,2" IsVisible="False"
                                   IsCheckedChanged="OnPropertyChanged"/>
@@ -1189,12 +1145,10 @@
                                         Value="12" Minimum="4" Maximum="200"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
-                </Expander>
+                        </StackPanel>
+                        <StackPanel x:Name="DetailParamExpander" Spacing="4" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.behavior.title}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
 
-                <!-- ═══ 控件细节（批次 1a：仪表 / 指示灯 / 按钮的契约属性） ═══ -->
-                <Expander x:Name="DetailParamExpander" Header="{res:Loc prop.detail}" IsExpanded="True"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
-                          IsVisible="False">
                     <!-- 行数 ≥ 下面最大 Grid.Row+1（当前 0..69） -->
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="0" Margin="0,4,0,0">
@@ -1684,12 +1638,137 @@
                                         Value="32" Minimum="1" Maximum="64"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
-                </Expander>
-
-                <!-- ═══ 曲线设置（history_curve / realtime_curve 共用） ═══ -->
-                <Expander x:Name="CurveParamExpander" Header="{res:Loc prop.curve.title}" IsExpanded="True"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
-                          IsVisible="False">
+                        </StackPanel>
+                        <!-- 专属参数：运行时确实读了、但此前没有可编辑行的属性。
+                             每行是一个具名 Grid 行容器（切显隐切整行，避免隐藏后留空行）；
+                             图元 kind 级参数由 FigureParamHost 按 FigurePropertyCatalog 动态生成。 -->
+                        <StackPanel x:Name="ExclusiveParamExpander" Spacing="4" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.exclusive.title}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
+                            <Grid x:Name="RowArcStart" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc arc.start.angle}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="ArcStartBox" Grid.Column="1" Minimum="-360" Maximum="720" Value="0"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowArcEnd" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc arc.end.angle}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="ArcEndBox" Grid.Column="1" Minimum="-360" Maximum="720" Value="360"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowGaugeLabelPos" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.gauge.labelpos}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="GaugeLabelPosCombo" Grid.Column="1" SelectedIndex="0"
+                                          Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                          BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                          SelectionChanged="OnPropertyChanged">
+                                    <ComboBoxItem Content="{res:Loc prop.exclusive.gauge.labelpos.inside}" Tag="inside"/>
+                                    <ComboBoxItem Content="{res:Loc prop.exclusive.gauge.labelpos.outside}" Tag="outside"/>
+                                    <ComboBoxItem Content="{res:Loc prop.exclusive.gauge.labelpos.none}" Tag="none"/>
+                                </ComboBox>
+                            </Grid>
+                            <CheckBox x:Name="KnobShowValueCheck" IsVisible="False" Content="{res:Loc prop.exclusive.knob.showvalue}"
+                                      Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="12" IsCheckedChanged="OnPropertyChanged"/>
+                            <Grid x:Name="RowChartDecimals" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.chart.decimals}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="ChartDecimalsBox" Grid.Column="1" Minimum="0" Maximum="6" Value="0"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowHistRefresh" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.hist.refresh}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="HistRefreshBox" Grid.Column="1" Minimum="0" Maximum="600000" Value="5000"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowCurveRefresh" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.curve.refresh}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="CurveRefreshBox" Grid.Column="1" Minimum="0" Maximum="600000" Value="5000"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowRecipeRowHeight" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.recipe.rowheight}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="RecipeRowHeightBox" Grid.Column="1" Minimum="0" Maximum="60" Value="0"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <CheckBox x:Name="RecipeScrollbarCheck" IsVisible="False" Content="{res:Loc prop.exclusive.recipe.scrollbar}"
+                                      Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="12" IsCheckedChanged="OnPropertyChanged"/>
+                            <Grid x:Name="RowAlarmFilter" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.alarm.filter}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="AlarmLevelFilterBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                         PlaceholderText="{res:Loc prop.exclusive.alarm.filter.hint}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowAlarmColumns" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.alarm.columns}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="AlarmColumnsBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                         PlaceholderText="{res:Loc prop.exclusive.alarm.columns.hint}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowAlarmScroll" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.alarm.scroll}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="AlarmScrollCombo" Grid.Column="1" SelectedIndex="0"
+                                          Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                          BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                          SelectionChanged="OnPropertyChanged">
+                                    <ComboBoxItem Content="{res:Loc prop.exclusive.alarm.scroll.auto}" Tag="auto"/>
+                                    <ComboBoxItem Content="{res:Loc prop.exclusive.alarm.scroll.none}" Tag="none"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid x:Name="RowPipeWallColor" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.pipe.wallcolor}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="PipeWallColorBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                         PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowBoxColor" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.checkbox.boxcolor}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="BoxColorBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                         PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowKeyboardTarget" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.keyboard.target}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="KeyboardTargetBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}"
+                                         PlaceholderText="{res:Loc prop.exclusive.keyboard.target.hint}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowXyXMin" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.xy.xmin}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="XyXMinBox" Grid.Column="1" Minimum="-1000000" Maximum="1000000" Value="0"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowXyXMax" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.xy.xmax}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="XyXMaxBox" Grid.Column="1" Minimum="-1000000" Maximum="1000000" Value="100"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowXyXDecimals" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.xy.xdecimals}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="XyXDecimalsBox" Grid.Column="1" Minimum="0" Maximum="6" Value="0"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowFigureFillOpa" ColumnDefinitions="70,*" IsVisible="False">
+                                <TextBlock Text="{res:Loc prop.exclusive.figure.fillopa}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="FigureFillOpaBox" Grid.Column="1" Minimum="0" Maximum="255" Value="255"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowFigurePoints" IsVisible="False">
+                                <Grid ColumnDefinitions="70,*">
+                                    <TextBlock Text="{res:Loc prop.exclusive.figure.points}" Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="FigurePointsHint" Grid.Column="1" Text="{res:Loc prop.exclusive.figure.points.hint}"
+                                               Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                </Grid>
+                                <TextBox x:Name="FigurePointsBox" FontSize="13" Margin="0,2,0,0" MinHeight="56" MaxHeight="120"
+                                         AcceptsReturn="True" TextWrapping="NoWrap"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <StackPanel x:Name="FigureParamHost" Spacing="4"/>
+                        </StackPanel>
+                        <StackPanel x:Name="CurveParamExpander" Spacing="4" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.trend.title}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="4" Margin="0,4,0,0">
                         <TextBlock x:Name="LblCurveAxis" Text="{res:Loc prop.curve.axis}" Grid.Row="0" Grid.Column="0"
@@ -1831,12 +1910,24 @@
                                         Value="0" Minimum="0" Maximum="1440"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
                     </Grid>
+                        </StackPanel>
+                    </StackPanel>
                 </Expander>
 
-                <!-- ═══ Faceplate 参数 ═══ -->
-                <Expander x:Name="FaceplateParamExpander" Header="{res:Loc prop.faceplate.params}" IsExpanded="True"
+                <!-- ═══ 动作与高级 ═══ -->
+                <Expander x:Name="ActionsAdvancedSection" Header="{res:Loc prop.section.actions.advanced}" IsExpanded="False"
                           Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4"
                           IsVisible="False">
+                    <StackPanel Margin="0,4,0,0" Spacing="6">
+                        <!-- 长按提示是**交互**属性（按下并保持才出现），跟几何无关；
+                             从「位置与大小」挪到高级区，与动作/Faceplate 同处。 -->
+                        <Grid x:Name="RowTooltip" ColumnDefinitions="62,*">
+                            <TextBlock Text="{res:Loc prop.tooltip}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="TooltipBox" Grid.Column="1"
+                                     TextChanged="OnPropertyChanged" MaxLength="64"/>
+                        </Grid>
+                        <StackPanel x:Name="FaceplateParamExpander" Spacing="6" IsVisible="False">
                     <StackPanel x:Name="FaceplateParamPanel" Spacing="6" Margin="0,4,0,0">
                         <TextBlock x:Name="FaceplateTemplateName" Text=""
                                    Foreground="{StaticResource HmiLinkBrush}" FontSize="12" FontWeight="Medium"/>
@@ -1846,12 +1937,9 @@
                              不依赖「前两个子元素是固定表头」这类位置假设。 -->
                         <StackPanel x:Name="FaceplateParamHost" Spacing="6"/>
                     </StackPanel>
-                </Expander>
+                        </StackPanel>
+                        <StackPanel x:Name="ActionExpander" Spacing="6">
 
-                <!-- ═══ 动作 ═══ -->
-                <Expander x:Name="ActionExpander" Header="{res:Loc prop.actions}" IsExpanded="False"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <StackPanel Margin="0,4,0,0" Spacing="6">
                         <!-- 动作列表（多动作管理）-->
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <ItemsControl x:Name="ActionList">
@@ -1904,13 +1992,10 @@
                                      PlaceholderText="{res:Loc prop.action.value.hint}"
                                      TextChanged="OnPropertyChanged"/>
                         </Grid>
-                    </StackPanel>
-                </Expander>
-
-                <!-- ═══ AI 布局建议 (T4.4) ═══ -->
-                <Expander x:Name="AiSuggestExpander" Header="{res:Loc prop.ai.suggest}" IsExpanded="False"
-                          Background="{StaticResource HmiBgCardBrush}" CornerRadius="6" Padding="8,4">
-                    <StackPanel x:Name="AiSuggestPanel" Margin="0,4,0,0" Spacing="6">
+                        </StackPanel>
+                        <StackPanel x:Name="AiSuggestExpander" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.ai.suggest}" Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
+                            <StackPanel x:Name="AiSuggestPanel" Margin="0,4,0,0" Spacing="6">
                         <TextBlock x:Name="AiScoreText" Text=""
                                    Foreground="{StaticResource HmiWarningBrush}" FontSize="13" FontWeight="SemiBold"
                                    TextWrapping="Wrap"/>
@@ -1938,6 +2023,8 @@
                                 BorderThickness="0" Padding="10,4" FontSize="11"
                                 HorizontalAlignment="Left"
                                 Click="OnAutoFixClicked"/>
+                    </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Expander>
             </StackPanel>

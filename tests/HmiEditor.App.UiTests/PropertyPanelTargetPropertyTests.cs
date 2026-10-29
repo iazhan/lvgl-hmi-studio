@@ -51,9 +51,18 @@ public class PropertyPanelTargetPropertyTests
         var panel = new PropertyPanelView();
         if (expandBindingSection)
         {
-            var expander = panel.FindControl<Expander>("VariableBindingExpander");
-            Assert.NotNull(expander);
-            expander!.IsExpanded = true;
+            // 绑定区已并入「绑定与状态」分区，容器是 StackPanel（内容恒可见、没有折叠体）。
+            // 仍然是 Expander 时展开它；两种形态都要求这个容器存在。
+            var container = panel.FindControl<Control>("VariableBindingExpander");
+            Assert.NotNull(container);
+            if (container is Expander expander)
+                expander.IsExpanded = true;
+            else if (panel.FindControl<Expander>("BindingStateSection") is { } section)
+            {
+                // 既要在 Show 前展开，也要在 Show 前可见：不可见的分区在首帧布局时同样不建内容子树
+                section.IsVisible = true;
+                section.IsExpanded = true;
+            }
         }
 
         var window = new Window { Width = 900, Height = 900, Content = panel };

@@ -158,6 +158,7 @@ public partial class PropertyPanelView : UserControl
             or HmiControlType.Table or HmiControlType.TabView
             or HmiControlType.Dropdown;
         VisualStateExpander.IsVisible = supportsVisualStates;
+        BindingStateSection.IsVisible = isDisplayCtrl || supportsVisualStates;
 
         // P1: 显示绑定模式提示
         UpdateBindingHint();

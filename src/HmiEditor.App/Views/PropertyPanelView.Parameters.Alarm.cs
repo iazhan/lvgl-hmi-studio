@@ -25,7 +25,7 @@ public partial class PropertyPanelView
         SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, visible);
     }
 
-    /// <summary>报警条专属行（6 项）。</summary>
+    /// <summary>报警条专属行（契约 alarm_bar 的全部 props，运行时逐项读）。</summary>
     private void ShowAlarmBarRows(bool visible)
     {
         SetParamRow(LblAlarmNormalText, AlarmNormalTextBox, visible);
@@ -34,6 +34,12 @@ public partial class PropertyPanelView
         SetParamRow(LblAlarmScrollChars, AlarmScrollCharsBox, visible);
         SetParamRow(LblAlarmShowDate, AlarmShowDateCheck, visible);
         SetParamRow(LblAlarmShowTime, AlarmShowTimeCheck, visible);
+        // 闪烁、时间/日期格式、排序：运行时都读，别只给报警列表留入口
+        SetParamRow(LblAlarmBlink, AlarmBlinkCheck, visible);
+        SetParamRow(LblAlarmBlinkMs, AlarmBlinkMsBox, visible);
+        SetParamRow(LblAlarmDateFormat, AlarmDateFormatBox, visible);
+        SetParamRow(LblAlarmTimeFormat, AlarmTimeFormatBox, visible);
+        SetParamRow(LblAlarmOrder, AlarmOrderCombo, visible);
     }
 
     /// <summary>把报警相关字段回填到面板（列表与条共用同一批字段）。</summary>

@@ -1,0 +1,29 @@
+[
+  {
+    "id": 0,
+    "name": "炉温",
+    "type": "f32",
+    "access": "r",
+    "unit": "℃",
+    "source": {
+      "device": "plc1",
+      "datatype": "f32",
+      "area": "holding",
+      "addr": 0,
+      "order": "CDAB",
+      "scale": 0.1
+    }
+  },
+  {
+    "id": 1,
+    "name": "启动",
+    "type": "bool",
+    "access": "rw"
+  },
+  {
+    "id": 2,
+    "name": "设定",
+    "type": "i16",
+    "access": "rw"
+  }
+]

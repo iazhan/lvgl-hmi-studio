@@ -52,6 +52,12 @@ public class HmiControl
     /// <summary>是否在设计器中可见（隐藏后不渲染）。默认 true。</summary>
     public bool IsVisible { get; set; } = true;
 
+    /// <summary>是否可交互。默认 true。</summary>
+    public bool IsEnabled { get; set; } = true;
+
+    /// <summary>长按提示文本；空值表示不显示提示。</summary>
+    public string? Tooltip { get; set; }
+
     /// <summary>层索引（Z 序排序用，值小的在下层）。默认 0。</summary>
     public int LayerIndex { get; set; }
 
@@ -626,6 +632,80 @@ public class HmiControl
 
     /// <summary>时间格式（如 hh:mm:ss）。</summary>
     public string? AlarmTimeFormat { get; set; }
+
+    // ── 运行时已消费、模型原先缺字段的专属项（面板重做补齐）──
+
+    /// <summary>CheckBox：勾选框颜色（契约 box_color，默认 #2F70D0）。</summary>
+    public string? BoxColor { get; set; }
+
+    /// <summary>Knob：显示中心读数（契约 show_value，默认 true）。</summary>
+    public bool KnobShowValue { get; set; } = true;
+
+    /// <summary>Gauge：两端数值位置（契约 label_pos：inside / outside / none，默认 inside）。</summary>
+    public string? GaugeLabelPos { get; set; } = "inside";
+
+    /// <summary>Pipe：管壁颜色（契约 wall_color）；空 = 运行时缺省。</summary>
+    public string? PipeWallColor { get; set; }
+
+    /// <summary>HistoryTable：刷新周期毫秒（契约 refresh_ms，默认 5000）。与曲线的 RefreshMs 分开，互不牵连。</summary>
+    public int HistTableRefreshMs { get; set; } = 5000;
+
+    /// <summary>RecipeTable：行高（0 = 默认 26）。不与历史表共用字段。</summary>
+    public int RecipeRowHeight { get; set; }
+
+    /// <summary>RecipeTable：右侧滚动条。</summary>
+    public bool RecipeScrollbar { get; set; } = true;
+
+    /// <summary>AlarmBar：轮换方式（契约 scroll：auto / none，默认 auto）。</summary>
+    public string? AlarmScroll { get; set; } = "auto";
+
+    /// <summary>Keyboard：要输入的控件 id（契约 target，必填）。</summary>
+    public string? KeyboardTarget { get; set; }
+
+    /// <summary>XyCurve：X 轴量程下限（与 Y 轴的 MinValue 分开）。</summary>
+    public double XMinValue { get; set; }
+
+    /// <summary>XyCurve：X 轴量程上限（与 Y 轴的 MaxValue 分开）。</summary>
+    public double XMaxValue { get; set; } = 100;
+
+    /// <summary>XyCurve：X 轴读数小数位（契约 x_decimals）。</summary>
+    public int CurveXDecimals { get; set; }
+
+    // ── 图元专属参数（契约 figures 的 kind 级 props；运行时 ui_figure.c 已读）──
+    //
+    // 全部用可空类型：每个 kind 的契约缺省值不同（star5 的 inner_ratio 是 0.4、star 是 0.5；
+    // tank 的 wall 是 0.08、管道是 0.15）。null = 用户没改过 ⇒ 导出不写键 ⇒ 运行时用自己的缺省，
+    // 面板显示契约缺省值。这样一个字段能服务所有 kind，也不会伪造"用户设过"的值。
+
+    /// <summary>图元填充不透明度（契约 fill_opa，缺省 255 = 不透明；0 = 不填充）。</summary>
+    public int? FigureFillOpa { get; set; }
+
+    /// <summary>弧的起始角（0° 在 3 点方向，顺时针）。null = 契约缺省 0。</summary>
+    public int? ArcAngleStart { get; set; }
+
+    /// <summary>弧的结束角（允许超过 360）。null = 契约缺省 360。</summary>
+    public int? ArcAngleEnd { get; set; }
+
+    public double? FigureSkew { get; set; }
+    public double? FigureTopWidth { get; set; }
+    public string? FigureFlip { get; set; }
+    public double? FigureInnerRatio { get; set; }
+    public int? FigureSpikes { get; set; }
+    public double? FigureThickness { get; set; }
+    public string? FigureTail { get; set; }
+    public int? FigureTailSize { get; set; }
+    public double? FigureDepth { get; set; }
+    public string? FigureLight { get; set; }
+    public double? FigureTip { get; set; }
+    public double? FigureWall { get; set; }
+    public double? FigureFlare { get; set; }
+    public bool? FigureTop { get; set; }
+    public double? FigureBend { get; set; }
+    public int? FigureFlaps { get; set; }
+    public double? FigureOpen { get; set; }
+    public double? FigureGrooveWidth { get; set; }
+    public double? FigureHead { get; set; }
+    public string? FigureDirection { get; set; }
 
     // 按钮的**按下态**（契约 pressed）不在这里另开字段：它已经由
     // `VisualStates[Pressed]`（背景/边框/文字色/文字）表达，导出器 AddPressed() 负责组装。

@@ -44,15 +44,10 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblStretch, StretchCombo, false);
         SetParamRow(LblBrightness, BrightnessBox, false);
         SetParamRow(LblSpinSpeed, SpinSpeedBox, false);
-        SetParamRow(LblLineCap, LineCapCombo, false);
-        SetParamRow(LblKeyboardMode, KeyboardModeCombo, false);
-        SetParamRow(LblValueMode, ValueModeCombo, false);
         SetParamRow(LblLongMode, LongModeCombo, false);
         SetParamRow(LblImageAsset, ImageAssetCombo, false);
         SetParamRow(LblSvgAsset, SvgAssetCombo, false);
         // I7: 过程图形控件专属字段
-        SetParamRow(LblTankShowScale, TankShowScaleCheck, false);
-        SetParamRow(LblTankTickCount, TankTickCountBox, false);
         SetParamRow(LblPipeDirection, PipeDirectionCombo, false);
         SetParamRow(LblPipeFlowDirection, PipeFlowDirectionCombo, false);
         SetParamRow(LblPipeFlowSpeed, PipeFlowSpeedBox, false);
@@ -87,7 +82,6 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblSwitchOff, SwitchColorOffBox, false);
         SetParamRow(LblSwitchKnob, SwitchKnobColorBox, false);
         SetParamRow(LblBarDirection, BarDirectionCombo, false);
-        SetParamRow(LblBarRanges, BarRangesBox, false);
         SetParamRow(LblBarPercent, BarShowPercentCheck, false);
         SetParamRow(LblSpinnerArcLen, SpinnerArcLenBox, false);
         SetParamRow(LblSpinnerArcWidth, SpinnerArcWidthBox, false);
@@ -102,6 +96,7 @@ public partial class PropertyPanelView : UserControl
         // 控件都会带着这个按钮（点了也没用，只有表格有单元格）
         EditCellsBtn.IsVisible = false;
         DetailParamExpander.IsVisible = false;
+        ResetExclusiveRows();
         ShowCurveRows(false);
         ShowAlarmListRows(false);
         // 批次 2b：实时曲线采样参数
@@ -149,6 +144,8 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.Knob:
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
+                // 契约 knob.step：运行时 build_knob 读 step（拖动的粒度），面板必须有入口
+                SetParamRow(LblStepValue, StepValueBox, true);
                 SetParamRow(LblKnobArcWidth, KnobArcWidthBox, true);
                 DetailParamExpander.IsVisible = true;
                 break;
@@ -206,13 +203,9 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.Line:
                 // 没有专属行：细线图元是"填充的窄矩形"，没有端点样式可配（LineCap 不导出）
                 break;
-            case HmiControlType.Keyboard:
-                SetParamRow(LblKeyboardMode, KeyboardModeCombo, true);
-                break;
             // I7: 过程图形控件
             case HmiControlType.Tank:
-                // 罐形图元没有液位比例，量程/刻度/读数都没有落点（运行时 tank 只有
-                // wall/flare/top 三个几何参数），这四行一律不显示。
+                // 罐形图元只显示其图元几何参数；量程和刻度没有 runtime 落点。
                 break;
             case HmiControlType.Chart:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -223,6 +216,9 @@ public partial class PropertyPanelView : UserControl
             case HmiControlType.XyCurve:
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
+                // 采样周期与时间窗（契约 sample_ms / span_s）：导出器写，运行时读
+                SetParamRow(LblSampleMs, SampleMsBox, true);
+                SetParamRow(LblCgSpanMin, CgSpanMinBox, true);
                 ShowXyRows(true);
                 ShowCurveRows(true);
                 break;
@@ -298,11 +294,10 @@ public partial class PropertyPanelView : UserControl
                 break;
             // I10: 基础绘图图形
             case HmiControlType.Arc:
-                // 圆弧角度范围：MinValue/MaxValue 作为起始/结束角（度），指示弧进度取 Value
+                // 弧的几何角度在「专属参数」区（ArcStartBox/ArcEndBox），这里只剩进度量程 min/max，
+                // 两者不再共用一个字段。
                 SetParamRow(LblMinValue, MinValueBox, true);
                 SetParamRow(LblMaxValue, MaxValueBox, true);
-                LblMinValue.Text = AppLocalization.Service[Lang.ArcStartAngle];
-                LblMaxValue.Text = AppLocalization.Service[Lang.ArcEndAngle];
                 break;
             // 图片族（值换图/帧动画/二维码）与内容型（消息条/枚举文本/滚轮）的专属行：
             // 都在「控件功能参数」里（与 min/max/options 同区），没有「控件细节」行。
@@ -328,16 +323,22 @@ public partial class PropertyPanelView : UserControl
             LblMaxValue.Text = AppLocalization.Service[Lang.PropParamMax];
         }
 
+        // 专属参数（运行时已消费但原先没有编辑入口）：显隐与回填都按类型算
+        ShowExclusiveRows(control);
+
         // 字体族 / 字号 / 对齐的显隐跟着「内容 + 外观样式」那张表走（见 AppearanceRows.cs），
         // 免得两处各写一份名单后漂移。
 
         // 旋转/镜像：只有运行时 apply_transform 支持的档位才显示（图片 / 图元 / 文本类），
         // 其余类型连行都不出现 —— 免得用户设了之后只在导出时撞 Error。
         var hasTransform = AppearanceSupport.HasTransform(control.Type);
+        // 镜像只有图片/顶点图元能表达：文本类镜像会让导出器报 Error（整页建不起来），
+        // 所以这一行按 HasMirror 单独判，别跟着"能旋转"一起出现。
+        var hasMirror = hasTransform && AppearanceSupport.HasMirror(control.Type);
         SetParamRow(LblRotation, RotationBox, hasTransform);
         SetParamRow(LblRotationDir, RotationDirCombo, hasTransform);
-        SetParamRow(LblMirrorH, MirrorHCheck, hasTransform);
-        SetParamRow(LblMirrorV, MirrorVCheck, hasTransform);
+        SetParamRow(LblMirrorH, MirrorHCheck, hasMirror);
+        SetParamRow(LblMirrorV, MirrorVCheck, hasMirror);
         BtnResetRotation.IsVisible = hasTransform;
         anyVisible |= hasTransform;
 
@@ -365,7 +366,6 @@ public partial class PropertyPanelView : UserControl
         SwitchColorOffBox.Text = control.SwitchColorOff ?? "";
         SwitchKnobColorBox.Text = control.SwitchKnobColor ?? "";
         SelectComboByTag(BarDirectionCombo, control.BarDirection, 0);
-        BarRangesBox.Text = control.BarRanges ?? "";
         BarShowPercentCheck.IsChecked = control.BarShowPercent;
         SpinnerArcLenBox.Value = control.SpinnerArcLen;
         SpinnerArcWidthBox.Value = control.SpinnerArcWidth;
@@ -403,14 +403,8 @@ public partial class PropertyPanelView : UserControl
         ShowTicksCheck.IsChecked = control.ShowTicks;
         ShowPointerCheck.IsChecked = control.EffectiveShowPointer();
         SpinSpeedBox.Value = control.SpinSpeed;
-        SelectComboByTag(LineCapCombo, control.LineCap, 0);
-        SelectComboByTag(KeyboardModeCombo, control.KeyboardMode, 0);
-        SelectComboByTag(ValueModeCombo, control.ValueMode, 0);
         SelectComboByTag(LongModeCombo, control.LabelLongMode, 0);
 
-        // I7: 过程图形控件专属字段恢复
-        TankShowScaleCheck.IsChecked = control.TankShowScale;
-        TankTickCountBox.Value = control.TankTickCount;
         SelectComboByTag(PipeDirectionCombo, control.PipeDirection, 0);
         SelectComboByTag(PipeFlowDirectionCombo, control.PipeFlowDirection, 0);
         PipeFlowSpeedBox.Value = control.PipeFlowSpeed;

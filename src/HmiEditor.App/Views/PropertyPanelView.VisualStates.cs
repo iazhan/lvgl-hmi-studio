@@ -144,6 +144,9 @@ public partial class PropertyPanelView : UserControl
         // 🩸 阶段 201 修 `#91` 的另一半：Normal 态的三色 = **控件自己的三色**
         //   （与下面 text/align/image 在 Normal 取 `control.*` 同形）；其它态取状态条目（空 = 继承）。
         var isNormal = state == VisualState.Normal;
+        VsTextDefaultHint.IsVisible = isNormal;
+        VsText.IsVisible = !isNormal;
+        RowVsTextAlignment.IsVisible = !isNormal;
         VsBgColor.Text = (isNormal ? control.BgColor : st?.BgColor) ?? "";
         VsTextColor.Text = (isNormal ? control.TextColor : st?.TextColor) ?? "";
         VsBorderColor.Text = (isNormal ? control.BorderColor : st?.BorderColor) ?? "";

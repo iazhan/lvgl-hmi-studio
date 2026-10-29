@@ -1,0 +1,15 @@
+{
+  "alarms": [
+    {
+      "id": 0,
+      "tag": 0,
+      "type": "hi",
+      "limit": 400,
+      "deadband": 2,
+      "level": 3,
+      "ack": true,
+      "group": "温度",
+      "text": "炉温过高"
+    }
+  ]
+}

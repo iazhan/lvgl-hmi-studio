@@ -35,7 +35,8 @@ public static class AppearanceSupport
     /// 同理也不该导出 <c>bg_color</c>（运行时对 pipe 直接忽略，但键留在产物里会误导人）。</para>
     /// </summary>
     public static bool HasBgColor(HmiControlType type) => type is not
-        (HmiControlType.Led or HmiControlType.QrCode or HmiControlType.Pipe) && IsExported(type);
+        (HmiControlType.Led or HmiControlType.QrCode or HmiControlType.Pipe
+         or HmiControlType.RealtimeCurve or HmiControlType.HistoryCurve) && IsExported(type);
 
     /// <summary>
     /// 有矩形框（圆角 / 边框宽度 / 边框颜色）的类型 —— 也是导出器**总是**写
@@ -54,6 +55,9 @@ public static class AppearanceSupport
         (HmiControlType.Led or HmiControlType.QrCode
         or HmiControlType.Line or HmiControlType.Polyline or HmiControlType.Arc
         or HmiControlType.Pipe or HmiControlType.Valve
+        // 曲线自己画背景与外框（CurveBgColor / CurveBorderColor，导出器写 bg_color / border_color）：
+        // 再给一份通用框样式就是两个真源，后写的会盖掉前者。
+        or HmiControlType.RealtimeCurve or HmiControlType.HistoryCurve
         or HmiControlType.Screen or HmiControlType.Svg or HmiControlType.Keyboard);
 
     /// <summary>
@@ -87,6 +91,17 @@ public static class AppearanceSupport
     /// 运行时 <c>apply_transform</c> 支持的档位：图片 / 图元 / 文本类。其余类型连旋转行
     /// 都不显示 —— 显示出来只会让人在导出时撞 Error（越档是硬失败，整页建不起来）。
     /// </summary>
+    /// <summary>
+    /// 运行时/导出器接受**镜像**的类型。文本类（label/value/button/combobox/input…）只允许
+    /// 旋转：LVGL 9.5 没有负缩放，导出器对文本类镜像直接报 Error（整页建不起来）；
+    /// rect/round_rect/circle 没有顶点可翻，同样拒绝。判据与导出器
+    /// <c>ApplyTransform</c> 一致，改一处必须同时改另一处。
+    /// </summary>
+    public static bool HasMirror(HmiControlType type) => type is
+        HmiControlType.Image or HmiControlType.Shape or HmiControlType.Line
+        or HmiControlType.Polyline or HmiControlType.Arc or HmiControlType.Tank
+        or HmiControlType.Valve;
+
     public static bool HasTransform(HmiControlType type) => type is
         HmiControlType.Label or HmiControlType.Value or HmiControlType.EnumText
         or HmiControlType.TextArea or HmiControlType.Dropdown or HmiControlType.Button

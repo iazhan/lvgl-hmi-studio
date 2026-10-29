@@ -198,6 +198,36 @@ public class LocalizationKeyReachabilityGuardTests
     /// </summary>
     private static readonly Dictionary<string, string> KeptUnreachable = new(StringComparer.Ordinal)
     {
+        // ── 图元 kind 级行标签（22）──
+        // 这些行由 FigurePropertyCatalog 动态生成，键是代码拼接（$"prop.figure.{prop.Key}"），
+        // XAML 里没有静态 {res:Loc} ⇒ M1/M2 都取不到。行本身由 CoverageMatrixTests
+        // （面板显隐 + 模型写回）与 CoverageMatrixExportTests（导出键值）逐条断言。
+        ["prop.figure.bend"] = "图元 kind 级行：标签由 FigurePropertyCatalog 动态拼接",
+        ["prop.figure.depth"] = "同上",
+        ["prop.figure.direction"] = "同上",
+        ["prop.figure.flaps"] = "同上",
+        ["prop.figure.flare"] = "同上",
+        ["prop.figure.flip"] = "同上",
+        ["prop.figure.groove_w"] = "同上",
+        ["prop.figure.head"] = "同上",
+        ["prop.figure.inner_ratio"] = "同上",
+        ["prop.figure.light"] = "同上",
+        ["prop.figure.max"] = "同上",
+        ["prop.figure.min"] = "同上",
+        ["prop.figure.open"] = "同上",
+        ["prop.figure.skew"] = "同上",
+        ["prop.figure.spikes"] = "同上",
+        ["prop.figure.tail"] = "同上",
+        ["prop.figure.tail_size"] = "同上",
+        ["prop.figure.thickness"] = "同上",
+        ["prop.figure.tip"] = "同上",
+        ["prop.figure.top"] = "同上",
+        ["prop.figure.top_w"] = "同上",
+        ["prop.figure.wall"] = "同上",
+        // 陈旧常量：全仓只剩 Lang.DeviceTitle 的定义，没有任何消费点（面板/对话框都没有
+        // "设备名称"这一栏）。按既定「只增不删」登记，等确认后连常量一起删。
+        ["device.title"] = "陈旧常量：Lang.DeviceTitle 无消费点",
+
         // ── 插件配置字段（5）──
         // 字段 Key 由**插件**声明，而插件可由外部程序集加载（src/Hmi.Hardware.Loader/
         // PluginLoadContext）⇒ 仓库内不可枚举。既定结论「只增不删」见

@@ -95,7 +95,6 @@ public partial class PropertyPanelView : UserControl
         RowHeightBox.ValueChanged += OnNumberChanged;
         BrightnessBox.ValueChanged += OnNumberChanged;
         SpinSpeedBox.ValueChanged += OnNumberChanged;
-        TankTickCountBox.ValueChanged += OnNumberChanged;
         RotationBox.ValueChanged += OnNumberChanged;
         PipeFlowSpeedBox.ValueChanged += OnNumberChanged;
 
@@ -144,6 +143,24 @@ public partial class PropertyPanelView : UserControl
         HistRowHeightBox.ValueChanged += OnNumberChanged;
         HistMaxRowsBox.ValueChanged += OnNumberChanged;
         AsciiMaxLenBox.ValueChanged += OnNumberChanged;
+        // 专属参数区（运行时已消费但此前没有编辑入口的项）
+        ArcStartBox.ValueChanged += OnNumberChanged;
+        ArcEndBox.ValueChanged += OnNumberChanged;
+        ChartDecimalsBox.ValueChanged += OnNumberChanged;
+        HistRefreshBox.ValueChanged += OnNumberChanged;
+        CurveRefreshBox.ValueChanged += OnNumberChanged;
+        RecipeRowHeightBox.ValueChanged += OnNumberChanged;
+        XyXMinBox.ValueChanged += OnNumberChanged;
+        XyXMaxBox.ValueChanged += OnNumberChanged;
+        XyXDecimalsBox.ValueChanged += OnNumberChanged;
+        FigureFillOpaBox.ValueChanged += OnNumberChanged;
+        // 数据/媒体类的数字框：此前只有写回代码、没有订阅 ValueChanged —— 改了不落盘，
+        // 靠"豁免清单"一直没被发现（夹具补全后矩阵判据当场抓出来）。
+        CgAlarmRowsBox.ValueChanged += OnNumberChanged;
+        CgSpanMinBox.ValueChanged += OnNumberChanged;
+        MessageAutoHideBox.ValueChanged += OnNumberChanged;
+        RollerRowsBox.ValueChanged += OnNumberChanged;
+        FrameIntervalBox.ValueChanged += OnNumberChanged;
 
         // 屏幕页面属性：数值输入
         ScreenWidth.ValueChanged += (_, _) => OnScreenNumberChanged();
@@ -167,6 +184,7 @@ public partial class PropertyPanelView : UserControl
         // I1: 表达式绑定 —— 绑定源切换 + 表达式实时校验
         BindingKindCombo.SelectionChanged += OnBindingKindChanged;
         ExpressionInput.TextChanged += OnExpressionInputChanged;
+        TooltipBox.TextChanged += OnTooltipChanged;
     }
 
     /// <summary>设置变量管理器引用（用于变量下拉列表和动作目标列表）。</summary>
@@ -214,10 +232,17 @@ public partial class PropertyPanelView : UserControl
             RowIndicatorColor.IsVisible = false;
             OpacityBox.Value = 100;
             PropVisible.IsChecked = true;   // 没有选中对象时按"默认可见"重置，别把上次的 false 留着
+            PropEnabled.IsChecked = true;
+            TooltipBox.Text = "";
             FaceplateParamExpander.IsVisible = false;
             VisualStateExpander.IsVisible = false;
+            VariableBindingExpander.IsVisible = false;
+            BindingStateSection.IsVisible = false;
+            DataDisplaySection.IsVisible = false;
+            ActionsAdvancedSection.IsVisible = false;
             ValueDisplayExpander.IsVisible = false;
             ControlParamExpander.IsVisible = false;
+            DataDisplaySection.IsVisible = false;
             AppearanceExpander.IsVisible = false;   // 外观样式是控件级，屏幕模式下没有可改的对象
 
             // 参考 Figma/Sketch/XD：空白区域点击 → 属性栏切换到页面/屏幕属性
@@ -275,6 +300,8 @@ public partial class PropertyPanelView : UserControl
 
             // 控件级显隐（契约 common.visible）：勾掉就恒不显示，导出写 visible:false
             PropVisible.IsChecked = control.IsVisible;
+            PropEnabled.IsChecked = control.IsEnabled;
+            TooltipBox.Text = control.Tooltip ?? "";
 
             // 指示器颜色（LV_PART_INDICATOR）—— Slider/Bar/Switch/Gauge/Knob
             // 以及过程图形控件（Tank 液位填充色 / Pipe 流动段色 / Valve 开态色）
@@ -283,8 +310,16 @@ public partial class PropertyPanelView : UserControl
                 or HmiControlType.Bar or HmiControlType.Switch
                 or HmiControlType.Gauge or HmiControlType.Knob
                 or HmiControlType.Tank or HmiControlType.Pipe or HmiControlType.Valve
-                or HmiControlType.Arc;
+                or HmiControlType.Arc or HmiControlType.Spinner or HmiControlType.Led;
             RowIndicatorColor.IsVisible = supportsIndicator;
+            // 灯珠/加载圈的"指示器"就是它们的本体颜色：同一个字段，标签按类型换词，
+            // 不另开一个改不动运行时的第二个颜色行。
+            LblIndicatorColor.Text = AppLocalization.Service[control.Type switch
+            {
+                HmiControlType.Led => "prop.appearance.lamp.color",
+                HmiControlType.Spinner => "prop.appearance.spinner.color",
+                _ => "prop.indicator.color",
+            }];
             IndicatorColorBox.Text = control.IndicatorColor ?? "";
 
             // 不透明度（通用）
@@ -304,6 +339,7 @@ public partial class PropertyPanelView : UserControl
 
             // 加载动作
             LoadAction(control);
+            ActionsAdvancedSection.IsVisible = true;
 
             // 加载 Faceplate 参数面板
             LoadFaceplateParams(control);
@@ -327,6 +363,8 @@ public partial class PropertyPanelView : UserControl
 
             // 加载控件功能参数（按类型显示相关行）
             LoadControlParameters(control);
+            DataDisplaySection.IsVisible = supportsValueDisplay || ControlParamExpander.IsVisible
+                || CurveParamExpander.IsVisible || ExclusiveParamExpander.IsVisible;
         }
 
         _isUpdating = false;

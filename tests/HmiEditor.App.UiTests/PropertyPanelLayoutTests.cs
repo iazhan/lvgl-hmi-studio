@@ -172,10 +172,10 @@ public class PropertyPanelLayoutTests
 
             foreach (var (type, expectedRows) in new[]
                      {
-                         // 指示器颜色 + 背景/圆角/边框×2 + 不透明度 + 可见（文字/字号/对齐滑块没有）
-                         (HmiControlType.Slider, 7),
-                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度 + 可见
-                         (HmiControlType.Label, 10),
+                         // 指示器颜色 + 背景/圆角/边框×2 + 不透明度（visible 已归入 GeometryExpander）
+                         (HmiControlType.Slider, 6),
+                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度
+                         (HmiControlType.Label, 9),
                      })
             {
                 var screen = new HmiScreen { Id = "s1", Name = "S1", Width = 1024, Height = 600 };
@@ -190,15 +190,13 @@ public class PropertyPanelLayoutTests
                 window.Show();
                 UiTestHost.Pump(5);
 
-                var root = ControlWiringFace.Find<Control>(panel, "AppearanceExpander")
-                    .GetVisualDescendants().OfType<StackPanel>()
-                    .First(p => p.Children.Any(c => c is Grid g && g.Name == "RowBgColor"));
+                var root = ControlWiringFace.Find<StackPanel>(panel, "AppearanceExpander");
 
-                var visible = root.Children.Where(c => c.IsVisible).ToList();
+                var visible = root.Children.OfType<Grid>().Where(c => c.IsVisible).Cast<Control>().ToList();
                 if (visible.Count != expectedRows)
                     gaps.Add($"{type}: 可见行 {visible.Count} ≠ {expectedRows}");
-                if (visible.Count > 0 && visible[0].Bounds.Y > 1)
-                    gaps.Add($"{type}: 首行距顶部 {visible[0].Bounds.Y:0.#}px（隐藏行在占位）");
+                if (visible.Count > 0 && visible[0].Bounds.Y > 25)
+                    gaps.Add($"{type}: 首行距顶部 {visible[0].Bounds.Y:0.#}px（分区标题后仍有隐藏行空洞）");
                 if (visible.Count > 0 && Math.Abs(root.Bounds.Height - visible[^1].Bounds.Bottom) > 1)
                     gaps.Add($"{type}: 组高 {root.Bounds.Height:0.#} ≠ 内容底 {visible[^1].Bounds.Bottom:0.#}");
 

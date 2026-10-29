@@ -1,0 +1,18 @@
+{
+  "groups": [
+    {
+      "name": "temp",
+      "mode": "period",
+      "tags": [
+        0
+      ],
+      "max_mb": 4,
+      "csv_delimiter": ",",
+      "csv_time_format": "iso",
+      "record_timestamp": true,
+      "period_s": 10,
+      "max_records": 2000,
+      "full_policy": "overwrite"
+    }
+  ]
+}

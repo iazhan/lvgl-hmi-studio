@@ -68,6 +68,14 @@ public class PropertyPanelTextBoxWiringTests
         ["ScreenBgColor"] = "屏幕底色：同上（**XAML 属性式接线**，不在本面）",
         ["ColWidthsBox"] = "列宽：同上（**XAML 属性式接线**，不在本面）",
         ["HeaderBox"] = "表头：同上（**XAML 属性式接线**，不在本面）",
+        // 专属参数区（运行时已消费、本轮补进来的行）：全部走 XAML 属性式接线，
+        // 写回在 SaveExclusiveRows 里按行可见性逐条落模型。
+        ["AlarmLevelFilterBox"] = "报警等级过滤：同上（**XAML 属性式接线**）",
+        ["AlarmColumnsBox"] = "报警列：同上（**XAML 属性式接线**）",
+        ["BoxColorBox"] = "勾选框颜色：同上（**XAML 属性式接线**）",
+        ["PipeWallColorBox"] = "管壁颜色：同上（**XAML 属性式接线**）",
+        ["KeyboardTargetBox"] = "键盘目标控件：同上（**XAML 属性式接线**）",
+        ["FigurePointsBox"] = "图元顶点集：同上（**XAML 属性式接线**）",
         ["OptionsBox"] = "选项：同上（**XAML 属性式接线**，不在本面）",
         ["PlaceholderBox"] = "占位符：同上（**XAML 属性式接线**，不在本面）",
         ["TxtActionValue"] = "动作值：同上（**XAML 属性式接线**，不在本面）",
@@ -202,7 +210,10 @@ public class PropertyPanelTextBoxWiringTests
     [Fact]
     public void EveryTextBoxAndWiring_IsAccountedFor()
     {
+        // TooltipBox 走 code-behind 的 += OnTooltipChanged（单独写回，不进 SaveProperties），
+        // 驱动条目在 PropertyPanelCoverageTests.GeometryAndVisibilityEditors_AreVisibleAndWriteBack
+        // 那条用例里（它改 TooltipBox.Text 并断言模型）。
         ControlWiringFace.AssertFullyDriven(
-            "PropertyPanelView.axaml", new[] { "ExpressionInput" }, scanFloor: 1, WithoutWiring);
+            "PropertyPanelView.axaml", new[] { "ExpressionInput", "TooltipBox" }, scanFloor: 1, WithoutWiring);
     }
 }

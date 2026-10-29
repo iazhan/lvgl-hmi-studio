@@ -690,7 +690,6 @@ public static class Lang
     public const string PropTitle             = "prop.title";
     public const string PropNoSelection       = "prop.no.selection";
     public const string PropPosSize           = "prop.pos.size";
-    public const string PropContent           = "prop.content";
     public const string PropAppearance        = "prop.appearance";
     public const string PropSectionColor      = "prop.section.color";
     public const string PropSectionContent    = "prop.section.content";
@@ -713,7 +712,6 @@ public static class Lang
     public const string PropRadius            = "prop.radius";
     public const string PropBorderWidth       = "prop.border.width";
     public const string PropBorderColor       = "prop.border.color";
-    public const string PropVarBinding        = "prop.var.binding";
     public const string PropBindSource        = "prop.bind.source";
     public const string PropBindSourceExpression = "prop.bind.source.expression";
     public const string PropBindVar           = "prop.bind.var";
@@ -722,8 +720,6 @@ public static class Lang
     public const string PropBindMode          = "prop.bind.mode";
     public const string PropBindReadWrite     = "prop.bind.readwrite";
     public const string PropBindReadOnly      = "prop.bind.readonly";
-    public const string PropFaceplateParams   = "prop.faceplate.params";
-    public const string PropActions           = "prop.actions";
     public const string PropAddAction         = "prop.add.action";
     public const string PropActionType        = "prop.action.type";
     public const string PropActionTarget      = "prop.action.target";
@@ -1162,16 +1158,10 @@ public static class Lang
     public const string PropParamStretch     = "prop.param.stretch";
     public const string PropParamBrightness  = "prop.param.brightness";
     public const string PropParamSpeed       = "prop.param.speed";
-    public const string PropParamLineCap     = "prop.param.linecap";
-    public const string PropParamKeyboard    = "prop.param.keyboard";
 
     // ── LVGL 标准行为配置 ──
     public const string PropIndicatorColor    = "prop.indicator.color";
     public const string PropOpacity           = "prop.opacity";
-    public const string PropParamValueMode    = "prop.param.valmode";
-    public const string PropParamValueModeNormal = "prop.param.valmode.normal";
-    public const string PropParamValueModeSym = "prop.param.valmode.sym";
-    public const string PropParamValueModeRange = "prop.param.valmode.range";
     public const string PropParamLongMode     = "prop.param.longmode";
     public const string PropParamLongModeWrap = "prop.param.longmode.wrap";
     public const string PropParamLongModeDots = "prop.param.longmode.dots";

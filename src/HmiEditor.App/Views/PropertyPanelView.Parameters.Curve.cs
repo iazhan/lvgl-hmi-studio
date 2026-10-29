@@ -28,7 +28,8 @@ public partial class PropertyPanelView
         // 曲线刻度（props.show_ticks）：契约缺省 true，而这行以前对曲线不显示，
         // 于是导出恒为 false —— 板上永远没有刻度线，面板上也找不到开关
         SetParamRow(LblShowTicks, ShowTicksCheck, visible);
-        SetParamRow(LblCurveDirection, CurveDirectionCombo, visible);
+        // 曲线方向：运行时只接受 lr（rl 直接拒绝整页），面板不给入口，避免"改了不生效"
+        SetParamRow(LblCurveDirection, CurveDirectionCombo, false);
         SetParamRow(LblCurveXFormat, CurveXFormatCombo, visible);
         SetParamRow(LblCurveXDiv, CurveXDivBox, visible);
         SetParamRow(LblCurveXMinor, CurveXMinorBox, visible);

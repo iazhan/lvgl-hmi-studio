@@ -105,8 +105,6 @@ public class PropertyPanelWiringTests
         ["LampRangesBox"] = "面板不再显示：同上",
         // ShowTicksCheck / ShowPointerCheck 已改为挂在仪表与曲线上（运行时读 ticks /
         // style / show_ticks），由 Gauge 场景驱动，不再豁免。
-        ["TankShowScaleCheck"] = "面板不再显示：罐形图元没有液位比例",
-        ["TankTickCountBox"] = "面板不再显示：同上",
         ["AsciiEncodingCombo"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["AsciiMaxLenBox"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
         ["ChartKindCombo"] = "批次 5 控件专属行：夹具里还没有这些类型，整块显隐",
@@ -198,6 +196,15 @@ public class PropertyPanelWiringTests
         HmiControlType.Svg, HmiControlType.Tank, HmiControlType.Pipe,
         HmiControlType.Valve, HmiControlType.Rectangle, HmiControlType.Ellipse,
         HmiControlType.Polyline, HmiControlType.Arc,
+        // 数据/媒体/图元类：缺了它们，"专属行"只能靠别的类型的脏写被误判成"已接通"。
+        // 面板一旦按行可见性写回（跨类型不再互相污染），这些行就会如实暴露为未覆盖。
+        HmiControlType.AlarmList, HmiControlType.AlarmBar,
+        HmiControlType.RealtimeCurve, HmiControlType.HistoryCurve,
+        HmiControlType.HistoryTable, HmiControlType.RecipeTable,
+        HmiControlType.Chart, HmiControlType.XyCurve,
+        HmiControlType.Shape, HmiControlType.StateImage, HmiControlType.FrameAnim,
+        HmiControlType.QrCode, HmiControlType.Message, HmiControlType.EnumText,
+        HmiControlType.Roller, HmiControlType.AsciiDisplay,
     };
 
     private readonly ITestOutputHelper _out;
@@ -317,6 +324,8 @@ public class PropertyPanelWiringTests
         yield return "#123456";
         yield return "1234";
         yield return "Button1";
+        // 顶点集编辑器只收 "x,y" 行：给一组合法坐标，否则它永远驱动不动
+        yield return "0,0\n20,20";
         yield return "";
     }
 

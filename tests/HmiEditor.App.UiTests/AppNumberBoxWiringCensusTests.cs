@@ -40,9 +40,11 @@ public class AppNumberBoxWiringCensusTests
     /// <summary>**面 A：具名数字框 ∩ 有 ValueChanged 接线**（阶段 195 实测，逐行可审）。</summary>
     private static readonly FileFace[] WiredNamedNumberBoxes =
     {
-        // 批次 1a 加了 9 个数字框（仪表 5 / 指示灯 1 / 按钮 3），接线同步补齐
-        // 70 = 68 + InputDecimalsBox（输入框的「小数位」）+ HistMaxRowsBox（历史表最大行数）
-        new("PropertyPanelView.axaml", 71, "enumerated", "PropertyPanelWiringTests.cs"),
+        // 面板重做又加了 13 个数字框（专属参数 9：弧起止角、图表小数位、历史表刷新、
+        // 配方行高、XY 三件套、图元填充不透明度；另 4 个随数据/媒体行补齐）。
+        // 84 = 71 + 13；每个都在 PropertyPanelView.axaml.cs 里接了 ValueChanged
+        // （FaceB 逐名核对），改数量必须同时改接线。
+        new("PropertyPanelView.axaml", 85, "enumerated", "PropertyPanelWiringTests.cs"),
         new("SettingsDialog.axaml", 9, "perBox", "SettingsDialogNumberBoxWiringTests.cs"),
         new("ScreenManagerView.axaml", 2, "perBox", "ScreenManagerNumberBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 1, "perBox", "ProjectSettingsNumberBoxWiringTests.cs"),

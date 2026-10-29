@@ -24,6 +24,12 @@ internal sealed class ChengeWidgetMapper
     private readonly int _screenHeight;
     private readonly Dictionary<string, string> _widgetIds;
 
+    /// <summary>
+    /// 键盘控件 → 目标控件 Id。键盘可能排在目标前面导出（画布顺序即控件顺序），
+    /// 那时目标还没有 widget id，只能建完本页再回填（<see cref="ApplyPendingKeyboardTargets"/>）。
+    /// </summary>
+    private readonly List<(JsonObject Props, string TargetControlId, string Where)> _pendingKeyboardTargets = new();
+
     public ChengeWidgetMapper(ChengeSchema schema, ChengeIssueBag issues, ChengeColors colors,
         ChengeAssets assets, ChengeMaps maps, HashSet<string> features, int screenWidth, int screenHeight,
         Dictionary<string, string> widgetIds)
@@ -39,8 +45,26 @@ internal sealed class ChengeWidgetMapper
         _widgetIds = widgetIds;
     }
 
-    public JsonObject? Map(HmiControl control, string pageId, string widgetId)
+    /// <summary>
+    /// 回填本页所有"目标排在键盘之后"的 target。必须在整页控件都 Map 完之后调用。
+    /// 目标不存在时报 Error（运行时 link_keyboards 找不到 target 会拒绝整页）。
+    /// </summary>
+    public void ApplyPendingKeyboardTargets()
     {
+        if (_pendingKeyboardTargets.Count == 0) return;
+
+        foreach (var (props, targetControlId, where) in _pendingKeyboardTargets)
+        {
+            if (_widgetIds.TryGetValue(targetControlId, out var mapped))
+                props["target"] = mapped;
+            else
+                _issues.Error("keyboard.target_missing", where,
+                    $"键盘的目标控件 {targetControlId} 不在本页：运行时找不到 target 会拒绝整页");
+        }
+        _pendingKeyboardTargets.Clear();
+    }
+
+    public JsonObject? Map(HmiControl control, string pageId, string widgetId)    {
         var where = $"pages/{pageId}.json#{widgetId}";
         // 设计画布的几何补丁按导出后的 widget id 寻址（顶层与子控件都从这里过）
         if (!string.IsNullOrEmpty(control.Id)) _widgetIds[control.Id] = widgetId;
@@ -84,6 +108,9 @@ internal sealed class ChengeWidgetMapper
                 if (!string.IsNullOrWhiteSpace(control.ValueSuffix))
                     props["suffix"] = control.ValueSuffix.Trim();
                 props["align"] = Align(control.TextAlign);
+                // 垂直对齐（widgets_common.c apply_text_valign 读 valign）：契约 value.valign
+                // 一直开着，但这里漏写 —— 面板上改垂直对齐在板子上没反应。
+                props["valign"] = VAlign(control.TextVAlign);
                 SetFont(props, control, DefaultFont(20));
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
                 break;
@@ -116,6 +143,8 @@ internal sealed class ChengeWidgetMapper
                 SetFont(props, control, DefaultFont(16));
                 props["color"] = _colors.ResolveOr(control.TextColor, _colors.TextDefault, where);
                 props["checked"] = control.IsChecked;
+                // 勾选框颜色（运行时 build_checkbox 读 box_color）；空 = 不写，用运行时缺省
+                if (_colors.Resolve(control.BoxColor, where) is { } boxColor) props["box_color"] = boxColor;
                 break;
 
             case HmiControlType.Led:
@@ -157,6 +186,10 @@ internal sealed class ChengeWidgetMapper
                 props["ticks"] = control.ShowTicks ? Clamp(control.MajorTickCount, 2, 11) : 0;
                 props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
                 props["show_value"] = control.GaugeShowValue;
+                // 两端数值位置（运行时 build_gauge 读 label_pos，缺省 inside）
+                if (!string.IsNullOrWhiteSpace(control.GaugeLabelPos) &&
+                    !string.Equals(control.GaugeLabelPos.Trim(), "inside", StringComparison.OrdinalIgnoreCase))
+                    props["label_pos"] = OneOf(control.GaugeLabelPos, "outside", "none", "inside", where, "gauge.label_pos");
                 // 下面几项 0 都表示"按控件尺寸自动"，所以 0 不写，交给运行时默认
                 if (control.GaugeArcWidth > 0) props["arc_width"] = Clamp(control.GaugeArcWidth, 1, 64);
                 if (control.GaugeTickLen > 0) props["tick_len"] = Clamp(control.GaugeTickLen, 1, 32);
@@ -174,7 +207,7 @@ internal sealed class ChengeWidgetMapper
                 props["step"] = control.StepValue;
                 props["color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
                 props["decimals"] = Clamp(control.ValueDecimalPlaces is >= 0 and <= 6 ? control.ValueDecimalPlaces : 0, 0, 6);
-                props["show_value"] = true;
+                props["show_value"] = control.KnobShowValue;
                 if (control.KnobArcWidth is > 0 and not 10) props["arc_width"] = Clamp(control.KnobArcWidth, 1, 32);
                 break;
 
@@ -272,9 +305,25 @@ internal sealed class ChengeWidgetMapper
                 break;
 
             case HmiControlType.Keyboard:
-                _issues.Warn("keyboard.not_exported", where,
-                    "键盘控件不导出：chenge-runtime 的 input 自带模态数字/文本键盘，独立键盘控件在目标里没有对应实现");
-                return null;
+                // 运行时 build_keyboard + link_keyboards 完整实现了"常驻内联键盘"：
+                // props.target 必填，键位按 target 的绑定类型自动选数字/文本。
+                // 契约里还有 title，但运行时根本没读它（build_keyboard 直接 (void)props），
+                // 所以只写 target，别伪造一个改了没反应的键。
+                if (string.IsNullOrWhiteSpace(control.KeyboardTarget))
+                {
+                    _issues.Error("keyboard.no_target", where,
+                        "键盘控件要指定目标输入控件（运行时缺 props.target 会拒绝整页）");
+                    return null;
+                }
+                {
+                    var targetControlId = control.KeyboardTarget!.Trim();
+                    if (_widgetIds.TryGetValue(targetControlId, out var mappedTarget))
+                        props["target"] = mappedTarget;
+                    else
+                        _pendingKeyboardTargets.Add((props, targetControlId, where));
+                }
+                _features.Add("widgets_ext");
+                break;
 
             case HmiControlType.Rectangle:
                 kind = control.Radius > 0 ? "round_rect" : "rect";
@@ -307,8 +356,11 @@ internal sealed class ChengeWidgetMapper
 
             case HmiControlType.Arc:
                 kind = "arc";
-                props["angle_start"] = (int)Math.Round(control.MinValue);
-                props["angle_end"] = (int)Math.Round(control.MaxValue);
+                // 几何角度与进度量程是两件事：角度走 ArcAngleStart/End（缺省 0/360），
+                // 量程走 MinValue/MaxValue（缺省 0/100，由 MapFigureExtras 写 min/max）。
+                // 早先两者共用 MinValue/MaxValue —— 改量程会把弧的形状一起改掉。
+                props["angle_start"] = Clamp(control.ArcAngleStart ?? 0, -360, 720);
+                props["angle_end"] = Clamp(control.ArcAngleEnd ?? 360, -360, 720);
                 props["border_color"] = _colors.ResolveOr(control.IndicatorColor, _colors.Primary, where);
                 props["border_width"] = Math.Max(1, control.BorderWidth);
                 break;
@@ -332,6 +384,10 @@ internal sealed class ChengeWidgetMapper
                 if (!string.IsNullOrWhiteSpace(control.PipeChannelColor) &&
                     _colors.Resolve(control.PipeChannelColor, where) is { } chan)
                     props["channel_color"] = chan;
+                // 管壁颜色（运行时 build_pipe 读 wall_color）；空 = 运行时缺省
+                if (!string.IsNullOrWhiteSpace(control.PipeWallColor) &&
+                    _colors.Resolve(control.PipeWallColor, where) is { } pipeWall)
+                    props["wall_color"] = pipeWall;
                 // flow_ms 是"一个块走完全程"的毫秒数；0 = 静态（契约下限 40，用 0 表示不流动）
                 props["flow_ms"] = control.PipeFlowSpeed > 0
                     ? Clamp(control.PipeFlowSpeed, 40, 2000)
@@ -459,12 +515,13 @@ internal sealed class ChengeWidgetMapper
                     props["points"] = PointsOf(control, where);
                 else if (kind == "line" && control.Points is { Count: >= 2 })
                     props["points"] = PointsOf(control, where);
-                // 弧/扇的两个端点就是起止角：与 Arc 控件共用 MinValue/MaxValue，
+                // 弧/扇的两个端点就是起止角：与 Arc 控件共用 ArcAngleStart/ArcAngleEnd，
                 // 否则从「通用图元」进来画的弧导出后是缺省 0..360（整圈）。
+                // 量程 min/max 另走 MinValue/MaxValue（MapFigureExtras）。
                 if (kind is "arc" or "pie")
                 {
-                    props["angle_start"] = (int)Math.Round(control.MinValue);
-                    props["angle_end"] = (int)Math.Round(control.MaxValue);
+                    props["angle_start"] = Clamp(control.ArcAngleStart ?? 0, -360, 720);
+                    props["angle_end"] = Clamp(control.ArcAngleEnd ?? 360, -360, 720);
                 }
                 // 容器：子控件递归导进 props.children（坐标相对容器，运行时 flatten_widgets 展开）
                 if (string.Equals(kind, "container", StringComparison.Ordinal))
@@ -519,15 +576,17 @@ internal sealed class ChengeWidgetMapper
                 props["sample_ms"] = Clamp(control.SampleMs is >= 100 and <= 60000 ? control.SampleMs : 1000, 100, 60000);
                 props["span_s"] = SpanSeconds(control, where);
                 RequireRange(control, where, "xy_curve.range");
-                props["x_min"] = (int)Math.Round(control.MinValue);
-                props["x_max"] = (int)Math.Round(control.MaxValue);
+                // X/Y 各自一对量程：模型里 X 用 XMinValue/XMaxValue，Y 用 MinValue/MaxValue。
+                // 早先四个键都取同一对字段，X 轴永远等于 Y 轴。
+                props["x_min"] = (int)Math.Round(control.XMinValue);
+                props["x_max"] = (int)Math.Round(control.XMaxValue);
                 props["y_min"] = (int)Math.Round(control.MinValue);
                 props["y_max"] = (int)Math.Round(control.MaxValue);
                 props["x_div"] = Clamp(control.CurveXDiv, CurveDivMin, CurveDivMax);
                 props["y_div"] = Clamp(control.CurveYDiv, CurveDivMin, CurveDivMax);
                 props["x_minor"] = Clamp(control.CurveXMinor, CurveMinorMin, CurveMinorMax);
                 props["y_minor"] = Clamp(control.CurveYMinor, CurveMinorMin, CurveMinorMax);
-                props["x_decimals"] = Clamp(control.CurveXLabelStep is >= 0 ? control.CurveYDecimals : 0, 0, 6);
+                props["x_decimals"] = Clamp(control.CurveXDecimals, 0, 6);
                 props["y_decimals"] = Clamp(control.CurveYDecimals, 0, 6);
                 props["grid"] = control.CurveGrid;
                 if (_colors.ResolveOr(control.CurveAxisColor, "#4A5A6A", where) is { } xa) props["axis_color"] = xa;
@@ -555,7 +614,7 @@ internal sealed class ChengeWidgetMapper
                 // 历史表用自己的行数（契约缺省 500）。复用报警列表的 AlarmMaxRows（10）
                 // 会让历史表恒只显示 10 行，而面板没有这一行可改。
                 props["max_rows"] = Clamp(control.HistTableMaxRows, 10, 2000);
-                props["refresh_ms"] = Clamp(control.RefreshMs, 0, 60000);
+                props["refresh_ms"] = Clamp(control.HistTableRefreshMs, 0, 60000);
                 props["row_height"] = control.HistTableRowHeight > 0 ? Clamp(control.HistTableRowHeight, 16, 60) : 26;
                 props["scrollbar"] = control.HistTableScrollbar;
                 SetFont(props, control, DefaultFont(14));
@@ -576,8 +635,8 @@ internal sealed class ChengeWidgetMapper
                 }
                 props["columns"] = rcols;
                 props["source"] = new JsonObject { ["recipe_group"] = control.RecipeGroup!.Trim() };
-                props["row_height"] = control.HistTableRowHeight > 0 ? Clamp(control.HistTableRowHeight, 16, 60) : 26;
-                props["scrollbar"] = control.HistTableScrollbar;
+                props["row_height"] = control.RecipeRowHeight > 0 ? Clamp(control.RecipeRowHeight, 16, 60) : 26;
+                props["scrollbar"] = control.RecipeScrollbar;
                 props["show_unit"] = control.RecipeShowUnit;
                 SetFont(props, control, DefaultFont(14));
                 _features.Add("recipe");
@@ -613,6 +672,10 @@ internal sealed class ChengeWidgetMapper
                 return null;
         }
 
+        // 图元 kind 级专属参数（skew / top_w / spikes / open / light …）与 figure_common 的
+        // fill_opa / 角度：唯一登记表是 FigurePropertyCatalog，面板行与这张表同源。
+        if (!string.IsNullOrEmpty(kind)) MapFigureExtras(props, control, kind, where);
+
         AddCommon(props, control, target, kind, where);
 
         var finalProps = FilterProps(target, kind, props, where);
@@ -635,7 +698,9 @@ internal sealed class ChengeWidgetMapper
         CheckBounds(widget, control, where);
         AddBindings(widget, control, target, pageId, widgetId, where);
         AddEvents(widget, control, pageId, widgetId, where);
-        if (!control.IsVisible) widget["props"]!["visible"] = false;
+        if (!control.IsVisible) finalProps["visible"] = false;
+        if (!control.IsEnabled) finalProps["enabled"] = false;
+        if (!string.IsNullOrWhiteSpace(control.Tooltip)) finalProps["tooltip"] = control.Tooltip.Trim();
         if (control.LayerIndex != 0) finalProps["z"] = control.LayerIndex;
 
         return widget;
@@ -707,6 +772,9 @@ internal sealed class ChengeWidgetMapper
         props["blink"] = control.AlarmBlink;
         props["blink_ms"] = Clamp(control.AlarmBlinkMs, 100, 5000);
         props["only_unacked"] = control.AlarmOnlyUnacked;
+        // 轮换方式（运行时 build_alarm_bar 读 scroll，auto 是缺省；只在 none 时写键）
+        if (string.Equals(control.AlarmScroll?.Trim(), "none", StringComparison.OrdinalIgnoreCase))
+            props["scroll"] = "none";
         props["scroll_ms"] = Clamp(control.AlarmScrollMs, 500, 60000);
         props["scroll_chars"] = Clamp(control.AlarmScrollChars, 0, 64);
         props["show_date"] = control.AlarmShowDate;
@@ -941,6 +1009,41 @@ internal sealed class ChengeWidgetMapper
         if (cells.Count > 0) props["cells"] = cells;
         _features.Add("table");
         _features.Add("widgets_ext");
+    }
+
+    /// <summary>
+    /// 图元专属属性 → props。只写用户设过的（模型字段可空，null = 用运行时缺省），
+    /// 避免把一个 kind 的缺省值安到另一个 kind 上。键名/范围来自
+    /// <see cref="FigurePropertyCatalog"/>（与面板动态行、覆盖矩阵同源）。
+    /// </summary>
+    private void MapFigureExtras(JsonObject props, HmiControl control, string kind, string where)
+    {
+        foreach (var prop in FigurePropertyCatalog.For(kind))
+        {
+            if (!prop.HasUserValue(control)) continue;
+            var raw = prop.Get(control);
+            switch (prop.Type)
+            {
+                case FigurePropType.Int:
+                    props[prop.Key] = Clamp(FigurePropertyCatalog.ToInt(raw), (int)prop.Min, (int)prop.Max);
+                    break;
+                case FigurePropType.Float:
+                    props[prop.Key] = Math.Round(
+                        Math.Clamp(FigurePropertyCatalog.ToDouble(raw), prop.Min, prop.Max), 3);
+                    break;
+                case FigurePropType.Bool:
+                    props[prop.Key] = FigurePropertyCatalog.ToBool(raw);
+                    break;
+                default:
+                    props[prop.Key] = OneOf(raw as string, prop.Options.ToArray(), (string)prop.Default,
+                        where, $"figure.{kind}.{prop.Key}");
+                    break;
+            }
+        }
+
+        if (control.FigureFillOpa is { } fillOpa) props["fill_opa"] = Clamp(fillOpa, 0, 255);
+        if (control.ArcAngleStart is { } start) props["angle_start"] = Clamp(start, -360, 720);
+        if (control.ArcAngleEnd is { } end) props["angle_end"] = Clamp(end, -360, 720);
     }
 
     private void MapShapeCommon(JsonObject props, HmiControl control, string where)

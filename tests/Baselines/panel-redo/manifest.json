@@ -1,0 +1,31 @@
+{
+  "format_version": "0.6",
+  "min_runtime": "0.1.0",
+  "hw_profile": "f1c100s-kinseal",
+  "name": "验收工程",
+  "version": "1.0.0",
+  "screen": {
+    "width": 800,
+    "height": 480
+  },
+  "start_page": "home",
+  "default_language": "zh",
+  "features": [
+    "alarm",
+    "curves",
+    "pipe",
+    "table",
+    "widgets_ext"
+  ],
+  "font_sizes": [
+    14,
+    20,
+    24
+  ],
+  "counts": {
+    "tags": 3,
+    "pages": 1,
+    "devices": 1,
+    "scripts": 0
+  }
+}
