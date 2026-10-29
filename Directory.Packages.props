@@ -27,6 +27,9 @@
     <PackageVersion Include="Dock.Model" Version="12.1.0" />
     <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0" />
     <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <!-- 测试项目跑图片资产转换要用到原生 libSkiaSharp.so；编辑器侧是 Avalonia.Skia 顺带带来的，
+         测试宿主没有那层，必须显式引。 -->
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
     <PackageVersion Include="FluentAvaloniaUI" Version="3.0.2" />
   </ItemGroup>
 

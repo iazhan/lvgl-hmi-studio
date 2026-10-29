@@ -21,7 +21,7 @@ C 源码导出、`.so` 编译、模拟器工程、下载到 HMI、设备管理**
 | Gauge / Knob | `gauge` / `knob` | 刻度/指针参数 |
 | Dropdown | `combobox` | 选项 + `bind.selected` |
 | TextArea | `input` | 占位符 / 最大长度 |
-| Image | `image` | 资产转 RGB565 `.bin` |
+| Image | `image` | 资产转 RGB565 `.bin`；`props.src` 只写**文件名**（运行时自己拼 `assets/img/`，多带一层目录会让整页建不起来） |
 | Table | `table` | 行列 / 表头 / 单元格（含变量单元格） |
 | TabView | `tabview` | 页签名 |
 | Spinner | `spinner` | |

@@ -9,6 +9,11 @@ namespace HmiEditor.Export.Chenge;
 /// <para>运行时不带 PNG 解码器，`image.src` 只认 .bin；所以"图片没转"在板上表现为
 /// 占位方块而不是报错。这里转换失败一律记 warning 并返回 null——控件仍然导出，
 /// 但 MAPPING-REPORT 的"未支持"清单里能看到是哪张图。</para>
+///
+/// <para><b>`props.src` 只写文件名，不带目录</b>：运行时自己拼
+/// <c>&lt;工程根&gt;/assets/img/&lt;src&gt;</c>（<c>ui_image_bin.c</c> 的 <c>image_bin_path</c>）。
+/// 这里再带一层 <c>assets/img/</c> 就会拼成 <c>assets/img/assets/img/…</c>，图片控件建页失败
+/// 会连累**整页**打不开（不是"图不显示"那么轻）。</para>
 /// </summary>
 internal sealed class ChengeAssets
 {
@@ -54,16 +59,20 @@ internal sealed class ChengeAssets
         }
 
         var name = ChengeNames.Slug(Path.GetFileNameWithoutExtension(item.Name.Length > 0 ? item.Name : local), "img");
-        var relative = $"assets/img/{name}.bin";
+        var fileName = $"{name}.bin";
+        var relative = $"assets/img/{fileName}";
         if (_binaries.ContainsKey(relative))
-            relative = $"assets/img/{name}_{ChengeNames.Slug(assetId, "a")}.bin";
+        {
+            fileName = $"{name}_{ChengeNames.Slug(assetId, "a")}.bin";
+            relative = $"assets/img/{fileName}";
+        }
 
         var bytes = Convert(local, where, item.Name);
         if (bytes == null) return null;
 
         _binaries[relative] = bytes;
-        _srcByAssetId[assetId] = relative;
-        return relative;
+        _srcByAssetId[assetId] = fileName;   // 只回文件名：目录由运行时拼
+        return fileName;
     }
 
     public IReadOnlyDictionary<string, byte[]> Binaries => _binaries;
