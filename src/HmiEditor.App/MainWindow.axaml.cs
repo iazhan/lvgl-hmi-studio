@@ -1410,6 +1410,17 @@ public partial class MainWindow : Window
         var result = _chengeExport.Export(_currentProject, _assetLibrary, _projectDirectory,
             BuildChengeExportOptions(), outputDir);
 
+        // 板上工程 id 第一次导出就固化：它既是 /data 下的目录名，也是 projects/active 的内容。
+        // 每次按工程名重算的话，改个名字板上就多一个工程目录，旧目录不会被回收。
+        if (result.Success && result.ProjectIdGenerated && !string.IsNullOrEmpty(result.ProjectId))
+        {
+            _currentProject.ProjectId = result.ProjectId;
+            if (_currentHmiPath is not null)
+                await SaveProjectCore();      // 已有 .hmi：立刻落盘
+            else
+                SetUnsavedChanges(true);      // 还没保存过：等用户保存，不在这里弹存储对话框
+        }
+
         ReportChengeResult(result, outputDir);
         if (!result.Success)
         {
@@ -1461,6 +1472,8 @@ public partial class MainWindow : Window
         if (result.Success)
         {
             StatusText.Text = LocService.Format("status.chenge.export.ok", outputDir);
+            if (!string.IsNullOrEmpty(result.ProjectId))
+                StatusText.Text += "　" + LocService.Format("status.chenge.export.project_id", result.ProjectId);
             _authService.RecordAudit(AuditAction.DataExported,
                 LocService.Format("audit.chenge.export", outputDir), true);
         }

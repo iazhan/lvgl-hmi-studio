@@ -34,6 +34,17 @@ public sealed class ChengeExportResult
     public required string OutputDirectory { get; init; }
     public bool Success => !Issues.HasErrors;
 
+    /// <summary>
+    /// 本次写进 <c>manifest.name</c> 的板上工程 id。调用方据此把"推导出来的 id"固化进工程文件。
+    /// </summary>
+    public string ProjectId { get; init; } = "";
+
+    /// <summary>
+    /// id 由工程名推导而来（工程里没有显式 id）。为 true 时调用方应把 <see cref="ProjectId"/>
+    /// 写回 <c>HmiProject.ProjectId</c> 并保存 —— 否则下次改工程名就会换 id。
+    /// </summary>
+    public bool ProjectIdGenerated { get; init; }
+
     public int PageCount { get; init; }
     public int WidgetCount { get; init; }
     public int TagCount { get; init; }

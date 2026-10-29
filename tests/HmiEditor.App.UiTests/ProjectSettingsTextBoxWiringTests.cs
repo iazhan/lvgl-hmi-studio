@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using HmiEditor.App.Resources;
 using HmiEditor.App.Views;
 using HmiEditor.Core.Models;
 using HmiEditor.Core.Models.User;
@@ -53,6 +54,14 @@ public class ProjectSettingsTextBoxWiringTests
         // 显示名 **不裁剪**（只供编辑器辨认，不下发设备）
         new("TxtRuntimeUserDisplayName", "RuntimeUser.DisplayName",
             v => Draft(v)[0].DisplayName ?? "", "  运维管理员  ", "  运维管理员  "),
+
+        // 板上工程 id：这条 TextChanged 只做**只读的即时校验提示**（不写任何状态），真值在点
+        // 「确定」时由 SaveToProject 读取 —— 所以判据是"提示跟着输入变"，不是草稿值。
+        new("TxtBoardProjectId", "ProjectId 的即时校验提示",
+            v => ControlWiringFace.Find<TextBlock>(v, "TxtBoardProjectIdState").Text
+                 == AppLocalization.Service[Lang.ProjectSettingsBoardIdInvalid]
+                ? "invalid" : "other",
+            "Active", "invalid"),
     };
 
     /// <summary>

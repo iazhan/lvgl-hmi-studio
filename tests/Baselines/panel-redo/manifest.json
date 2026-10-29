@@ -2,7 +2,8 @@
   "format_version": "0.6",
   "min_runtime": "0.1.0",
   "hw_profile": "f1c100s-kinseal",
-  "name": "验收工程",
+  "name": "proj_ad918dd7",
+  "title": "验收工程",
   "version": "1.0.0",
   "screen": {
     "width": 800,

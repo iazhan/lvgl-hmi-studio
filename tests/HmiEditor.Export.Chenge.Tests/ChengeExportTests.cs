@@ -41,6 +41,52 @@ public class ChengeExportTests : IDisposable
         Assert.Contains("alarm", manifest.GetProperty("features").EnumerateArray().Select(f => f.GetString()));
     }
 
+    /// <summary>
+    /// <c>manifest.name</c> 是板端工程 id（/data 下的目录名 + active 内容），板端导入只收
+    /// <c>[a-z0-9_]</c>、1~32 位。中文工程名直接写进去 = "导出成功、插上板子导入失败"，
+    /// 所以必须推导成合法 id，原名另存 <c>title</c>。
+    /// </summary>
+    [Fact]
+    public void Export_ChineseProjectName_ProducesImportableIdAndKeepsTitle()
+    {
+        var result = ExportFixture.Export(ExportFixture.Build(), _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+        Assert.True(result.ProjectIdGenerated, "工程里没有显式 id 时应由工程名推导");
+
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "manifest.json"))).RootElement;
+        var id = manifest.GetProperty("name").GetString()!;
+        Assert.Equal(result.ProjectId, id);
+        Assert.True(ChengeNames.IsBoardProjectId(id), $"板上工程 id 不合法：{id}");
+        Assert.Equal("验收工程", manifest.GetProperty("title").GetString());
+    }
+
+    /// <summary>显式 id 优先于工程名，且不再标记为"推导值"（否则每次导出都会回写工程）。</summary>
+    [Fact]
+    public void Export_ExplicitProjectId_Wins()
+    {
+        var project = ExportFixture.Build();
+        project.ProjectId = "oven_01";
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+        Assert.False(result.ProjectIdGenerated);
+
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "manifest.json"))).RootElement;
+        Assert.Equal("oven_01", manifest.GetProperty("name").GetString());
+    }
+
+    /// <summary>显式 id 不合法必须拦在导出期 —— 等板端拒导入时用户已经拿着包了。</summary>
+    [Fact]
+    public void Export_InvalidExplicitProjectId_IsAnError()
+    {
+        var project = ExportFixture.Build();
+        project.ProjectId = "Active";   // 大写 + 保留名
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "manifest.name");
+    }
+
     [Fact]
     public void Export_CoreWidgets_MapToContractTypes()
     {

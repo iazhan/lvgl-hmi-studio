@@ -42,6 +42,11 @@ public static class Lang
     public const string ProjectSettingsCategorySecurity   = "project.settings.category.security";
     public const string ProjectSettingsBasicDesc          = "project.settings.basic.desc";
     public const string ProjectSettingsBasicAuthor        = "project.settings.basic.author";
+    public const string ProjectSettingsBoardId            = "project.settings.basic.board.id";
+    public const string ProjectSettingsBoardIdAuto        = "project.settings.basic.board.id.auto";
+    public const string ProjectSettingsBoardIdHint        = "project.settings.basic.board.id.hint";
+    public const string ProjectSettingsBoardIdInvalid     = "project.settings.basic.board.id.invalid";
+    public const string ProjectSettingsBoardIdOk          = "project.settings.basic.board.id.ok";
     public const string ProjectSettingsBasicCompany       = "project.settings.basic.company";
     public const string ProjectSettingsBasicVersion       = "project.settings.basic.version";
     public const string ProjectSettingsBasicLvgl           = "project.settings.basic.lvgl";

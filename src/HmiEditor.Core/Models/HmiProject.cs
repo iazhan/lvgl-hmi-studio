@@ -11,6 +11,18 @@ public class HmiProject
     // ── 基本元数据 ──
 
     public string Name { get; set; } = "Untitled";
+
+    /// <summary>
+    /// 板端工程 id（37 契约的 <c>manifest.name</c>）：<c>/data/chenge/projects/&lt;id&gt;/</c> 的目录名，
+    /// 也是 <c>projects/active</c> 的内容。板端导入要求 1~32 位、只含小写字母/数字/下划线、不能是 <c>active</c>。
+    ///
+    /// <para><b>为什么单独存一个字段而不是每次由工程名推导</b>：id 一换，板上就多一个工程目录、
+    /// 旧的还占着 NAND，而且"更新组态"不会覆盖旧 id 的目录。固化后改工程名只改显示名。</para>
+    ///
+    /// <para>留空 = 按 <see cref="Name"/> 推导（首次导出时写回本字段并保存工程）。</para>
+    /// </summary>
+    public string? ProjectId { get; set; }
+
     public string LvglVersion { get; set; } = "9.5";
     public string? HardwareTargetId { get; set; }
 

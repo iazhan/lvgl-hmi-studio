@@ -151,6 +151,19 @@
                                         <TextBlock x:Name="TxtModifiedAt" Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="3"
                                                    Foreground="{StaticResource HmiTextSecondaryBrush}" VerticalAlignment="Center"
                                                    Margin="0,0,0,10"/>
+                                        <!-- 板上工程 id：manifest.name，既是 /data 下的目录名也是 active 内容。
+                                             留空才允许自动推导——填了就必须过板端规则，否则导出被拦。 -->
+                                        <TextBlock Grid.Row="8" Grid.Column="0"
+                                                   Text="{res:Loc project.settings.basic.board.id}"
+                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="TxtBoardProjectId" Grid.Row="8" Grid.Column="1"
+                                                 PlaceholderText="{res:Loc project.settings.basic.board.id.hint}"
+                                                 Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
+                                                 BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,6"
+                                                 Margin="0,0,12,10"/>
+                                        <TextBlock x:Name="TxtBoardProjectIdState" Grid.Row="8" Grid.Column="2" Grid.ColumnSpan="2"
+                                                   Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="12"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,0,10"/>
                                     </Grid>
                                 </Border>
                             </ScrollViewer>

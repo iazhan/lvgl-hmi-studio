@@ -202,20 +202,16 @@ public sealed class ChengeExporter
         }
 
         var hwProfile = ResolveHwProfile(project, options, issues);
-        var projectName = string.IsNullOrWhiteSpace(project.Name) ? "chenge_project" : project.Name;
-        // 板端 hmi_import_check 把 manifest.name 当工程 id：只收小写字母/数字/下划线、
-        // 1~32 字符、不能是 active（它同时是 /data 下的目录名与 active 文件内容）。
-        // 中文名/空格在这里不拦就会变成"导出成功、插上板子导入失败"。
-        if (!IsImportSafeProjectName(projectName))
-            issues.Warn("manifest.name", "manifest.json",
-                $"工程名 '{projectName}' 不能直接装到板上：板端要求 1~32 位小写字母/数字/下划线" +
-                "（且不能是 active）。导出不受影响，但导入前请改名。");
+        var (projectId, projectIdGenerated) = ResolveProjectId(project, issues);
         var manifest = new JsonObject
         {
             ["format_version"] = "0.6",
             ["min_runtime"] = "0.1.0",
             ["hw_profile"] = hwProfile,
-            ["name"] = projectName,
+            ["name"] = projectId,
+            // 工程名（允许中文/空格）另存一份：manifest.name 是板端目录名与 active 内容，
+            // 必须合法；显示用的人话放 title，运行时忽略未知键。
+            ["title"] = string.IsNullOrWhiteSpace(project.Name) ? projectId : project.Name.Trim(),
             ["version"] = string.IsNullOrWhiteSpace(project.ProjectVersion) ? "1.0.0" : project.ProjectVersion,
             ["screen"] = new JsonObject { ["width"] = screenWidth, ["height"] = screenHeight },
             ["start_page"] = startPage ?? "",
@@ -244,6 +240,8 @@ public sealed class ChengeExporter
             DeviceCount = devices.Count,
             WidgetIds = widgetIds,
             PageIds = maps.PageIdByScreenId,
+            ProjectId = projectId,
+            ProjectIdGenerated = projectIdGenerated,
         };
 
         if (issues.HasErrors) return result;
@@ -260,6 +258,8 @@ public sealed class ChengeExporter
             WrittenFiles = written,
             WidgetIds = widgetIds,
             PageIds = maps.PageIdByScreenId,
+            ProjectId = projectId,
+            ProjectIdGenerated = projectIdGenerated,
         };
     }
 
@@ -1008,17 +1008,26 @@ public sealed class ChengeExporter
         return (w, h);
     }
 
-    /// <summary>板端导入期对工程 id 的要求（chenge-common 的 id_valid）：小写字母/数字/下划线。</summary>
-    private static bool IsImportSafeProjectName(string name)
+    /// <summary>
+    /// 决定 <c>manifest.name</c>：显式 <see cref="HmiProject.ProjectId"/> 优先，留空则按工程名推导。
+    ///
+    /// <para>显式 id 非法是 Error 而不是悄悄改：那是用户在设置页填的东西，替他改等于
+    /// "板上目录名与设置不一致"，下次导入还会撞一次。推导值必然合法（Slug 的字符集与长度
+    /// 与板端 id 规则一致），只需避开保留名 active。</para>
+    /// </summary>
+    private static (string Id, bool Generated) ResolveProjectId(HmiProject project, ChengeIssueBag issues)
     {
-        if (name.Length is < 1 or > 32) return false;
-        if (string.Equals(name, "active", StringComparison.Ordinal)) return false;
-        foreach (var ch in name)
+        if (!string.IsNullOrWhiteSpace(project.ProjectId))
         {
-            if (ch is >= 'a' and <= 'z' or >= '0' and <= '9' or '_') continue;
-            return false;
+            var raw = project.ProjectId.Trim();
+            if (ChengeNames.IsBoardProjectId(raw)) return (raw, false);
+            issues.Error("manifest.name", "manifest.json",
+                $"板上工程 id '{raw}' 不合法（只允许小写字母/数字/下划线，1~32 位，且不能是 active）；" +
+                "请在「工程设置 → 基本信息 → 板上工程 id」里改正，或清空让它按工程名自动生成");
+            return ("invalid_project_id", false);
         }
-        return true;
+
+        return (ChengeNames.DeriveBoardProjectId(project.Name), true);
     }
 
     private static string ResolveHwProfile(HmiProject project, ChengeExportOptions options, ChengeIssueBag issues)

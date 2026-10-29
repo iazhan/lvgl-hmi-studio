@@ -11,6 +11,7 @@ using HmiEditor.Core.Models.User;
 using HmiEditor.Core.Security;
 using HmiEditor.Core.Serialization;
 using HmiEditor.Core.Services;
+using HmiEditor.Export.Chenge;
 using Hmi.Hardware.Builtin;
 using Hmi.Hardware.Contracts;
 using Hmi.Hardware.Loader;
@@ -297,6 +298,31 @@ public partial class ProjectSettingsView : ChromeWindow
     }
 
     /// <summary>
+    /// 「板上工程 id」的即时提示。留空是合法选择（导出时按工程名推导并固化），
+    /// 填了就必须过板端导入规则 —— 在这里先讲清楚，而不是等导出报一条 ERROR。
+    /// </summary>
+    private void ValidateBoardProjectId()
+    {
+        if (TxtBoardProjectIdState == null) return;
+        var raw = TxtBoardProjectId.Text?.Trim() ?? "";
+        if (raw.Length == 0)
+        {
+            var derived = ChengeNames.DeriveBoardProjectId(_project?.Name);
+            TxtBoardProjectIdState.Text = AppLocalization.Service.Format(Lang.ProjectSettingsBoardIdAuto, derived);
+            TxtBoardProjectIdState.Foreground = (IBrush)Application.Current!.Resources["HmiTextSecondaryBrush"]!;
+            return;
+        }
+        if (ChengeNames.IsBoardProjectId(raw))
+        {
+            TxtBoardProjectIdState.Text = AppLocalization.Service.Format(Lang.ProjectSettingsBoardIdOk, raw);
+            TxtBoardProjectIdState.Foreground = (IBrush)Application.Current!.Resources["HmiSuccessBrush"]!;
+            return;
+        }
+        TxtBoardProjectIdState.Text = AppLocalization.Service[Lang.ProjectSettingsBoardIdInvalid];
+        TxtBoardProjectIdState.Foreground = (IBrush)Application.Current!.Resources["HmiDangerBrush"]!;
+    }
+
+    /// <summary>
     /// 校验文案按 <c>Code</c> 查字典，查不到就回落插件自带的消息。
     ///
     /// <para>规则住在**插件程序集**（<c>Hmi.Hardware.Builtin</c>）里，那里拿不到 App 的字典，
@@ -416,6 +442,8 @@ public partial class ProjectSettingsView : ChromeWindow
         TxtAuthor.Text = _project.Author ?? "";
         TxtCompany.Text = _project.Company ?? "";
         TxtProjectVersion.Text = _project.ProjectVersion ?? "1.0.0";
+        TxtBoardProjectId.Text = _project.ProjectId ?? "";
+        ValidateBoardProjectId();
         CmbLvglVersion.SelectedItem = string.IsNullOrEmpty(_project.LvglVersion) ? "9.5" : _project.LvglVersion;
         CmbHardwareTarget.SelectedItem = FindHardwareTargetItem(_project.HardwareTargetId);
         ValidateHardwareTarget();
@@ -551,6 +579,7 @@ public partial class ProjectSettingsView : ChromeWindow
         _project.Author = string.IsNullOrEmpty(TxtAuthor.Text) ? null : TxtAuthor.Text.Trim();
         _project.Company = string.IsNullOrEmpty(TxtCompany.Text) ? null : TxtCompany.Text.Trim();
         _project.ProjectVersion = string.IsNullOrEmpty(TxtProjectVersion.Text) ? "1.0.0" : TxtProjectVersion.Text.Trim();
+        _project.ProjectId = string.IsNullOrWhiteSpace(TxtBoardProjectId.Text) ? null : TxtBoardProjectId.Text.Trim();
         _project.LvglVersion = string.IsNullOrEmpty(CmbLvglVersion.SelectedItem as string) ? "9.5" : (string)CmbLvglVersion.SelectedItem!;
         _project.HardwareTargetId = GetHardwareTargetId();
 
@@ -693,6 +722,9 @@ public partial class ProjectSettingsView : ChromeWindow
         AttachChangeHandler(TxtAuthor);
         AttachChangeHandler(TxtCompany);
         AttachChangeHandler(TxtProjectVersion);
+        AttachChangeHandler(TxtBoardProjectId);
+        // 即时校验走自己的 handler：带回调的 AttachChangeHandler 重载是空实现（只服务于分类列表）
+        TxtBoardProjectId.TextChanged += (_, _) => ValidateBoardProjectId();
         AttachChangeHandler(TxtDefaultBgColor);
         AttachChangeHandler(TxtHistoryPath);
         AttachChangeHandler(TxtOutputDir);
