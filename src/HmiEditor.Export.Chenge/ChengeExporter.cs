@@ -108,11 +108,11 @@ public sealed class ChengeExporter
         }
 
         var pageId = maps.PageIdByScreenId[screen.Id];
-        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features,
+        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, fontSizes,
             screenWidth, screenHeight, widgetIds);
         var widgetCount = 0;
         var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features,
-            fontSizes, issues, ref widgetCount);
+            issues, ref widgetCount);
         if (issues.HasErrors) return null;
 
         result = new ChengeExportResult
@@ -156,13 +156,14 @@ public sealed class ChengeExporter
 
         // 控件 Id → 导出 widget id：设计画布的几何补丁要靠它寻址（两种 id 不是一回事）
         var widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
-        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, screenWidth, screenHeight, widgetIds);
+        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, fontSizes,
+            screenWidth, screenHeight, widgetIds);
         var pageDocs = new List<(string Path, JsonNode Node)>();
         var widgetCount = 0;
         foreach (var screen in screens)
         {
             var pageId = maps.PageIdByScreenId[screen.Id];
-            var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features, fontSizes, issues, ref widgetCount);
+            var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features, issues, ref widgetCount);
             pageDocs.Add(($"pages/{pageId}.json", doc));
         }
 
@@ -208,6 +209,7 @@ public sealed class ChengeExporter
             features.Add("users");
         }
 
+        ValidateFontSizes(fontSizes, issues);
         var hwProfile = ResolveHwProfile(project, options, issues);
         var (projectId, projectIdGenerated) = ResolveProjectId(project, issues);
         var manifest = new JsonObject
@@ -289,7 +291,7 @@ public sealed class ChengeExporter
 
     private JsonObject BuildPage(HmiProject project, HmiScreen screen, string pageId, ChengeMaps maps,
         ChengeWidgetMapper mapper, ChengeColors colors, ChengeAssets assets, HashSet<string> features,
-        HashSet<int> fontSizes, ChengeIssueBag issues, ref int widgetCount)
+        ChengeIssueBag issues, ref int widgetCount)
     {
         var page = new JsonObject
         {
@@ -340,7 +342,7 @@ public sealed class ChengeExporter
             if (!string.IsNullOrEmpty(control.ParentId))
                 issues.Warn("page.orphan_parent", pageId,
                     $"控件 {control.Id} 的 ParentId={control.ParentId} 指向不存在的容器，已按顶层控件导出");
-            AppendWidget(widgets, control, pageId, "w", ref seq, maps, mapper, features, fontSizes,
+            AppendWidget(widgets, control, pageId, "w", ref seq, maps, mapper, features,
                 issues, ref widgetCount);
         }
         // 键盘控件可能排在目标前面：整页建完再回填 props.target
@@ -351,7 +353,7 @@ public sealed class ChengeExporter
 
     private void AppendWidget(JsonArray target, HmiControl control, string pageId, string idPrefix,
         ref int seq, ChengeMaps maps, ChengeWidgetMapper mapper, HashSet<string> features,
-        HashSet<int> fontSizes, ChengeIssueBag issues, ref int widgetCount)
+        ChengeIssueBag issues, ref int widgetCount)
     {
         seq++;
         var widgetId = idPrefix + seq;
@@ -371,7 +373,6 @@ public sealed class ChengeExporter
         if (widget == null) return;
         target.Add(widget);
         widgetCount += 1 + CountDescendants(control);
-        fontsAdd(fontSizes, control);
     }
 
     private static int CountDescendants(HmiControl control)
@@ -379,12 +380,6 @@ public sealed class ChengeExporter
         var n = 0;
         foreach (var child in control.Children) n += 1 + CountDescendants(child);
         return n;
-    }
-
-    private static void fontsAdd(HashSet<int> fontSizes, HmiControl control)
-    {
-        if (control.FontSize > 0) fontSizes.Add(control.FontSize);
-        foreach (var child in control.Children) fontsAdd(fontSizes, child);
     }
 
     // ── tags ──
@@ -450,6 +445,13 @@ public sealed class ChengeExporter
             var hasSource = !string.IsNullOrWhiteSpace(variable.ConnectionId);
             if (hasSource)
             {
+                // Modbus 主站 v1 只解到 32 位（loader.c 对 i64/double 的 source 直接拒载）。
+                // 这里只报错、不跳过：跳过会让 tag id 与数组下标错位，运行时又要求 id 从 0 连续。
+                if (type is "i64" or "double")
+                    issues.Error("tag.unsupported_type", $"variable:{variable.Name}",
+                        $"Modbus 主站 v1 只到 32 位：{type} 变量不能挂在设备上（运行时会拒载整份 tags.json）；" +
+                        "请改用 i32/f32，或去掉设备连接当内部变量");
+
                 var deviceId = ResolveDeviceId(variable, project, maps, issues);
                 if (deviceId == null)
                 {
@@ -587,7 +589,6 @@ public sealed class ChengeExporter
         HashSet<string> features, ChengeIssueBag issues)
     {
         var usedPorts = new HashSet<string>(StringComparer.Ordinal);
-        var portDeviceCount = new Dictionary<string, int>(StringComparer.Ordinal);
 
         foreach (var conn in project.VariableManager.Connections.Where(c => c.IsEnabled))
         {
@@ -605,29 +606,10 @@ public sealed class ChengeExporter
             var connDeviceId = ChengeNames.Slug(conn.Name, "dev");
             if (isTcp)
             {
-                features.Add("modbus_tcp");
-                var host = GetConfig(conn, "host", "ip", "address");
-                var tcpPort = ParseInt(GetConfig(conn, "tcpPort", "port", "tcp_port"), 502);
-                if (string.IsNullOrWhiteSpace(host))
-                {
-                    issues.Error("device.tcp_host", $"device:{conn.Name}", "Modbus TCP 设备缺少 host（37 §4）");
-                    continue;
-                }
-                var dev = new JsonObject
-                {
-                    ["id"] = connDeviceId,
-                    ["name"] = conn.Name,
-                    ["protocol"] = "modbus_tcp",
-                    ["host"] = host,
-                    ["tcp_port"] = tcpPort,
-                    ["slave"] = ParseInt(GetConfig(conn, "slaveId", "slave"), 1),
-                    ["timeout_ms"] = ParseInt(GetConfig(conn, "timeoutMs", "timeout"), 1000),
-                    ["retries"] = 1,
-                    ["poll_ms"] = 500,
-                    ["default_order"] = "ABCD",
-                };
-                devices.Add(dev);
-                maps.DeviceIdByConnectionId[conn.Id] = connDeviceId;
+                // 运行时 v1 的 load_devices 只认 sim / modbus_rtu（其它协议整份工程拒载），
+                // modbus_tcp 模块也没编进固件。写出去就是"导出成功、插上板子起不来"。
+                issues.Error("device.protocol_tcp", $"device:{conn.Name}",
+                    "运行时未实现 Modbus TCP（只支持 modbus_rtu）；请改成串口连接，或先在编辑器里停用该连接");
                 continue;
             }
 
@@ -635,6 +617,14 @@ public sealed class ChengeExporter
             if (portName == null)
             {
                 issues.Error("device.port", $"device:{conn.Name}", "Modbus RTU 设备缺少串口（37 §4：port 必须指向 ports.json 的串口 id）");
+                continue;
+            }
+            // 本板的逻辑串口是编译期定死的（chenge-runtime 的 port_map.c 只映射 com1）。
+            // com2 在 37 里合法，但写到本板上是 ports.json 校验失败 → 整份工程拒载。
+            if (!string.Equals(portName, "com1", StringComparison.Ordinal))
+            {
+                issues.Error("device.port_unknown", $"device:{conn.Name}",
+                    $"本板没有逻辑串口 {portName}（只有 com1）；串口映射是编译期定死的，改不了");
                 continue;
             }
             if (usedPorts.Add(portName))
@@ -648,8 +638,6 @@ public sealed class ChengeExporter
                     ["stop_bits"] = ParseInt(GetConfig(conn, "stopBits"), 1),
                 });
             }
-            portDeviceCount[portName] = portDeviceCount.GetValueOrDefault(portName) + 1;
-
             var timeout = ParseInt(GetConfig(conn, "timeoutMs", "timeout"), 300);
             var retries = ParseInt(GetConfig(conn, "retries"), 2);
             var poll = Math.Clamp(conn.Slaves.FirstOrDefault()?.Config.TryGetValue("pollMs", out var p) == true ? ParseInt(p, 200) : 200, 50, 60000);
@@ -695,9 +683,6 @@ public sealed class ChengeExporter
                 maps.DeviceIdByConnectionId[conn.Id] = connDeviceId;
             }
         }
-
-        if (portDeviceCount.TryGetValue("com2", out var com2) && com2 > 1)
-            issues.Error("port.rs232_multi", "ports.json", $"com2 是 RS232，只允许挂 1 个设备，实际 {com2} 个（37 §4）");
     }
 
     private static string? NormalizePort(string? raw, ChengeIssueBag issues, string deviceName)
@@ -1013,6 +998,28 @@ public sealed class ChengeExporter
         var w = options.ScreenWidth > 0 ? options.ScreenWidth : (int)Math.Round(first?.Width ?? 800);
         var h = options.ScreenHeight > 0 ? options.ScreenHeight : (int)Math.Round(first?.Height ?? 480);
         return (w, h);
+    }
+
+    /// <summary>运行时的字号档位上限（chenge-runtime 的 <c>PROJ_FONT_MAX</c>）。</summary>
+    private const int ProjFontMax = 8;
+
+    /// <summary>
+    /// 字号档位收口：运行时只收 ≤8 档、每档 8..128（37 §5.11），越界是**整份工程拒载**。
+    ///
+    /// <para>档位来自 mapper 真正写进 <c>props.font_size</c> 的值（已被 SetFont 钳到 10..48），
+    /// 所以越界分支只是防线；真正的坑是**档位太多**。超档报 Error 而不是"合并到最近档"：
+    /// 合并要改控件字号，那是用户看得见的设计变化，替他改完再导出等于悄悄改图。</para>
+    /// </summary>
+    private static void ValidateFontSizes(HashSet<int> sizes, ChengeIssueBag issues)
+    {
+        foreach (var fs in sizes.Where(s => s is < 8 or > 128).OrderBy(s => s))
+            issues.Error("manifest.font_size", "manifest.json",
+                $"字号 {fs} 超出运行时范围 8..128（用到它的控件会让整页建不起来）");
+
+        if (sizes.Count > ProjFontMax)
+            issues.Error("manifest.font_sizes", "manifest.json",
+                $"工程用到 {sizes.Count} 种字号（{string.Join('/', sizes.OrderBy(s => s))}），" +
+                $"运行时上限 {ProjFontMax} 档；请把相近字号合并成不超过 {ProjFontMax} 种");
     }
 
     /// <summary>

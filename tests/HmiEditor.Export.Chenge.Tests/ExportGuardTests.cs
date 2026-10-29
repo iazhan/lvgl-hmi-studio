@@ -373,4 +373,93 @@ public class ExportGuardTests : IDisposable
         Assert.DoesNotContain("建页失败", log);
         Assert.DoesNotContain("越界", log);
     }
+
+    /// <summary>
+    /// 字号档位：运行时只收 ≤8 档（loader 的 PROJ_FONT_MAX），超了整份工程拒载。
+    /// 这里报 Error 而不是"合并到最近档"——合并要改用户设的字号，那是看得见的设计变化。
+    /// </summary>
+    [Fact]
+    public void Export_NineFontTiers_ReportsError()
+    {
+        var project = ExportFixture.Build();
+        var screen = project.Screens[0];
+        screen.Controls.Clear();
+        for (var i = 0; i < 9; i++)   // 10..18 共 9 档（SetFont 钳到 10..48，不会被合并）
+            screen.Controls.Add(new HmiControl
+            {
+                Id = $"l{i}", Name = $"L{i}", Type = HmiControlType.Label,
+                X = 10 + i * 80, Y = 40, Width = 70, Height = 24, Text = "x", FontSize = 10 + i,
+            });
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "manifest.font_sizes");
+    }
+
+    /// <summary>
+    /// 面板允许填 200，运行时只认 10..48（SetFont 钳过）⇒ manifest 声明的必须是**写出去的值**。
+    /// 声明原始值会带一个越界档位，板端按 8..128 校验直接拒载。
+    /// </summary>
+    [Fact]
+    public void Export_FontSize_ManifestDeclaresClampedValue()
+    {
+        var project = ExportFixture.Build();
+        var label = project.Screens[0].Controls.First(c => c.Type == HmiControlType.Label);
+        label.FontSize = 200;
+
+        var result = ExportFixture.Export(project, _dir);
+        Assert.True(result.Success, string.Join("\n", result.Issues.Items));
+
+        Assert.Equal(48, FirstOfType("label").GetProperty("props").GetProperty("font_size").GetInt32());
+        var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "manifest.json"))).RootElement;
+        var sizes = manifest.GetProperty("font_sizes").EnumerateArray().Select(x => x.GetInt32()).ToList();
+        Assert.Contains(48, sizes);
+        Assert.DoesNotContain(200, sizes);
+    }
+
+    /// <summary>本板只有 com1（port_map.c 编译期定死）：com2 写出去是 ports.json 校验失败、整份拒载。</summary>
+    [Fact]
+    public void Export_Com2Port_ReportsError()
+    {
+        var project = ExportFixture.Build();
+        project.VariableManager.Connections[0].Config["port"] = "COM2";
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "device.port_unknown");
+    }
+
+    /// <summary>Modbus TCP：运行时未实现（load_devices 只认 sim / modbus_rtu），导出期必须拦住。</summary>
+    [Fact]
+    public void Export_ModbusTcpDevice_ReportsError()
+    {
+        var project = ExportFixture.Build();
+        var conn = project.VariableManager.Connections[0];
+        conn.DriverId = "modbus-tcp";
+        conn.Config["host"] = "192.168.1.10";
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "device.protocol_tcp");
+    }
+
+    /// <summary>Modbus 主站 v1 只到 32 位：i64/double 挂设备上，运行时会拒载整份 tags.json。</summary>
+    [Fact]
+    public void Export_I64VariableOnModbus_ReportsError()
+    {
+        var project = ExportFixture.Build();
+        project.VariableManager.Variables.Add(new Variable
+        {
+            Id = "v_big", Name = "累计量", DataType = "Int64", ConnectionId = "conn1",
+            Area = "holding", Address = "40020", Access = "r",
+        });
+
+        var result = ExportFixture.Export(project, _dir);
+
+        Assert.False(result.Success);
+        Assert.Contains(result.Issues.Items, i => i.Code == "tag.unsupported_type");
+    }
 }

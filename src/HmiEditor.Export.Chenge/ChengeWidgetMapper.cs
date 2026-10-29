@@ -25,14 +25,21 @@ internal sealed class ChengeWidgetMapper
     private readonly Dictionary<string, string> _widgetIds;
 
     /// <summary>
+    /// 实际写进 <c>props.font_size</c> 的档位（<see cref="SetFont"/> 里钳过之后的值）。
+    /// manifest.font_sizes 必须与它一致：收原始 <c>HmiControl.FontSize</c> 的话，
+    /// 面板填 200 的控件写出去是 48，manifest 却声明 200 —— 运行时按 8..128 校验，整份工程拒载。
+    /// </summary>
+    private readonly HashSet<int> _fontSizes;
+
+    /// <summary>
     /// 键盘控件 → 目标控件 Id。键盘可能排在目标前面导出（画布顺序即控件顺序），
     /// 那时目标还没有 widget id，只能建完本页再回填（<see cref="ApplyPendingKeyboardTargets"/>）。
     /// </summary>
     private readonly List<(JsonObject Props, string TargetControlId, string Where)> _pendingKeyboardTargets = new();
 
     public ChengeWidgetMapper(ChengeSchema schema, ChengeIssueBag issues, ChengeColors colors,
-        ChengeAssets assets, ChengeMaps maps, HashSet<string> features, int screenWidth, int screenHeight,
-        Dictionary<string, string> widgetIds)
+        ChengeAssets assets, ChengeMaps maps, HashSet<string> features, HashSet<int> fontSizes,
+        int screenWidth, int screenHeight, Dictionary<string, string> widgetIds)
     {
         _schema = schema;
         _issues = issues;
@@ -40,6 +47,7 @@ internal sealed class ChengeWidgetMapper
         _assets = assets;
         _maps = maps;
         _features = features;
+        _fontSizes = fontSizes;
         _screenWidth = screenWidth;
         _screenHeight = screenHeight;
         _widgetIds = widgetIds;
@@ -1923,8 +1931,9 @@ internal sealed class ChengeWidgetMapper
     /// </summary>
     private void SetFont(JsonObject props, HmiControl control, int fallback, int max = 48)
     {
-        var size = control.FontSize > 0 ? control.FontSize : fallback;
-        props["font_size"] = Clamp(size, 10, max);
+        var size = Clamp(control.FontSize > 0 ? control.FontSize : fallback, 10, max);
+        props["font_size"] = size;
+        _fontSizes.Add(size);   // manifest.font_sizes 只声明真正写出去的值
     }
 
     private static int DefaultFont(int size) => size;
