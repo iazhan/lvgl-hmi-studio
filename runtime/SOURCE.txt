@@ -8,5 +8,3 @@
   make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1              # 截图预览的进程版
   make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1 WINDOWS=1    # Windows 宿主（mingw-w64）
   bash tools/sync-runtime.sh --from <主仓库>/chenge-hmi/chenge-runtime
-
-注意：runtime/src 依赖主仓库的 chenge-common 与 LVGL 源码树，不能在本仓库单独编译。

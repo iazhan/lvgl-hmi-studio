@@ -9,9 +9,10 @@ runtime/
 ├── VERSION          取用时的运行时版本（与主仓库 chenge-runtime/VERSION 同值）
 ├── SOURCE.txt       来源目录、来源提交、取用时间，以及更新它要跑的命令
 ├── linux-x64/       chenge-preview-host、chenge-runtime、libchenge_runtime.so、sample/
-├── win-x64/         chenge-preview-host.exe、sample/
-└── src/             运行时源码副本（契约头与实现留档）
+└── win-x64/         chenge-preview-host.exe、sample/
 ```
+
+这里只有**产物**，没有源码。
 
 ## 谁在用
 
@@ -34,7 +35,7 @@ bash tools/sync-runtime.sh --from <主仓库>/chenge-hmi/chenge-runtime
 
 ## 不变式
 
-- `src/` 是**只读留档**：它依赖主仓库的 `chenge-common/common.mk` 与 LVGL 源码树，
-  **不能在本仓库单独编译**。要编运行时去主仓库，编完用上面的命令取回来。
+- **本目录不存源码**：运行时源码依赖主仓库的 `chenge-common/common.mk` 与 LVGL 源码树，
+  搬过来也编不了。要改运行时去主仓库改、编完用上面的命令把产物取回来。
 - 两个平台的宿主必须同一版本：编辑器与宿主之间的协议随版本变，混用会出现
   "画布能开、点一下就没反应"这类没有报错的症状。判据是 `VERSION` 与 `SOURCE.txt`。

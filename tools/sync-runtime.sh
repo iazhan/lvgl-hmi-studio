@@ -5,16 +5,16 @@
 # 为什么要有仓库内副本：打包脚本若只能靠 --runtime 指到主仓库，换机器/主仓库被挪走
 # 就出不了包。本仓库 runtime/ 自带一份产物，tools/package.sh 不传 --runtime 时用它。
 #
-# 取什么：
+# 取什么（只要产物）：
 #   runtime/linux-x64/   chenge-preview-host、chenge-runtime、libchenge_runtime.so、sample/
 #   runtime/win-x64/     chenge-preview-host.exe、chenge-runtime.exe、SDL2.dll、sample/
-#   runtime/src/         运行时源码（不含 objs*），只作契约头与实现查阅 —— 它依赖主仓库的
-#                        chenge-common 与 LVGL 源码树，**不能**在本仓库单独编译
+#
+# 源码不进来：它依赖主仓库的 chenge-common 与 LVGL 树，搬过来也编不了；
+# 放在这里只会让人以为本仓库能重建运行时。要改运行时去主仓库改、编完再同步产物。
 #
 # 用法：
 #   bash tools/sync-runtime.sh --from <主仓库>/chenge-hmi/chenge-runtime
 #   bash tools/sync-runtime.sh --from <...> --platform linux     # 只取一个平台
-#   bash tools/sync-runtime.sh --from <...> --no-source          # 不取源码
 # ============================================================================
 set -euo pipefail
 
@@ -23,13 +23,11 @@ ROOT="$(cd "$HERE/.." && pwd)"
 DEST="$ROOT/runtime"
 FROM=""
 PLATFORM="all"
-WITH_SOURCE=1
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --from)       FROM="${2:-}"; shift ;;
         --platform)   PLATFORM="${2:-}"; shift ;;
-        --no-source)  WITH_SOURCE=0 ;;
         -h|--help)    sed -n '2,/^set -euo/p' "$0" | sed '$d'; exit 0 ;;
         *) echo "未知参数：$1" >&2; exit 2 ;;
     esac
@@ -77,18 +75,6 @@ if [ "$PLATFORM" = all ] || [ "$PLATFORM" = win ]; then
 fi
 [ "$TOOK" = 1 ] || { echo "什么都没取到：$FROM 里没有这两个平台的产物（先编运行时）" >&2; exit 1; }
 
-if [ "$WITH_SOURCE" = 1 ]; then
-    step "运行时源码（只作查阅，不能单独编译）"
-    rm -rf "$DEST/src"
-    mkdir -p "$DEST/src"
-    for item in Makefile VERSION include src tools win-compat third_party sample; do
-        [ -e "$FROM/$item" ] && cp -a "$FROM/$item" "$DEST/src/"
-    done
-    find "$DEST/src" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
-    find "$DEST/src" -type f \( -name '*.o' -o -name '*.d' -o -name '*.pyc' \) -delete 2>/dev/null || true
-    printf '  %s\n' "$(du -sh "$DEST/src" | cut -f1)"
-fi
-
 # ── 版本与来源：两份文字记录是"这份二进制到底哪来的"唯一凭据 ──
 VERSION="$(cat "$FROM/VERSION" 2>/dev/null | tr -d '[:space:]')"
 [ -n "$VERSION" ] || VERSION="unknown"
@@ -106,8 +92,6 @@ cat > "$DEST/SOURCE.txt" <<SOURCE
   make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1              # 截图预览的进程版
   make -C <主仓库>/chenge-hmi/chenge-runtime HOST=1 WINDOWS=1    # Windows 宿主（mingw-w64）
   bash tools/sync-runtime.sh --from <主仓库>/chenge-hmi/chenge-runtime
-
-注意：runtime/src 依赖主仓库的 chenge-common 与 LVGL 源码树，不能在本仓库单独编译。
 SOURCE
 
 step "完成"
