@@ -68,11 +68,15 @@ public sealed record LuaFeature(
 /// 含 <c>.</c> = 库字段（<c>table.pack</c>，点两侧允许空白）。</param>
 /// <param name="Minimum">最早可用的 Lua 版本。</param>
 /// <param name="Note">一句话依据。</param>
+/// <param name="RemovedIn">从哪个版本起**又被移除**了（<see langword="null"/> = 至今仍在）。
+/// 5.4 上真正会炸的是这一类：<c>unpack</c> / <c>setfenv</c> 在 5.2 移进别处、<c>bit32</c> 在 5.3 移除，
+/// 光有 <paramref name="Minimum"/> 只会判成"可用"。</param>
 public sealed record LuaRuntimeSymbol(
     string Name,
     string Symbol,
     LuaVersion Minimum,
-    string Note);
+    string Note,
+    LuaVersion? RemovedIn = null);
 
 /// <summary>运行前检查对某个符号引用给出的判定。</summary>
 public enum LuaSymbolStatus
@@ -98,72 +102,29 @@ public sealed record LuaRuntimeSymbolHit(
     LuaSymbolStatus Status);
 
 /// <summary>
-/// 一条**方言差异改写规则**：解析器报错里出现 <paramref name="Marker"/> ⇒ 这不是普通语法错，
-/// 而是"编辑器基准与设备目标可能不一致"。
+/// Lua 方言的**单一事实源**：编辑器与设备用同一个解释器（官方 Lua 5.4），所以这里不再记录
+/// "两套版本怎么对齐"，只记录「哪些写法在 5.4 上没有」。
 ///
-/// <para><b>为什么是 record 而不是元组</b>：它有 4 个字段，其中两个是字符串
-/// （<paramref name="Marker"/> 与 <paramref name="Code"/>），元组写法一旦调换顺序，
-/// 编译器**不会**报错，只会在运行时静默失配。</para>
-/// </summary>
-/// <param name="Marker">解析器报错里的片段（<c>near '/'</c>），匹配用。</param>
-/// <param name="Code">命中后的诊断 Code —— 界面按 <c>script.issue.&lt;code 小写&gt;</c> 查字典。</param>
-/// <param name="Version">该写法属于哪个 Lua 版本。渲染时只把**标签**当参数传出去，
-/// 模板里不写死版本号（与 <see cref="LuaDialect.ParserBaselineLabel"/> 同一条纪律）。</param>
-/// <param name="Fallback">中文回落原文（含"若目标设备版本更高…"那句尾巴，见
-/// <see cref="LuaDialect.Hints"/>）。字典模板渲染后必须与它**逐字一致**，有判据守着。</param>
-public sealed record LuaDialectHint(
-    string Marker,
-    string Code,
-    LuaVersion Version,
-    string Fallback);
-
-/// <summary>
-/// Lua 方言对齐的**单一事实源**。
-///
-/// <para><b>为什么要它</b>：编辑器能提供的解析能力（MoonSharp 2.0.0 = <b>Lua 5.2</b>）与设备上真正跑的
-/// Lua 版本**未必相同**，两者不一致时会出现两个方向的偏差 —— 而这两个方向的危害完全不对称：</para>
-/// <list type="bullet">
-///   <item><b>假阳性</b>（编辑器报错、设备能跑）：用户会来抱怨，但设备不会出事；</item>
-///   <item><b>假阴性</b>（编辑器放行、设备炸）：**用户在编辑器里看到一片绿，到设备上才发现**。
-///   这是危险的方向，也是 <see cref="Features"/> 存在的理由。</item>
-/// </list>
-///
-/// <para><b>设备侧目标版本当前不可判</b>（<see cref="Target"/> = <see cref="LuaVersion.Unknown"/>）：
-/// 固件里**根本没有 Lua** —— <c>LV_USE_LUA</c> 不是 LVGL 的配置项（LVGL 全树无此符号），
-/// 模板引用的 <c>lv_lua_bridge.h</c> / <c>lv_binding_lua</c> 也不在树里；而 Tina SDK 自带的是
-/// <b>Lua 5.1.5</b>（<c>firmware/Tina-SDK/package/utils/lua</c>）。两个候选（5.1.5 / 新版 binding）
-/// 差一个数量级，不能靠猜。完整取证见 <c>docs/2026-09-20-lua-dialect-alignment.md</c>。</para>
-///
-/// <para><b>对齐的触发条件只有一处</b>：把 <see cref="Target"/> 从 <see cref="LuaVersion.Unknown"/>
-/// 改成真实版本，然后 —— <c>LuaDialectTests.WhenTargetIsDecided_AlignmentMustBeDone</c> 会红，
-/// 逼你把新出现的假阴性逐条处置。**不要只改这一个字段就收工。**</para>
+/// <para><b>为什么还需要这张表</b>：语法层交给官方 5.4 解析器（<see cref="LuaSyntaxValidator"/>），
+/// 但**语法合法不等于板上能跑** —— <c>bit32.band(1,3)</c> 是合法表达式，缺的是运行时的库；
+/// 5.1 时代的全局 <c>unpack</c> / <c>setfenv</c> 在 5.4 已移除，写出来照样能解析、运行到才报 nil。
+/// 这类问题只能在语法之外单独扫，产出**警告**而不是错误（<see cref="CheckRuntimeSymbols"/>）。</para>
 /// </summary>
 public static class LuaDialect
 {
-    // ── 两个版本：解析器基准（确定的）与设备目标（未定的）────────────────
+    // ── 版本：解析器与设备是同一条（官方 5.4）──────────────────────────
 
     /// <summary>
-    /// 解析器基准 —— **编辑器能提供的解析能力上限**，由 MoonSharp 2.0.0 决定（它实现 Lua 5.2）。
-    ///
-    /// <para>这不是"产品选择"，是**库的硬边界**：换成 5.3/5.4 就得换解析器。
-    /// 实测依据（25 个用例）见 <c>docs/2026-09-20-lua-syntax-validation.md</c> §3。</para>
+    /// 解析器基准 —— 官方 Lua 5.4 原生库（<c>third_party/lua-5.4.7</c>，由
+    /// <c>tools/build-lua.sh</c> 编成 .so/.dll），与设备侧运行时同一份源码。
     /// </summary>
-    public static readonly LuaVersion ParserBaseline = LuaVersion.Lua52;
+    public static readonly LuaVersion ParserBaseline = LuaVersion.Lua54;
 
     /// <summary>
-    /// 设备侧目标版本。**当前 <see cref="LuaVersion.Unknown"/>**（固件没有 Lua，无从对齐）。
-    /// 这是"对齐"唯一的开关 —— 但改它只是**开始**对齐，不是完成（见类型注释）。
+    /// 设备侧目标版本：运行时链的就是 <c>lua-5.4.7</c>（<c>chenge-runtime/Makefile</c> 的
+    /// <c>LUA_DIR</c>）。两侧一致 ⇒ 此前"方言误报"整类问题消失。
     /// </summary>
-    public static readonly LuaVersion Target = LuaVersion.Unknown;
-
-    /// <summary>
-    /// 已知候选目标及其证据。**区分"候选"与"已定"** —— 列在这里不代表选了它。
-    /// </summary>
-    public static readonly IReadOnlyList<(LuaVersion Version, string Evidence)> Candidates = new[]
-    {
-        (LuaVersion.Lua51,
-         "Tina SDK 自带 Lua 5.1.5：firmware/Tina-SDK/package/utils/lua（源码里 lua.h 的 LUA_RELEASE）"),
-    };
+    public static readonly LuaVersion Target = LuaVersion.Lua54;
 
     // ── 版本标签 ─────────────────────────────────────────────────────
 
@@ -234,39 +195,6 @@ public static class LuaDialect
     public static IReadOnlyList<LuaFeature> NonMonotone
         => Features.Where(f => f.Minimum is null).ToList();
 
-    // ── 偏差计算 ─────────────────────────────────────────────────────
-
-    /// <summary>
-    /// **假阴性**：编辑器**会放行**、而 <paramref name="target"/> 上**不可用**的写法。
-    /// 危险方向 —— 用户在编辑器里看到全绿，到设备上才炸。
-    ///
-    /// <para>「编辑器放行」的判据：对 <see cref="LuaRejectStage.Parse"/> 项 = 基准能解析
-    /// （<c>Minimum &lt;= 基准</c>）；对 <see cref="LuaRejectStage.Runtime"/> 项 = **恒为真**
-    /// （语法永远合法，解析器永远不报）。</para>
-    /// </summary>
-    public static IReadOnlyList<LuaFeature> FalseNegatives(LuaVersion target) => Gaps(target, falseNegatives: true);
-
-    /// <summary>
-    /// **假阳性**：编辑器**会拒**、而 <paramref name="target"/> 上能跑的写法（已知误报，用户可见）。
-    /// 危害小于假阴性，但会让用户不信任校验。
-    /// </summary>
-    public static IReadOnlyList<LuaFeature> FalsePositives(LuaVersion target) => Gaps(target, falseNegatives: false);
-
-    private static IReadOnlyList<LuaFeature> Gaps(LuaVersion target, bool falseNegatives)
-    {
-        if (target == LuaVersion.Unknown || target == ParserBaseline) return Array.Empty<LuaFeature>();
-
-        return Features.Where(f =>
-        {
-            if (f.Minimum is not { } min) return false;                 // 非单调项不进这套算法
-            bool baselineAccepts = f.Stage == LuaRejectStage.Runtime    // 语法合法 ⇒ 解析器照收
-                                   || min <= ParserBaseline;
-            bool targetAccepts = min <= target;
-            return falseNegatives ? baselineAccepts && !targetAccepts
-                                  : !baselineAccepts && targetAccepts;
-        }).ToList();
-    }
-
     // ── 运行前检查：设备侧运行时符号 ──────────────────────────────────
     //
     //  这一节是**独立机制**，不是"对齐版本"的一部分。理由就写在 LuaRuntimeSymbol 的类型注释里：
@@ -274,22 +202,45 @@ public static class LuaDialect
     //  换解析器、调 Minimum、改基准，全都救不了它，只能单独扫。
 
     /// <summary>
-    /// 版本敏感的运行时符号表。与 <see cref="Features"/> 里 <see cref="LuaRejectStage.Runtime"/>
-    /// 的条目**一一对应** —— <see cref="LuaRuntimeSymbol.Name"/> 逐字一致、
-    /// <see cref="LuaRuntimeSymbol.Minimum"/> 也一致，两表不许漂移（有判据守着）。
+    /// 版本敏感的运行时符号表 —— **差异表**，不是白名单：只收"设备那个版本上确实没有"的名字。
+    ///
+    /// <para>两个方向都要收：<see cref="LuaRuntimeSymbol.Minimum"/>（某版本起才有）与
+    /// <see cref="LuaRuntimeSymbol.RemovedIn"/>（某版本起又被移除）。对 5.4 来说真正会炸的是后者 ——
+    /// <c>unpack</c> / <c>setfenv</c> 这类 5.1 的写法在 5.2 之后就没了，但它们在语法上完全合法，
+    /// 编辑器不扫就一路绿到设备上。</para>
     /// </summary>
     public static readonly IReadOnlyList<LuaRuntimeSymbol> RuntimeSymbols = new[]
     {
         new LuaRuntimeSymbol("bit32 库", "bit32", LuaVersion.Lua52,
-            "5.2 新增库；SDK 自带的 5.1.5 源码全文无 bit32"),
+            "5.2 引入、5.3 起移除（5.3+ 直接用位运算符 & | ~ << >>）", RemovedIn: LuaVersion.Lua53),
         new LuaRuntimeSymbol("table.pack", "table.pack", LuaVersion.Lua52,
-            "5.2 新增；5.1 的对应物是全局 unpack"),
+            "5.2 新增，5.4 仍在"),
         new LuaRuntimeSymbol("table.unpack", "table.unpack", LuaVersion.Lua52,
             "5.2 起才有；5.1 里 unpack 是全局函数（lbaselib.c 的 luaB_unpack）"),
         new LuaRuntimeSymbol("math.type", "math.type", LuaVersion.Lua53,
             "5.3 新增函数 —— math 库本身 5.1 就有，所以只能按「库.字段」判，不能把 math 整个算进去"),
         new LuaRuntimeSymbol("utf8 库", "utf8", LuaVersion.Lua53,
-            "5.3 新增库"),
+            "5.3 新增库，5.4 仍在"),
+
+        // ── 反向约束：5.4 上已经没有了 ──
+        new LuaRuntimeSymbol("全局 unpack", "unpack", LuaVersion.Lua51,
+            "5.1 的全局函数，5.2 起移进 table（table.unpack）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("setfenv", "setfenv", LuaVersion.Lua51,
+            "5.2 起移除（改用 _ENV）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("getfenv", "getfenv", LuaVersion.Lua51,
+            "5.2 起移除（改用 _ENV）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("loadstring", "loadstring", LuaVersion.Lua51,
+            "5.2 起移除（改用 load）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("module", "module", LuaVersion.Lua51,
+            "5.2 起移除", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("table.getn", "table.getn", LuaVersion.Lua51,
+            "5.2 起移除（用 # 运算符）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("table.maxn", "table.maxn", LuaVersion.Lua51,
+            "5.2 起移除", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("math.log10", "math.log10", LuaVersion.Lua51,
+            "5.2 起移除（用 math.log(x, 10)）", RemovedIn: LuaVersion.Lua52),
+        new LuaRuntimeSymbol("math.pow", "math.pow", LuaVersion.Lua51,
+            "5.3 起移除（用 ^ 运算符）", RemovedIn: LuaVersion.Lua53),
     };
 
     // ── 运行前检查的 Code 族 ──
@@ -370,7 +321,15 @@ public static class LuaDialect
 
         foreach (var symbol in RuntimeSymbols)
         {
-            if (target != LuaVersion.Unknown && symbol.Minimum <= target) continue;   // 可用 ⇒ 不报
+            // 反向约束优先：存在"某版本起又被移除"的符号（unpack / bit32 / setfenv 一类）。
+            // 只看 Minimum 会把它们在 5.4 上判成"可用" —— 正是最危险的那个方向。
+            bool removed = symbol.RemovedIn is { } removedIn
+                           && target != LuaVersion.Unknown && target >= removedIn;
+
+            // 只有「目标已知且该名字在那个版本上确实可用」才跳过。
+            // 目标未知时**不能**跳过 —— 那会把"待定"说成"没风险"，正是这套机制要避免的误报。
+            bool available = target != LuaVersion.Unknown && symbol.Minimum <= target;
+            if (!removed && available) continue;
 
             var status = target == LuaVersion.Unknown
                 ? LuaSymbolStatus.Undetermined
@@ -483,50 +442,4 @@ public static class LuaDialect
         return (line, index - lineStart + 1);
     }
 
-    // ── 面向用户的方言文案 ────────────────────────────────────────────
-
-    /// <summary>
-    /// 方言差异改写表：<c>Marker</c> 是解析器报错里的片段，<c>Fallback</c> 是给用户看的中文回落，
-    /// <c>Code</c> 是界面查字典用的诊断码。
-    ///
-    /// <para><b>文案里的基准版本必须由 <see cref="ParserBaselineLabel"/> 派生</b>，
-    /// 不许写死 —— 否则"基准换了、文案没换"会静默（有判据守着，见 <c>LuaDialectTests</c>）。</para>
-    ///
-    /// <para><b>文案里一律要说"若目标设备版本更高，此处应视为误报"</b>：因为目标未定，
-    /// 编辑器只能对**自己这一侧**的判定负责，不能替设备下结论（假阴性的方向更危险，
-    /// 由 <see cref="FalseNegatives"/> 单独承接，不靠这句安慰话）。</para>
-    /// </summary>
-    public static IReadOnlyList<LuaDialectHint> Hints { get; } = BuildHints();
-
-    /// <summary>
-    /// 方言提示统一带的尾巴。
-    ///
-    /// <para><b>为什么收成一个常量</b>：6 条提示都要带它，散在 6 处必然有一处漏、而漏了没人发现
-    /// —— 而这句话是"编辑器不替设备下结论"的**唯一表达**，漏掉就等于把误报说成了真错。
-    /// 它同时也是字典模板的组成部分（两边内容必须一致，有判据守着）。</para>
-    /// </summary>
-    public const string HintTail = "；若目标设备的 Lua 版本更高，此处应视为误报";
-
-    private static LuaDialectHint[] BuildHints()
-    {
-        string v = ParserBaselineLabel;
-        string v53 = LabelOf(LuaVersion.Lua53);
-        string v54 = LabelOf(LuaVersion.Lua54);
-
-        return new[]
-        {
-            new LuaDialectHint("near '/'", LuaSyntaxValidator.SyntaxOpIntDivCode, LuaVersion.Lua53,
-                $"此写法属于 {v53} 的整除运算符 //（编辑器校验基于 {v}）{HintTail}"),
-            new LuaDialectHint("near '&'", LuaSyntaxValidator.SyntaxOpBitAndCode, LuaVersion.Lua53,
-                $"此写法属于 {v53} 的按位与 &（编辑器校验基于 {v}）{HintTail}"),
-            new LuaDialectHint("near '|'", LuaSyntaxValidator.SyntaxOpBitOrCode, LuaVersion.Lua53,
-                $"此写法属于 {v53} 的按位或 |（编辑器校验基于 {v}）{HintTail}"),
-            new LuaDialectHint("near '~'", LuaSyntaxValidator.SyntaxOpBitNotCode, LuaVersion.Lua53,
-                $"此写法属于 {v53} 的按位取反 / 异或 ~（编辑器校验基于 {v}）{HintTail}"),
-            new LuaDialectHint("near '<'", LuaSyntaxValidator.SyntaxAngleAttrOrShiftLeftCode, LuaVersion.Lua54,
-                $"此写法可能是 {v54} 的属性（如 local x <const> = 1）或左移 <<（编辑器校验基于 {v}）{HintTail}"),
-            new LuaDialectHint("near '>'", LuaSyntaxValidator.SyntaxOpShiftRightCode, LuaVersion.Lua53,
-                $"此写法属于 {v53} 的右移 >>（编辑器校验基于 {v}）{HintTail}"),
-        };
-    }
 }

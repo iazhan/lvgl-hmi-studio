@@ -562,8 +562,8 @@ public partial class ScriptEditorView : ChromeWindow
             // 库 / 字段（bit32 / table.pack / math.type / utf8 …）。这类问题真解析在原理上
             // 看不见（见 LuaRejectStage.Runtime），只能靠单独扫描。
             //
-            // 这是**非阻断**提示，所以用黄色而不是红色 —— 设备侧目标 Lua 版本至今未定
-            // （LuaDialect.Target = Unknown），同一个 bit32 在 5.2 上正常、在 5.1 上必炸。
+            // 这是**非阻断**提示，所以用黄色而不是红色 —— 它说的是"板上那个版本没有这个名字"，
+            // 语法合法、只是运行期才炸；判红会挡住保存，而用户可能正想先写着。
             // 判红等于把"待定"当成"错误"。
             ValidationDot.Fill = new SolidColorBrush(UiPalette.ValidationWarn); // 黄色
             var warnMsg = AppLocalization.Service.Format(Lang.ScriptWarnPrefix, ExternalText.Describe(result.Warnings[0]));

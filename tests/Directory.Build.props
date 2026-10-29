@@ -17,4 +17,13 @@
              Link="TestAppDataRootSetup.cs"
              Condition="'$(MSBuildProjectName)' != 'HmiEditor.TestSupport'" />
   </ItemGroup>
+
+  <ItemGroup Label="原生 lua 校验库（跑 LuaSyntaxValidator 的用例需要它；见 tools/build-lua.sh）">
+    <None Include="$(MSBuildThisFileDirectory)../third_party/lua-5.4.7/lib/linux-x64/liblua54.so"
+          Link="liblua54.so" CopyToOutputDirectory="PreserveNewest"
+          Condition="'$(OS)' != 'Windows_NT'" />
+    <None Include="$(MSBuildThisFileDirectory)../third_party/lua-5.4.7/lib/win-x64/lua54.dll"
+          Link="lua54.dll" CopyToOutputDirectory="PreserveNewest"
+          Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
 </Project>

@@ -37,4 +37,15 @@
     <!-- 包版本统一由仓库根 Directory.Packages.props 管理（CPM）。
          此处不再声明 ManagePackageVersionsCentrally，避免与根配置冲突。 -->
   </PropertyGroup>
+
+  <ItemGroup Label="原生 lua 校验库（LuaSyntaxValidator 用；由 tools/build-lua.sh 编出）">
+    <!-- 与设备端同一份 lua 5.4.7 源码。放成 None + CopyToOutputDirectory：
+         构建与 publish 都会带上，装完即用，不依赖系统里有没有 lua。 -->
+    <None Include="$(MSBuildThisFileDirectory)../third_party/lua-5.4.7/lib/linux-x64/liblua54.so"
+          Link="liblua54.so" CopyToOutputDirectory="PreserveNewest"
+          Condition="'$(OS)' != 'Windows_NT'" />
+    <None Include="$(MSBuildThisFileDirectory)../third_party/lua-5.4.7/lib/win-x64/lua54.dll"
+          Link="lua54.dll" CopyToOutputDirectory="PreserveNewest"
+          Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
 </Project>

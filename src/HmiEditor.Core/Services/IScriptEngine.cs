@@ -47,11 +47,10 @@ public class ScriptValidationResult
     /// <c>bit32.band(1, 3)</c> 是合法 Lua 表达式，缺的是运行时的库），
     /// 只能靠单独扫描发现 —— 这就是 <see cref="LuaDialect.CheckRuntimeSymbols"/> 存在的理由。</para>
     ///
-    /// <para><b>为什么不塞进 <see cref="Errors"/></b>：设备侧目标 Lua 版本**至今未定**
-    /// （<see cref="LuaDialect.Target"/> = <see cref="LuaVersion.Unknown"/>，固件里根本没有 Lua）。
-    /// 同一个 <c>bit32</c>，设备是 5.2 就完全正常、是 5.1 就必炸 —— 此时判红等于
-    /// **把"待定"当成"错误"**：用户会看到满屏红色、而在设备上跑得起来的脚本，
-    /// 然后学会整片忽略校验。分开两条通道，正是为了保住这个区分。</para>
+    /// <para><b>为什么不塞进 <see cref="Errors"/></b>：这条通道说的是「板上那个版本没有这个库」
+    /// —— 它是**运行期才会炸**的风险（<c>setfenv(1, {})</c> 语法完全合法），不是"这段代码写错了"。
+    /// 判红会挡住保存：用户可能正想先写着、或那段代码在别的分支里根本不执行。
+    /// 分开两条通道，界面才能一边让脚本存下去、一边把风险点出来。</para>
     /// </summary>
     public List<ScriptError> Warnings { get; set; } = new();
 }

@@ -45,6 +45,5 @@
   <ItemGroup Label="运行时与其他">
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="System.IO.Ports" Version="9.0.0" />
-    <PackageVersion Include="MoonSharp" Version="2.0.0" />
   </ItemGroup>
 </Project>

@@ -73,40 +73,21 @@ public class LuaSyntaxValidatorTests
     public void EmptyCode_IsValid_BecauseCallerOwnsThatCheck(string? code)
         => Assert.True(LuaSyntaxValidator.Validate(code).IsValid);
 
-    // ── 方言边界（已知误报，显式钉住；版本标签一律从 LuaDialect 取，不写死）──
+    // ── 5.3 / 5.4 的写法必须被接受（解析器就是官方 5.4，与设备同一份）──
 
     [Theory]
-    [InlineData("function f() local a = 7 // 2 end", "整除")]
-    [InlineData("function f() local a = 1 & 3 end", "按位与")]
-    [InlineData("function f() local a = 1 | 3 end", "按位或")]
-    [InlineData("function f() local a = 8 >> 2 end", "右移")]
-    public void Dialect_Lua53Operators_AreRejected_WithDialectHint(string code, string what)
-    {
-        var r = LuaSyntaxValidator.Validate(code);
-
-        Assert.False(r.IsValid);                 // 基准解析器确实不认
-        var msg = Assert.Single(r.Errors).Message;
-        Assert.Contains(LuaDialect.LabelOf(LuaVersion.Lua53), msg);      // 但必须说清这是方言差异
-        Assert.Contains(LuaDialect.ParserBaselineLabel, msg);
-        Assert.Contains(what, msg);
-    }
-
-    [Fact]
-    public void Dialect_Lua54Attribute_IsRejected_WithDialectHint()
-    {
-        var r = LuaSyntaxValidator.Validate("function f() local x <const> = 1 end");
-
-        Assert.False(r.IsValid);
-        var msg = Assert.Single(r.Errors).Message;
-        Assert.Contains(LuaDialect.LabelOf(LuaVersion.Lua54), msg);
-        Assert.Contains(LuaDialect.ParserBaselineLabel, msg);
-    }
+    [InlineData("function f() local a = 7 // 2 end")]
+    [InlineData("function f() local a = 1 & 3 end")]
+    [InlineData("function f() local a = 1 | 3 end")]
+    [InlineData("function f() local a = 8 >> 2 end")]
+    [InlineData("function f() local x <const> = 1 end")]
+    public void Dialect_Lua53AndLua54Syntax_IsAccepted(string code)
+        => Assert.True(LuaSyntaxValidator.Validate(code).IsValid, code);
 
     /// <summary>
-    /// **「基准放行」不是「设备可用」** —— 本测试只证明解析器收下这些写法，
-    /// 不证明设备上跑得起来（<c>goto</c> / <c>bit32</c> / <c>table.pack</c> 在 SDK 自带的
-    /// Lua 5.1.5 上全部不可用，见 <see cref="LuaDialect.FalseNegatives"/>）。
-    /// 名字刻意写长就是为了让"这是基准判据"这件事在测试列表里一眼可见。
+    /// **「语法放行」不是「设备可用」** —— 这条只证明解析器收下这些写法。
+    /// <c>bit32</c> / <c>table.pack</c> 在 5.4 上是否真的存在，由
+    /// <see cref="LuaDialect.CheckRuntimeSymbols"/> 单独判（<c>bit32</c> 在 5.3 就已移除）。
     /// </summary>
     [Theory]
     [InlineData("function f() goto done ::done:: end")]         // 5.2 有 goto（5.1 没有）

@@ -15,10 +15,8 @@ namespace HmiEditor.Core.Tests;
 /// 换解析器、调基准、对齐版本，全都救不了。这就是本类型存在的全部理由。</para>
 ///
 /// <para><b>本组最要紧的一条</b>是 <see cref="EngineValidate_RuntimeSymbol_IsWarningNotError"/>：
-/// 运行前检查**不许**把脚本判红。设备侧目标版本至今未定
-/// （<see cref="LuaDialect.Target"/> = <see cref="LuaVersion.Unknown"/>），
-/// 同一个 <c>bit32</c> 在 5.2 上完全正常、在 5.1 上必炸 —— 判红就是把"待定"当成"错误"，
-/// 用户会看到满屏红色、却在设备上跑得起来的脚本，然后学会整片忽略校验。</para>
+/// 运行前检查**不许**把脚本判红 —— 它报的是"板上那个版本没有这个库"（语法合法、运行期才炸），
+/// 不是"代码写错了"。判红会挡住保存，而用户可能正想先写着。</para>
 /// </summary>
 public class LuaRuntimeCheckTests
 {
@@ -26,33 +24,24 @@ public class LuaRuntimeCheckTests
     private static string AllSymbolsAsLines() =>
         string.Join("\n", LuaDialect.RuntimeSymbols.Select(s => $"local a = {s.Symbol}"));
 
-    // ── 元判据：两张表不许漂移 ──
+    // ── 元判据：表本身要能判 ──
 
     /// <summary>
-    /// <see cref="LuaDialect.RuntimeSymbols"/> 必须与 <see cref="LuaDialect.Features"/> 里
-    /// <see cref="LuaRejectStage.Runtime"/> 的条目**一一对应**（名字与 Minimum 都一致）。
+    /// 在基准版本上**确实会触发**的条目不能太少 —— 否则这张表退化成"全可用"，扫了等于没扫。
     ///
-    /// <para><b>为什么少了这条就会出事</b>：扫描表**刻意不穷举标准库**（理由见
-    /// <see cref="LuaRuntimeSymbol"/> 的注释），它报哪些符号是**靠事实表承接**的。
-    /// 于是"往 <c>Features</c> 里新增一条 Runtime 事实、却忘了加对应扫描符号"会**静默漏报** ——
-    /// 而漏报正是本机制要治的病。</para>
+    /// <para>表里同时留着几条在 5.4 上可用的名字（table.pack / table.unpack / math.type / utf8）：
+    /// 它们是"与 5.1 相比才有"的历史依据，切换目标版本时还要用。</para>
     /// </summary>
     [Fact]
-    public void RuntimeSymbols_MatchRuntimeFeatures_BothWays()
+    public void SymbolsTriggeringOnBaseline_AreNotATokenFew()
     {
-        var featureNames = LuaDialect.Features
-            .Where(f => f.Stage == LuaRejectStage.Runtime)
-            .Select(f => f.Name)
-            .ToArray();
+        var triggering = LuaDialect.RuntimeSymbols
+            .Where(s => s.RemovedIn is { } r && r <= LuaDialect.ParserBaseline
+                        || s.Minimum > LuaDialect.ParserBaseline)
+            .ToList();
 
-        Assert.Equal(featureNames, LuaDialect.RuntimeSymbols.Select(s => s.Name).ToArray());
-
-        // 名字对上了、版本对不上，扫描给出的判定一样是错的 ⇒ Minimum 也要钉。
-        foreach (var s in LuaDialect.RuntimeSymbols)
-        {
-            var f = Assert.Single(LuaDialect.Features, x => x.Name == s.Name);
-            Assert.Equal(f.Minimum, s.Minimum);
-        }
+        Assert.True(triggering.Count >= 8,
+            $"基准 {LuaDialect.ParserBaselineLabel} 上只有 {triggering.Count} 条会触发，扫描器形同虚设");
     }
 
     /// <summary>
@@ -132,51 +121,52 @@ public class LuaRuntimeCheckTests
 
     // ── 认出来 + 行号 + 状态 ──
 
-    /// <summary>每条符号都被认出来，且行号是它真正所在的那一行（不是恒 0、不是恒 1）。</summary>
+    /// <summary>
+    /// 5.4 上确实不可用的符号必须全部认出来，且行号是它真正所在的那一行（不是恒 0、不是恒 1）。
+    /// </summary>
     [Fact]
-    public void EveryRuntimeSymbol_IsDetected_WithItsLineNumber()
+    public void EveryUnavailableSymbol_IsDetected_WithItsLineNumber()
     {
-        var hits = LuaDialect.CheckRuntimeSymbols(AllSymbolsAsLines(), LuaDialect.Target);
+        var unavailable = LuaDialect.RuntimeSymbols
+            .Where(s => s.RemovedIn is not null || s.Minimum > LuaDialect.Target)
+            .ToList();
+        Assert.NotEmpty(unavailable);
 
-        Assert.Equal(LuaDialect.RuntimeSymbols.Count, hits.Count);
+        var code = string.Join("\n", unavailable.Select(s => $"local a = {s.Symbol}"));
+        var hits = LuaDialect.CheckRuntimeSymbols(code, LuaDialect.Target);
 
+        Assert.Equal(unavailable.Count, hits.Count);
         for (int i = 0; i < hits.Count; i++)
         {
-            Assert.Equal(LuaDialect.RuntimeSymbols[i].Symbol, hits[i].Symbol.Symbol);
+            Assert.Equal(unavailable[i].Symbol, hits[i].Symbol.Symbol);
             Assert.Equal(i + 1, hits[i].Line);
-            Assert.Equal(LuaSymbolStatus.Undetermined, hits[i].Status);
+            Assert.Equal(LuaSymbolStatus.Unavailable, hits[i].Status);
         }
     }
 
-    // ── 目标一旦确定，这一层自动收敛 ──
+    // ── 反向约束：不同目标版本报的集合不同 ──
 
     /// <summary>
-    /// 目标**足够高**（取全表最大 Minimum）⇒ 一条都不报。
+    /// 目标 = Lua 5.1 ⇒ **只报"5.1 之后才有的"**（bit32 / table.pack / table.unpack /
+    /// math.type / utf8）；5.1 本来就有的全局 <c>unpack</c> / <c>setfenv</c> 不许报。
     ///
-    /// <para>这条守住的是"别把目标已定的情况也一律报" —— 没有它，上面所有"会报"的断言
-    /// 都能被一个"永远全报"的实现骗过。</para>
-    ///
-    /// <para>取 <c>Max(Minimum)</c> 而不是写死 <c>Lua54</c>：将来新增一条 Minimum 更高的符号时，
-    /// 写死的那版会**悄悄变成假绿**。</para>
+    /// <para>这条正是 <see cref="LuaRuntimeSymbol.RemovedIn"/> 存在的理由：同一个名字在 5.1 可用、
+    /// 在 5.4 已移除，只看 <c>Minimum</c> 的模型两边都会判错。</para>
     /// </summary>
     [Fact]
-    public void TargetHighEnough_ReportsNothing()
+    public void TargetLua51_ReportsOnlyNamesAddedLater()
     {
-        var highest = LuaDialect.RuntimeSymbols.Max(s => s.Minimum);
+        // "5.1 上不可用" = 5.1 之后才有的（含 5.2 有、后面又没了的 bit32）
+        var expected = LuaDialect.RuntimeSymbols
+            .Where(s => s.Minimum > LuaVersion.Lua51
+                        && (s.RemovedIn is null || s.RemovedIn > LuaVersion.Lua51))
+            .Select(s => s.Symbol)
+            .OrderBy(x => x, StringComparer.Ordinal)
+            .ToList();
 
-        Assert.Empty(LuaDialect.CheckRuntimeSymbols(AllSymbolsAsLines(), highest));
-    }
-
-    /// <summary>
-    /// 目标 = SDK 自带的 Lua 5.1 ⇒ 每条都判 <see cref="LuaSymbolStatus.Unavailable"/>，
-    /// 且措辞必须是**确定**的，不许含糊成"未定"。
-    /// </summary>
-    [Fact]
-    public void TargetLua51_ReportsEverySymbol_AsUnavailable()
-    {
         var hits = LuaDialect.CheckRuntimeSymbols(AllSymbolsAsLines(), LuaVersion.Lua51);
 
-        Assert.Equal(LuaDialect.RuntimeSymbols.Count, hits.Count);
+        Assert.Equal(expected, hits.Select(h => h.Symbol.Symbol).OrderBy(x => x, StringComparer.Ordinal));
         Assert.All(hits, h => Assert.Equal(LuaSymbolStatus.Unavailable, h.Status));
 
         foreach (var h in hits)
@@ -223,9 +213,9 @@ public class LuaRuntimeCheckTests
         Assert.Empty(r.Errors);
 
         var w = Assert.Single(r.Warnings);
-        // 设备目标未定（LuaDialect.Target = Unknown）⇒ 判定必然是"暂时无法确定"那一态。
-        // 这里钉**具体态**而不是"属于这个族"：本条要守的正是"未定不许说成不存在"。
-        Assert.Equal(LuaDialect.RuntimeSymbolUndeterminedCode, w.Code);
+        // 设备目标已定 5.4，而 bit32 在 5.3 就移除了 ⇒ 判定是"确定不存在"那一态。
+        // 仍然只是**警告**：它不影响脚本能否保存，用户可能就是想先写着。
+        Assert.Equal(LuaDialect.RuntimeSymbolUnavailableCode, w.Code);
         Assert.Equal(2, w.Line);
     }
 

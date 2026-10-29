@@ -144,7 +144,9 @@ public class ScriptIssueLocalizationGuardTests
         {
             [LuaSyntaxValidator.SyntaxMissingEqualsCode] = 0,   // 缺少赋值符号 '='
             [LuaSyntaxValidator.SyntaxMissingNameCode] = 0,     // 缺少名称（变量名或函数名）
-            [LuaSyntaxValidator.SyntaxExpectedCode] = 1,        // 缺少必要的语法元素：{0}
+            // 设备目标已定 5.4 ⇒ "目标未定"那一态在正常路径上不再产生。码与字典键都保留：
+            // CheckRuntimeSymbols 的 target 参数仍可传 Unknown（有单测覆盖那一支）。
+            [LuaDialect.RuntimeSymbolUndeterminedCode] = 2,   // {0} 符号、{1} 版本
         };
 
     /// <summary>需要守卫的**全部** Code：真实触发到的 + 豁免的。</summary>
@@ -201,7 +203,9 @@ public class ScriptIssueLocalizationGuardTests
             .Concat(DeclaredCodes(typeof(LuaDialect), LuaDialect.RuntimeSymbolWarningCodePrefix))
             .ToList();
 
-        Assert.True(declared.Count >= 14,
+        // 下限跟着码表走：语法族 10 个（旧的 6 个"方言误报"码随解析器换成官方 5.4 一起下架）
+        // + 运行前检查 2 个。低于这个数说明反射取数失效了。
+        Assert.True(declared.Count >= 10,
             $"反射只枚举到 {declared.Count} 个 Code —— 判据的取数方式可能失效了");
 
         // ① 声明了、触发不出来、又**不在豁免表**里 ⇒ 要么样本漏了，要么是死代码。

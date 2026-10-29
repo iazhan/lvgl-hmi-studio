@@ -4,13 +4,8 @@
     <RootNamespace>HmiEditor.Core</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Lua 语法校验用（LuaSyntaxValidator：只 LoadString 解析、不执行）。
-         版本在 Directory.Packages.props 集中声明。
-         从 HmiEditor.Scripting 迁移而来 —— 该程序集因此下架，
-         见 docs/2026-09-20-lua-syntax-validation.md。 -->
-    <PackageReference Include="MoonSharp" />
-  </ItemGroup>
+  <!-- Lua 语法校验不再依赖托管解析器：改用官方 lua 5.4 原生库（third_party/lua-5.4.7，
+       由 tools/build-lua.sh 编出 .so/.dll），与设备侧运行时同一份源码。 -->
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Strings.zh-CN.json">
