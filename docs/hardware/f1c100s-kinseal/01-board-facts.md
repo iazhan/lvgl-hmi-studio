@@ -42,38 +42,15 @@
 - **资源仪表盘**：预算取自目标契约（RAM 32 MiB / Flash 8 MiB），判读阈值见 `ResourceBudget`。
 - **工程设置 → 设备兼容性校验**：分辨率超过 800×480 报警告；工程 LVGL 主版本 ≠ 9 报**错误**
   （生成物会留着 9.x 已改名符号，板上编译不过）。
-- T113 / RK3506 目标与 `firmware/t113/` 固件**保持原样**：kinseal 支持是增量，不占位、
-  不改上游既有路径。
 
 ## 4. 边界：编辑器不管什么
 
-设备侧运行时（fbdev/evdev/触摸标定/字体解析/OTA）在姊妹仓库，本仓库只到"生成 C 代码 + 编译成 `.so`"为止：
+设备侧运行时（fbdev/evdev/触摸标定/字体解析/OTA）在姊妹仓库，本仓库只到"导出一份 chenge 工程"为止：
 
-- **`.so` 的交叉编译**编辑器自己也能做（「编译转换」→ `F1C100SSoBuilder`：buildroot 工具链 +
-  运行时契约头，产物 `libhmi_ui.so`）。它需要两样东西：buildroot 工具链、设备侧运行时目录
-  （`src/runtime/*.h` + `config/lv_conf.h` + `third_party/lvgl-*`）。这两样**只从**
-  ① 设置→真机部署 里显式指定的路径、② 环境变量 `F1C100S_GCC` / `CHENGE_RT_DIR`、
-  ③ SDK（见下）来 —— 编辑器是用户单独安装的软件，**不假设**目标机上存在本项目的任何
-  仓库布局（不向上遍历、不猜平级目录）。
-- **SDK 的分发与安装**（默认随安装包，不依赖网络）：
-  - 打包：`tools/package-kinseal-sdk.sh --runtime <chenge-rt> --host <buildroot/output/host> --slim`
-    产 `sdk/kinseal-sdk-<ver>.tar.gz` + 同名 `.manifest.json`（含 SHA-256）。脚本末尾会用**包内**
-    工具链真编一个 ARM `.so` 自检 —— 不可搬迁的工具链在这里就失败，不会等到用户装完。
-    实测：`--slim` 后归档 **87 MB**、解压 **271 MB**（工具链 302 MB 里去掉 host python2.7 与
-    `cc1plus`/`lto1`；C-only 够用）。
-  - 随包：两个文件放 `<安装目录>/sdk/`，构建时由 `HmiEditor.App.csproj` 带上。归档而非展开目录，
-    是因为 `tar` 能保可执行位（Windows 上直接铺文件会丢）。
-  - 首次使用：`KinSealSdkBootstrapper` 校验清单后把归档装到 `<用户数据目录>/sdk/kinseal`
-    （全有或全无：SHA 不符/内容不全一律不落盘），之后 `F1C100SSoBuilder` 自动认它。
-  - 网络分发（**保留**，默认关闭）：设置→真机部署 填清单地址即改为按清单下载安装，
-    与随包安装共用同一条校验/解压/落盘代码。
-- 主仓库 `f1c100s-os/scripts/02_build.sh` §1.6 仍然保留同等的编译能力（chenge-rt Makefile）：
-  没有 SDK 的机器上，导出源码交主仓库构建即可，两条路产物一致。
-- **图片资产**：生成代码用 `IMG_PATH_<id>`（LVGL FS 按路径解码，PNG 走 lodepng）。板上加载需要
-  主仓库构建时注入 `-DSIM_ASSET_DIR` 并部署资产目录——**该链路当前未接**（板上尚无工程图片），
-  属主仓库侧工作。
-- **字体**：工程字体经宿主 `hmi_resolve_font` 解析（FreeType 运行时 + 构建期子集 TTF），
-  子集化在主仓库 `chenge-rt/tools/make_font_subset.py`。
+- 导出产物是工程目录（JSON，格式 0.6），可直接交给设备侧运行时渲染。编辑器**不生成 C 代码、
+  不交叉编译 `.so`**，因此不需要工具链、SDK 或运行时源码树
+- 图片与字体随工程目录（或打包成 `.cgpkg`）到设备侧，由运行时负责解码与字体解析
+- 板级构建、烧写与交叉工具链都在主仓库：`f1c100s-os/chenge-bsp/` 与 `chenge-hmi/chenge-runtime`
 
 ## 5. 姊妹板预留
 

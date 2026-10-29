@@ -75,8 +75,7 @@ public class SystemIssueLocalizationGuardTests
 
     /// <summary>
     /// 真实撞一遍 BCL —— 场景覆盖本仓库实际调用面（<c>File.*</c> / <c>Directory.*</c> /
-    /// <c>ZipArchive</c> / <c>JsonDocument</c>），与探针
-    /// <c>tools/probe-bcl-exception-types.cs</c> 的 A–F 段一一对应。
+    /// <c>ZipArchive</c> / <c>JsonDocument</c>），覆盖与阶段 85 探针相同的 A–F 段。
     /// </summary>
     internal static List<Hit> Probe()
     {

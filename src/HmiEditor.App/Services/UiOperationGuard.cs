@@ -136,8 +136,7 @@ public static class UiOperationGuard
     /// ⚠ 另有两处要把一个<b>承接变量</b>提到 <c>try</c> 外（<c>CommunicationConfigView</c> 的 <c>file</c>、
     /// <c>BuildPipelineService.CompileAsync</c> 的 <c>targetDir</c> 都声明在 <c>try</c> 内）——
     /// 编译器会当场报 <c>CS0103</c>，别用 <c>null</c> 糊过去（那就把"带上对象"又丢了）。
-    /// 探针 <c>tools/probe-bcl-io-messages.cs</c> / <c>tools/probe-bcl-exception-types.cs</c>，
-    /// 读数与完整推理见 <c>docs/2026-09-23-exception-passthrough-triage.md</c> §84–86。</para>
+    /// 探针与完整推理见同批提交里的「异常直通分级」专题（§84–86），脚本已随 tools 收敛移除。</para>
     /// </summary>
     public static string FailureDetail(string operationKey, string? targetPath, Exception ex) =>
         targetPath is null

@@ -14,8 +14,7 @@ TestResults/
 ## Build artifacts
 publish/
 artifacts/
-## kinseal SDK 归档：由 tools/package-kinseal-sdk.sh 从一次构建产物生成（约 90 MB），
-## 属发布物不属源；随安装包分发时由 csproj 从这里带上。
+## cross 工具链归档（约 90 MB）属发布物不属源；这条规则留住，别让整包含进版本库。
 /sdk/
 
 ## OS files
@@ -51,10 +50,8 @@ firmware/t113/host_test/hmi_settings_test
 firmware/t113/host_test/screenshots/
 
 ## 生成工具的手工输出目录（不入库）
-## 说明：sim-output* 覆盖 SimExport 的默认输出与历史上的 sim-output-mock；
-## mock-hmi-out 是 MockHmiGen 的默认输出。正常验收走 scripts/verify.sh ——
-## 它写到 $TMPDIR，不落仓库。留在仓库里的旧产物会让人/AI 审查读到陈旧代码
-## 并得出错误结论（2026-08 已发生过一次）。
+## 说明：sim-output* 与 mock-hmi-out 是早前生成工具的默认输出目录，那些工具已下线，
+## 规则留着是因为留在仓库里的旧产物会让人/AI 审查读到陈旧代码并得出错误结论。
 sim-output*/
 mock-hmi-out/
 

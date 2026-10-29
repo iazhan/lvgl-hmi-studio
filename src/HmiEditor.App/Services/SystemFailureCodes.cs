@@ -9,7 +9,7 @@ namespace HmiEditor.App.Services;
 ///
 /// <para><b>它解决什么</b>：界面在中文环境下长期是**中英混排** —— 保存失败时用户看到的是
 /// <c>保存失败: Access to the path '/…/demo.hmi.tmp' is denied.</c>。阶段 84 用探针实测
-/// （<c>tools/probe-bcl-io-messages.cs</c>）把 <c>CurrentUICulture</c> 切成 <c>zh-CN</c> /
+/// 把 <c>CurrentUICulture</c> 切成 <c>zh-CN</c> /
 /// <c>en-US</c>，消息**一字不变** ⇒ BCL 的 IO 原文**不可翻译**，唯一出路是**按异常类型码化**：
 /// 「这是什么毛病」由字典决定（可翻译），「是哪个文件」由模板实参决定（#61b）。</para>
 ///
@@ -19,7 +19,7 @@ namespace HmiEditor.App.Services;
 /// 所在层）维护。这是**唯一**一处「码不是由产出方声明」的地方。</para>
 ///
 /// <para><b>码表为什么是这 7 个 —— 来自阶段 85 探针实测，不是凭类型清单抄的</b>
-/// （<c>tools/probe-bcl-exception-types.cs</c>，20 个场景，覆盖本仓库真实调用面
+/// （20 个场景，覆盖本仓库真实调用面
 /// <c>File.*</c> / <c>Directory.*</c> / <c>new StreamWriter|StreamReader</c> /
 /// <c>ZipArchive</c> / <c>JsonDocument</c>）：</para>
 /// <list type="bullet">
