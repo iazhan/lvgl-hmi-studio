@@ -241,4 +241,34 @@ internal static class ExportFixture
 
     public static ChengeExportResult Export(HmiProject project, string outDir) =>
         new ChengeExporter().Export(project, null, new ChengeExportOptions(), outDir);
+
+    /// <summary>
+    /// 用宿主运行时打开一个**已导出**的工程目录并截图。
+    ///
+    /// <para>返回 <c>(false, "skip: no CHENGE_RUNTIME_DIR")</c> 表示本机没配宿主二进制 ——
+    /// 调用方直接 return（与同目录渲染判据一致），别把它当失败：CI 上没有运行时是常态。</para>
+    /// </summary>
+    public static (bool Ok, string Log) RunRuntime(string projectDir, string shotPath)
+    {
+        var runtimeDir = Environment.GetEnvironmentVariable("CHENGE_RUNTIME_DIR") ?? "";
+        var binary = runtimeDir.Length == 0 ? "" : Path.Combine(runtimeDir, "chenge-runtime");
+        if (binary.Length == 0 || !File.Exists(binary)) return (false, "skip: no CHENGE_RUNTIME_DIR");
+
+        var psi = new System.Diagnostics.ProcessStartInfo(binary)
+        {
+            WorkingDirectory = runtimeDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        psi.Environment["SDL_VIDEODRIVER"] = "dummy";
+        psi.Environment["HMI_PROJECT_DIR"] = projectDir;
+        psi.Environment["HMI_DATA_DIR"] = Path.Combine(projectDir, "data");
+        psi.Environment["HMI_SHOT"] = shotPath;
+        psi.Environment["HMI_RT_TRACE"] = "1";
+
+        using var process = System.Diagnostics.Process.Start(psi)!;
+        var log = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd();
+        if (!process.WaitForExit(20000)) return (false, "运行时 20s 未退出\n" + log);
+        return (File.Exists(shotPath), log);
+    }
 }

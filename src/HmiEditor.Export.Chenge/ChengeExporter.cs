@@ -130,6 +130,10 @@ public sealed class ChengeExporter
     private ChengeExportResult ExportCore(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
         string? projectDirectory, IChengeExportSink sink)
     {
+        // 同一个导出器实例会被复用（预览 → 正式导出）：文本表必须每次从空开始，
+        // 否则上一个工程的报警文本会漏进这一份 strings.json。
+        _stringTexts.Clear();
+
         var issues = new ChengeIssueBag();
         var colors = new ChengeColors(project.Theme, issues);
         var assetStore = new ChengeAssets(assets, projectDirectory, issues);
@@ -180,17 +184,20 @@ public sealed class ChengeExporter
         if (string.IsNullOrEmpty(startPage))
             issues.Error("manifest.no_pages", "manifest.json", "工程里没有任何页面，无法导出");
 
-        var strings = BuildStrings(project, issues);
-        if (strings != null)
-        {
-            files["strings.json"] = strings;
-            features.Add("i18n");
-        }
+        // 顺序有依赖：报警的 text_id / text_clear_id 会往 _stringTexts 里登记文本，
+        // strings.json 必须在 BuildAlarms **之后**生成。反过来时 strings.json 恒为 null，
+        // 而运行时 alarm_load 找不到键是致命错误（整个工程起不来），不是"显示 id"。
         var alarmDoc = BuildAlarms(project, maps, issues);
         if (alarmDoc != null)
         {
             files["alarms.json"] = alarmDoc;
             features.Add("alarm");
+        }
+        var strings = BuildStrings(project, issues);
+        if (strings != null)
+        {
+            files["strings.json"] = strings;
+            features.Add("i18n");
         }
         var savecfg = BuildSaveCfg(project, maps, issues);
         if (savecfg != null) files["savecfg.json"] = savecfg;
