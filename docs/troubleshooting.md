@@ -1,4 +1,4 @@
-# zhishu-hmi 故障排查手册
+# 晨歌 HMI 编辑器故障排查手册
 
 面向使用编辑器的现场工程师。
 每条形如：**症状（你看到什么）→ 原因 → 处置（可执行命令/操作）→ 依据（仓库路径）**。
@@ -23,12 +23,11 @@
   判成仓库、把历史读成父仓库的提交，表现为一堆看似产品缺陷的断言失败。
 - **依据**：`README.md`「常见问题」、`tests/HmiEditor.TestSupport/TestTempDir.cs`。
 
-### 1.3 `scripts/verify.sh` 中途因空间不足失败，报错点却看着无关
+### 1.3 门禁怎么跑
 
-- **原因**：Golden 工程（含字体资源）与 LVGL 全量编译产物（数百 MB）都落在临时目录下。
-- **处置**：脚本第 [6] 步自带早失败检查；按提示把 `TMPDIR` 指到仓库外 ≥1 GB 的目录：
-  `TMPDIR=$HOME/.cache/zhishu-hmi-verify LVGL_DIR=~/Git/lvgl bash scripts/verify.sh`。
-- **依据**：`scripts/verify.sh`。
+- **阻断门禁**（脚本语法 → 构建，警告即失败 → 全量测试 → 路径卫生）：`bash scripts/ci-gate.sh`
+- **只查一项**：例如只看路径卫生 `bash scripts/check-path-hygiene.sh`
+- **依据**：`scripts/ci-gate.sh` 的步骤注释。
 
 ### 1.4 `scripts/ci-gate.sh` 报 `/dev/fd/63: 没有那个文件或目录`
 
@@ -143,5 +142,5 @@
 | --- | --- | --- |
 | Git 工作流用例全量并行偶发红：沙箱对「首次出现的文件路径」收约 60 ms 且全局串行，`git init` 撞穿 15 s 等待窗口。**（2026-09-27 阶段 115 又撞一次，指纹如下）**失败用例**耗时 50 s ≈ 3 × 15 s**，而断言落在**下游**那一条：`Commit_ThenHistory_ShowsEntry` 报 `Assert.NotEmpty() Failure: Collection was empty` （因为 `InitializeRepository` / `Commit` 的**返回值被测试丢弃** ⇒ 撞穿窗口这件事不报自己、只在下游显出「历史是空的」）。**证据**：同一批 8 条用例独立复跑 **5/5 绿 / 每次 241 ms**（`.workbuddy/tmp/s115-gitprobe1.log`）；同一棵树的门禁重跑，那一批 **551 ms**（`s115-gate1c.log`）⇒ **慢的那次与代码无关**，也不是门禁自身负载（两次门禁步 5 读数几乎相同） | 门禁已把 spawn git 的用例拆出单独跑（判据未放宽）；手工排查用 `--filter` 单独跑；⚠ **认这条指纹**：红的是非 `InitializeRepository*` 的同类用例也可以，只要「耗时 ≈ 15 s 的整数倍 ＋ 断言在下游」。**建议顺手改一处**（代价 2 行、不放开任何判据）：把那批用例的返回值从「丢弃」改成断言（`Assert.True(InitializeRepository(dir))` ＋ `var (ok, err) = Commit(...); Assert.True(ok, err)`）⇒ 失败消息就直接点名 `git 命令超时`，省掉一次 50 s 黑箱取证 | `scripts/ci-gate.sh` 第 [6] 步注释；2026-09-27 那次现场：`.workbuddy/tmp/s115-gate1.log`（红，mtime `20:20:39`）／`s115-gate1b.log` ＋ `s115-gate1c.log`（绿，`20:25:13` / `20:29:51`） |
 | `RuntimeConfig` 部分字段不走设备：`HistoryStoragePath`/`HeartbeatIntervalMs`/`MaxRuntimeTasks`/`EnableCrashDump`/`CrashDumpSector` 未下发，`EnableTamperDetection` 零消费，`WatchdogTimeoutMs`/`EnableHmiReboot` 是死字段（保留为老工程 JSON 兼容） | 在工程设置改这些项不会改变设备行为，闭环需先立机制 | — |
-| 编辑器侧一键出发布包：`bash scripts/package-release.sh`（发布编辑器 + 生成版本清单与校验和）；出包后 `bash scripts/package-release.sh --verify <包目录>` 复核 | 出包步骤见包内 `UPGRADE.md` | `scripts/package-release.sh` |
+| 出安装包：`bash tools/package.sh`（Linux 出 `.deb` 与 tar.gz，Windows 出 NSIS Setup 与 zip，随包内置运行时） | 用 `--linux` / `--windows` 只出一个平台；产物在 `dist/` | `tools/package.sh`、`tools/publish-linux.sh`、`tools/publish-win.sh` |
 | 极端迟到的设备回包仍可能串帧（晚于首字节宽限窗口） | 避免通道繁忙时下发超长命令；失败重试 | — |

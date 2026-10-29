@@ -153,6 +153,5 @@ curl -s -X POST http://127.0.0.1:9000/mcp \
 > 签名错误等，如 CS0029）计入"高"严重度，结果放入 `deep` 字段。需 dotnet SDK
 > 与可构建的项目；未找到项目或构建失败时返回原因并跳过。
 >
-> **CI 集成**：仓库根 `.workflow/devkit-check.yml`（Gitee Go 流水线）在 push 到 main
-> 时自动执行 devkit 测试与 C# 全仓库体检；CI 环境无 dotnet 时 Roslyn/深度检查
-> 自动跳过（启发式仍执行）。在 Gitee 仓库「流水线」页面启用后生效。
+> **怎么跑**：本地执行 devkit 的测试与 C# 全仓库体检即可，没有接 CI 服务。
+> 无 dotnet 时 Roslyn/深度检查自动跳过（启发式仍执行）。

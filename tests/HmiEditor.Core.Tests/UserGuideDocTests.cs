@@ -80,7 +80,9 @@ public class UserGuideDocTests
         Assert.True(paths.Count >= 40, $"只扫到 {paths.Count} 条仓库路径 —— 正则可能已失效");
         Assert.True(links.Count >= 3, $"只扫到 {links.Count} 条相对链接");
         Assert.True(shortcuts.Count >= 15, $"只扫到 {shortcuts.Count} 个快捷键");
-        Assert.True(scripts.Count >= 3, $"只扫到 {scripts.Count} 个脚本引用");
+        // 下限 2：文档只留用户手册与排障手册，里面讲的脚本入口就是门禁两个
+        // （ci-gate.sh / check-path-hygiene.sh）。再低就说明正则失效了。
+        Assert.True(scripts.Count >= 2, $"只扫到 {scripts.Count} 个脚本引用");
     }
 
     [Fact]

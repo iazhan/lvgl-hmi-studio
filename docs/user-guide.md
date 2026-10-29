@@ -1,4 +1,4 @@
-# zhishu-hmi 用户手册
+# 晨歌 HMI 编辑器用户手册
 
 适用对象：使用本编辑器做工业 HMI 画面的**现场工程师**。
 本文只描述仓库里已经存在的功能与命令，每条关键说法都标注了事实源文件，便于核对。
@@ -61,7 +61,7 @@ dotnet run --project src/HmiEditor.App/HmiEditor.App.csproj
 **最近打开**（`App.axaml.cs` 的启动分支）。选择后进入主窗口 `MainWindow.axaml`。
 
 运行日志写到应用数据目录下的 `logs/`（`src/HmiEditor.App/Services/FileLogger.cs`；
-默认根 `%APPDATA%/zhishu-hmi`，见 `src/HmiEditor.Core/Services/AppPaths.cs`）。
+默认根 `%APPDATA%/chenge-hmi`，见 `src/HmiEditor.Core/Services/AppPaths.cs`）。
 数据根可用环境变量 `HMI_APP_DATA_ROOT` 覆盖（`AppPaths.DataRootEnvVar`）。
 
 ## 4. 工程文件与工程包

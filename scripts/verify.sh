@@ -77,12 +77,12 @@ AVAIL_KB="$(df -Pk "$TMP_ROOT" 2>/dev/null | awk 'NR==2 {print $4}')"
 if [ "${AVAIL_KB:-0}" -lt 1048576 ]; then
   echo "ERROR: 临时目录 $TMP_ROOT 可用空间不足 1 GB（当前约 ${AVAIL_KB:-0} KB）。"
   echo "       LVGL 全量编译需要数百 MB；请改用有空间的目录："
-  echo "       TMPDIR=\$HOME/.cache/zhishu-hmi-verify LVGL_DIR=<lvgl 源码> bash scripts/verify.sh"
+  echo "       TMPDIR=\$HOME/.cache/chenge-hmi-verify LVGL_DIR=<lvgl 源码> bash scripts/verify.sh"
   exit 1
 fi
-GOLDEN_DIR="$TMP_ROOT/zhishu-hmi-golden"
+GOLDEN_DIR="$TMP_ROOT/chenge-hmi-golden"
 rm -rf "$GOLDEN_DIR"
-dotnet run --project tools/MockHmiGen/MockHmiGen.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR" >"$TMP_ROOT/zhishu-hmi-golden.log"
+dotnet run --project tools/MockHmiGen/MockHmiGen.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR" >"$TMP_ROOT/chenge-hmi-golden.log"
 test -s "$GOLDEN_DIR/MockChineseProject.hmi"
 test -s "$GOLDEN_DIR/MockHmiAssets/NotoSansCJK_Regular.ttc"
 if command -v unzip >/dev/null 2>&1; then
@@ -113,7 +113,7 @@ FAKE_LVGL="$GOLDEN_DIR/fake-lvgl"
 mkdir -p "$FAKE_LVGL"
 printf "/* compile-only probe; real LVGL required for C build */\n" > "$FAKE_LVGL/lvgl.h"
 set +e
-dotnet run --project tools/SimExport/SimExport.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR/MockChineseProject.hmi" "$SIM_DIR" "$FAKE_LVGL" >"$TMP_ROOT/zhishu-hmi-sim-export.log" 2>&1
+dotnet run --project tools/SimExport/SimExport.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR/MockChineseProject.hmi" "$SIM_DIR" "$FAKE_LVGL" >"$TMP_ROOT/chenge-hmi-sim-export.log" 2>&1
 SIM_EXIT=$?
 set -e
 test -s "$SIM_DIR/generated_hmi.c"
@@ -156,7 +156,7 @@ if command -v cmake >/dev/null 2>&1; then
   if [ -n "${LVGL_DIR:-}" ] && [ -f "$LVGL_DIR/lvgl.h" ]; then
     REAL_SIM_DIR="$GOLDEN_DIR/real-simulator"
     rm -rf "$REAL_SIM_DIR"
-    dotnet run --project tools/SimExport/SimExport.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR/MockChineseProject.hmi" "$REAL_SIM_DIR" "$LVGL_DIR" >"$TMP_ROOT/zhishu-hmi-real-sim.log" 2>&1
+    dotnet run --project tools/SimExport/SimExport.csproj -c "$CONFIG" --no-build --no-restore -- "$GOLDEN_DIR/MockChineseProject.hmi" "$REAL_SIM_DIR" "$LVGL_DIR" >"$TMP_ROOT/chenge-hmi-real-sim.log" 2>&1
     test -x "$REAL_SIM_DIR/build/hmi_sim"
     # 无头运行：selftest 只渲染固定帧数并校验显示/活动屏幕，不需要真实 X server。
     # CTest 用例（simulator_selftest）已声明 SDL_VIDEODRIVER=dummy；这里的手工调用

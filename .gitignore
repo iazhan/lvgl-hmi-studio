@@ -84,11 +84,6 @@ hardware/hmi-lceda-pro/kicad-export/refs/*.pdf
 ## KiCad 导出打包产物
 hardware/hmi-lceda-pro/kicad-export/*.zip
 
-## CI 工作流文件必须入库（.workflow/*.yml 是真实门禁）。
-## 只忽略本地临时/覆盖文件，不要忽略整个目录，否则门禁形同虚设。
-.workflow/*.local.yml
-.workflow/tmp/
-
 ## Avalonia headless 的字体回退产物：跑 HmiEditor.App.UiTests 时由 headless 字体管理器
 ## 落在**仓库根**（`Avalonia.Headless.BareMinimum.ttf`，约 1.7 KB，每次运行重生成）。
 ## 不是源码、不参与构建，忽略它免得每次跑完测试 `git status` 都多一条噪声。

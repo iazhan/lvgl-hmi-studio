@@ -66,7 +66,7 @@ python examples/scan_csharp.py                 # 启发式 + Roslyn 语法（默
 python examples/scan_csharp.py --deep          # + 项目级 dotnet build 语义检查（按项目分组构建）
 ```
 
-CI：仓库根 `.workflow/devkit-check.yml` 提供 Gitee Go 流水线（push 自动跑测试 + 体检）。
+测试：`python -m pytest tests/`（或 `make check`），本地跑，没有接 CI 服务。
 
 ## 目录结构
 

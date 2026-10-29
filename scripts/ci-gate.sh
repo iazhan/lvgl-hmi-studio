@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================
-# ci-gate.sh — 统一的仓库质量门禁（本地与 CI 共用）
+# ci-gate.sh — 仓库质量门禁（提交前本地执行）
 #
 # 与 verify.sh 的分工：
-#   ci-gate.sh   —— 快速、无外部依赖的阻断门禁（语法 / 构建 / 测试 / 固件 host 测试）
-#   verify.sh    —— 端到端验收（Golden 工程导出 + 真实 LVGL C 编译 + selftest + CTest）
+#   ci-gate.sh   —— 快速、无外部依赖的阻断门禁（脚本语法 / 构建 / 全量测试 / 路径卫生）
 #
 # 退出码：0 = 全部通过；非 0 = 首个失败步骤的退出码。
-#
-# 环境变量：
-#   CI_REQUIRE_FIRMWARE_TESTS=1  缺少 gcc 时也判定失败（CI 建议开启）
 # ============================================================
 set -euo pipefail
 
@@ -39,7 +35,7 @@ trap 'rm -f "$SCRIPT_LIST"' EXIT
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     git ls-files '*.sh' > "$SCRIPT_LIST"
 else
-    find . -name '*.sh' -not -path './firmware/Tina-*/*' -not -path './.git/*' > "$SCRIPT_LIST"
+    find . -name '*.sh' -not -path './.git/*' > "$SCRIPT_LIST"
 fi
 script_count=0
 while IFS= read -r f; do
@@ -52,17 +48,6 @@ while IFS= read -r f; do
 done < "$SCRIPT_LIST"
 [ "$script_count" -gt 0 ] || die "未找到任何 .sh 脚本（清单为空，检查上面的收集命令）"
 echo "✅ ${script_count} 个脚本语法正确"
-
-# ── [1b] 构建脚本不得就地改写被跟踪的应用源码 ──
-# 背景：tina/build.sh 曾用 `sed -i` 按板型改写 app/runtime/runtime_config.h，
-# 每次构建都污染工作区、切板后源码与产物不一致（构建不可复现）。
-# 板级差异现由 app/runtime/board_profile.h + 编译期 -D 注入表达。
-if grep -rn "sed[[:space:]]\+-i" firmware/t113/tina/build.sh 2>/dev/null \
-   | grep -qE "app/(runtime|drivers|comm|settings)/"; then
-    grep -rn "sed[[:space:]]\+-i" firmware/t113/tina/build.sh | grep -E "app/(runtime|drivers|comm|settings)/" >&2
-    die "build.sh 仍在用 sed -i 改写应用源码：请改为 board_profile.h + 编译期 -D 注入"
-fi
-echo "✅ 构建脚本未就地改写应用源码"
 
 # ── [1c] 产品/工具代码不得硬编码开发机家目录 ──
 # 背景：tools/MockHmiGen 曾写死 /home/<开发者>/...（默认输出目录 + "下一步"提示语），
@@ -285,30 +270,8 @@ fi
 rm -f "$BUILD_LOG"
 echo "✅ 构建通过（0 警告 / 0 错误）"
 
-# ── [2b] 出包 / 预算实测工具：单独构建 + 出包最小自检 ──
-#
-# 为什么单独一步：tools/* 沿用既有约定**不在 HmiEditor.slnx 里**（T113KitBuilder/SimExport 同），
-#   若门禁从不构建它们，「一键出包」的 CLI 接线可以腐烂而无人发现（实现逻辑有单测，但
-#   Program.cs 的接线没有）。这里构建两个新工具，并让 ReleasePackager 在临时目录里
-#   装配一个最小包、跑完整套自检 —— 不 publish、不碰仓库、不产出压缩包（秒级）。
-#
-# 为什么这里只把 **error** 判红、而不是像上面那样把 warning 也判红：
-#   工具工程需要单独 restore，受限环境的 NuGet 审计/缓存会打印与代码无关的 NU1900；
-#   "0 警告"的权威门禁是上面那次 slnx 构建。这里只保证工具**能构建、能跑通**。
-banner "出包 / 预算实测工具（构建 + 出包自检）"
-TOOL_LOG="$(mktemp)"
-trap 'rm -f "$SCRIPT_LIST" "$TOOL_LOG"' EXIT
-for tool in tools/ReleasePackager/ReleasePackager.csproj tools/BudgetCheck/BudgetCheck.csproj; do
-    # 管道里 set -e 看不到 dotnet 的退出码（最后一段是 tee）——所以统一由下面的 error 扫描判红
-    dotnet build "$tool" -c "$CONFIG" --nologo -v minimal 2>&1 | tee -a "$TOOL_LOG"
-done
-if grep -qE ": error " "$TOOL_LOG"; then
-    grep -E ": error " "$TOOL_LOG" | sort -u >&2
-    die "出包 / 预算实测工具构建失败"
-fi
-rm -f "$TOOL_LOG"
-dotnet run --project tools/ReleasePackager/ReleasePackager.csproj -c "$CONFIG" --no-build -- --self-check
-echo "✅ 出包工具链可用（版本清单取自固件头文件 + 目标插件）"
+# 出包走 tools/package.sh（tools/publish-{linux,win}.sh + NSIS），出包产物由用户按需生成；
+# 门禁不构建它 —— 出包脚本是 bash，语法由第 [1] 步的 bash -n 覆盖。
 
 # ── [3] 全量测试（拆两段：大队 → 会 spawn git 的用例单独跑）──
 #
@@ -387,32 +350,9 @@ dotnet test tests/HmiEditor.Core.Tests/HmiEditor.Core.Tests.csproj -c "$CONFIG" 
     --filter 'FullyQualifiedName~GitWorkflowServiceTests'
 echo "✅ 全量测试通过（两段之和 = 全量）"
 
-# ── [4] 固件主机侧测试（无需硬件/交叉链） ──
-#
-# 该脚本的第 [9/9] 步是**配置守卫**（tests/check_lv_conf_flags.sh）—— 它不跑代码，
-# 守的是 firmware/t113/config/lv_conf.h 的关键项：SVG 渐变开关必须为 1、
-# LV_GRADIENT_MAX_STOPS 必须与 C# 侧 SvgGradientGeometry.MaxStops 同源。
-# 为什么必须单独有这一步：上面 8 步虽然都带 -Iconfig，但**刻意不拉 lvgl.h**
-# （见 hmi_log.h 独立成文件的原因）⇒ 没有任何一步会真去解析那份 lv_conf.h。
-banner "设备树与现场生成一致 (scripts/gen-device-tree.sh --check)"
-# ⚠ 为什么这一步必须在固件 host 测试**之前**：设备树的 screens.c/tags.* 是**生成物**
-#   （③：不入库，构建前在开发机生成）。若它与现场生成漂移，固件步骤编的就是"来路不明的东西"，
-#   过了也说明不了任何事 —— 先证明它确实是当前生成器 + 仓内示例工程的产物，再往下编。
-if bash scripts/gen-device-tree.sh --check; then
-    echo "✅ 设备树与现场生成逐字节一致"
-else
-    die "设备树与现场生成不一致 —— 跑 bash scripts/gen-device-tree.sh --write 后复核差异"
-fi
-
-banner "固件 host 测试 (firmware/t113/tests/run_host_tests.sh)"
-if command -v gcc >/dev/null 2>&1; then
-    bash firmware/t113/tests/run_host_tests.sh
-    echo "✅ 固件 host 测试通过"
-elif [ "${CI_REQUIRE_FIRMWARE_TESTS:-0}" = "1" ]; then
-    die "CI_REQUIRE_FIRMWARE_TESTS=1 但未找到 gcc，固件 host 测试无法运行"
-else
-    echo "⚠ 未找到 gcc，跳过固件 host 测试（设 CI_REQUIRE_FIRMWARE_TESTS=1 可强制失败）"
-fi
+# ── 设备侧（固件 / 设备树 / 板级配置）不在本仓库，门禁不覆盖 ──
+# 本仓库只做编辑器：C 侧运行时在姊妹仓库 chenge-runtime，板级树在 chenge-bsp。
+# 那边有它们自己的构建与判据，这里重复跑只会让两边的"绿"互相顶替。
 
 echo
 echo "🎉 门禁全部通过（$step 步）"
