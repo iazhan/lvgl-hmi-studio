@@ -20,7 +20,8 @@ public class MqttCommandContractTests
     public MqttCommandContractTests(ITestOutputHelper o) => _out = o;
 
     private static string DeviceSource() =>
-        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot, "firmware/t113/tests/hmi_comm_test.c"));
+        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot,
+            "tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c"));
 
     [Fact]
     public void Samples_MatchTheDeviceHostTestTable()
@@ -162,7 +163,7 @@ public class MqttCommandContractTests
     public void Constants_MatchTheDeviceHeader()
     {
         var header = File.ReadAllText(Path.Combine(
-            SourceScanner.RepoRoot, "firmware/t113/app/comm/mqtt_cmd_contract.h"));
+            SourceScanner.RepoRoot, "tests/HmiEditor.TestSupport/fixtures/contracts/mqtt_cmd_contract.h"));
 
         Assert.Contains($"#define HMI_MQTT_CMD_ID_MAX          {MqttCommandContract.IdMaxLength}", header, StringComparison.Ordinal);
         Assert.Contains($"#define HMI_MQTT_CMD_MIN_TTL_MS      {MqttCommandContract.MinTtlMs}ull", header, StringComparison.Ordinal);

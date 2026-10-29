@@ -13,7 +13,7 @@ namespace HmiEditor.Core.Tests;
 /// **主题 / payload 契约 v1**（阶段 264；登记 `§2-#12` 的 M1）—— 解析侧 +
 /// **跨语言同源样例守卫**（设备侧 C 的 <c>k_contract_samples[]</c> 必须与这里的表**逐字段相同**）。
 ///
-/// <para>两侧各自的判据：C 侧 <c>firmware/t113/tests/hmi_comm_test.c</c> 的
+/// <para>两侧各自的判据：C 侧 <c>tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c</c> 的
 /// <c>test_mqtt_contract()</c> 拿同一张表逐字节断言 C 格式化器；本文件断言 C# 侧
 /// **格式化 + 解析**，并**直接读那个 C 文件**比对样例表（漂移即红 —— 这是"两端同源"唯一
 /// 不靠人记的做法）。</para>
@@ -24,7 +24,8 @@ public class MqttValueContractTests
 
     public MqttValueContractTests(ITestOutputHelper o) => _out = o;
 
-    private const string DeviceTestFile = "firmware/t113/tests/hmi_comm_test.c";
+    // 设备侧实现已退役；契约语料冻结在测试夹具里，跨语言同源判据照旧
+    private const string DeviceTestFile = "tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c";
 
     /// <summary>同源样例（必须与设备侧 C 表一致；由 <see cref="Samples_MatchTheDeviceHostTestTable"/> 钉住）。</summary>
     private static readonly Sample[] Samples =

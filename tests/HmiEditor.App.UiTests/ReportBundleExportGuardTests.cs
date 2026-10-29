@@ -68,7 +68,7 @@ public class ReportBundleExportGuardTests
     public void WriteBundle_IsByteIdentical_WithAFont()
     {
         using var typeface = SKTypeface.FromFile(Path.Combine(
-            SourceScanner.RepoRoot, "firmware", "t113", "tina", "package", "hmi-runtime", "files", "fangsong.ttf"));
+            SourceScanner.RepoRoot, "tests", "HmiEditor.TestSupport", "fixtures", "fangsong.ttf"));
         Assert.NotNull(typeface);
 
         var first = TestTempDir.NewDir("bundle-a");

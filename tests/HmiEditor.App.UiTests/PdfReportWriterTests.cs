@@ -15,15 +15,15 @@ namespace HmiEditor.App.UiTests;
 /// **PDF 写出器判据**（阶段 173）—— 走 SkiaSharp 的 PDF 后端，所以判据看的是"**结构 ＋ 确定性 ＋
 /// 文本真的进去了**"，而不是逐字节对拍一个常量（字体与 Skia 版本一变，字节就变）。
 ///
-/// <para>字体**用仓库自带的 CJK 字体文件**（<c>firmware/t113/…/fangsong.ttf</c>）⇒ 判据与机器上装了什么字体
-/// 无关（这是"可判"的前提；系统兜底那条由 <see cref="PdfReportWriter.ResolveTypeface"/> 负责，
-/// 它的失败路径在 UI 里有明确提示）。</para>
+/// <para>字体**用测试夹具里的 CJK 字体文件**（<c>tests/HmiEditor.TestSupport/fixtures/fangsong.ttf</c>）⇒
+/// 判据与机器上装了什么字体无关（这是"可判"的前提；系统兜底那条由
+/// <see cref="PdfReportWriter.ResolveTypeface"/> 负责，它的失败路径在 UI 里有明确提示）。</para>
 /// </summary>
 public class PdfReportWriterTests
 {
     private static readonly Lazy<SKTypeface> RepoFont = new(() => SKTypeface.FromFile(Path.Combine(
-        SourceScanner.RepoRoot, "firmware", "t113", "tina", "package", "hmi-runtime", "files", "fangsong.ttf"))
-        ?? throw new InvalidOperationException("仓库自带的 CJK 字体打不开 —— PDF 判据的前提不成立"));
+        SourceScanner.RepoRoot, "tests", "HmiEditor.TestSupport", "fixtures", "fangsong.ttf"))
+        ?? throw new InvalidOperationException("测试夹具里的 CJK 字体打不开 —— PDF 判据的前提不成立"));
 
     private static readonly DateTimeOffset FixedCreation = new(new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc));
 

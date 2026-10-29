@@ -20,7 +20,8 @@ public class MqttWriteGuardTests
     public MqttWriteGuardTests(ITestOutputHelper o) => _out = o;
 
     private static string DeviceSource() =>
-        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot, "firmware/t113/tests/hmi_comm_test.c"));
+        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot,
+            "tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c"));
 
     [Fact]
     public void Samples_MatchTheDeviceHostTestTable()

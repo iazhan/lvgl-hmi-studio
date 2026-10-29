@@ -106,7 +106,7 @@ public class AlarmReportExportGuardTests
                 AlarmReportText.Localizer);
 
             using var typeface = SKTypeface.FromFile(System.IO.Path.Combine(
-                SourceScanner.RepoRoot, "firmware", "t113", "tina", "package", "hmi-runtime", "files", "fangsong.ttf"));
+                SourceScanner.RepoRoot, "tests", "HmiEditor.TestSupport", "fixtures", "fangsong.ttf"));
             var creation = new DateTimeOffset(new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc));
 
             foreach (var table in new[] { audit, alarm })

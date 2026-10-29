@@ -23,7 +23,8 @@ public class MqttTopicAclTests
     private const string Prefix = "hmi/s1";
 
     private static string DeviceSource() =>
-        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot, "firmware/t113/tests/hmi_comm_test.c"));
+        File.ReadAllText(Path.Combine(SourceScanner.RepoRoot,
+            "tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c"));
 
     [Fact]
     public void Samples_MatchTheDeviceHostTestTable()
@@ -65,7 +66,7 @@ public class MqttTopicAclTests
         // ⚠ 设备 ACL 模块**只能**吃生成头（不得手写权限位 —— SecurityConfigCodeGenTests 有守卫，
         //    本模块第一版写了 `#define HMI_PERM_* 0x…` 兜底，当场被它拦下）。
         var aclImpl = File.ReadAllText(Path.Combine(
-            SourceScanner.RepoRoot, "firmware/t113/app/comm/mqtt_acl_contract.c"));
+            SourceScanner.RepoRoot, "tests/HmiEditor.TestSupport/fixtures/contracts/mqtt_acl_contract.c"));
         Assert.Contains("#include \"generated_security.h\"", aclImpl, StringComparison.Ordinal);
         // 只在**行首**找 `#define HMI_PERM_`（注释里提到它不算 —— 我第一版就是被自己的注释绊了一下：
         // 断言必须与守卫同一口径，否则"注释里写了什么"会变成判据的一部分）
@@ -73,7 +74,7 @@ public class MqttTopicAclTests
             "设备 ACL 模块不得手写权限位（唯一来源是 generated_security.h）");
 
         var header = File.ReadAllText(Path.Combine(
-            SourceScanner.RepoRoot, "firmware/t113/tests/fixtures/generated_security.h"));
+            SourceScanner.RepoRoot, "tests/HmiEditor.TestSupport/fixtures/contracts/generated_security.h"));
 
         Assert.Contains($"#define HMI_PERM_VIEW_SCREEN        0x{(uint)Permission.ViewScreen:X3}u", header, StringComparison.Ordinal);
         Assert.Contains($"#define HMI_PERM_OPERATE_CONTROL    0x{(uint)Permission.OperateControl:X3}u", header, StringComparison.Ordinal);

@@ -20,7 +20,8 @@ public class MqttAlarmStatusContractTests
 
     public MqttAlarmStatusContractTests(ITestOutputHelper o) => _out = o;
 
-    private const string DeviceTestFile = "firmware/t113/tests/hmi_comm_test.c";
+    // 设备侧实现已退役；契约语料冻结在测试夹具里，跨语言同源判据照旧
+    private const string DeviceTestFile = "tests/HmiEditor.TestSupport/fixtures/contracts/hmi_comm_test.c";
 
     private sealed record AlarmSample(string Prefix, string AlarmId, int State, int Severity,
                                       long TimestampMs, MqttTimeBase TimeBase, string Topic, string Payload);
