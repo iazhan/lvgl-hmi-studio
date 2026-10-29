@@ -74,12 +74,6 @@ public class SettingsTextBoxWiringTests
         new("TxtAutoExportDirectory", "autoexport", "AutoExport.Directory",
             d => d.Settings.AutoExport.Directory, "  /tmp/auto  ", "  /tmp/auto  "),
 
-        // ── 设备：SDK 与交叉编译器（同样裁剪）──
-        new("TxtT113SdkRoot", "device", "Device.T113SdkRoot",
-            d => d.Settings.Device.T113SdkRoot, "  /opt/tina  ", "/opt/tina"),
-        new("TxtT113Toolchain", "device", "Device.T113ToolchainGcc",
-            d => d.Settings.Device.T113ToolchainGcc, "  /opt/gcc  ", "/opt/gcc"),
-
         // ── 设备：kinseal（F1C100S）三个输入框，同样裁剪 ──
         new("TxtKinSealToolchain", "device", "KinSeal.ToolchainGcc",
             d => d.Settings.KinSeal.ToolchainGcc, "  /opt/arm-gcc  ", "/opt/arm-gcc"),

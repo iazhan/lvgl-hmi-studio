@@ -15,7 +15,7 @@ public class HardwareTargetTests
         var registry = new HardwareTargetRegistry();
         registry.LoadBuiltinTargets(new IHardwareTarget[]
         {
-            new AllwinnerT113Target(),
+            new AllwinnerF1C100STarget(),
             new RockchipRK3506Target()
         });
 
@@ -28,22 +28,22 @@ public class HardwareTargetTests
         var registry = new HardwareTargetRegistry();
         registry.LoadBuiltinTargets(new IHardwareTarget[]
         {
-            new AllwinnerT113Target(),
+            new AllwinnerF1C100STarget(),
             new RockchipRK3506Target()
         });
 
-        var t113 = registry.GetTarget("allwinner-t113");
-        Assert.NotNull(t113);
-        Assert.Equal("Allwinner T113-S3", t113!.Metadata.Name);
+        var kinseal = registry.GetTarget(AllwinnerF1C100STarget.TargetId);
+        Assert.NotNull(kinseal);
+        Assert.Equal("Allwinner F1C100S (kinseal)", kinseal!.Metadata.Name);
     }
 
     [Fact]
-    public void T113_Display_DefaultResolution_1024x600()
+    public void F1C100S_Display_DefaultResolution_800x480()
     {
-        // 硬件规格 02-schematic-spec：7寸 1024x600 RGB666 IPS 屏
-        var target = new AllwinnerT113Target();
-        Assert.Equal(1024, target.Display.DefaultWidth);
-        Assert.Equal(600, target.Display.DefaultHeight);
+        // 板级事实：800x480 RGB666 电阻触摸面板（docs/hardware/f1c100s-kinseal/01-board-facts.md）
+        var target = new AllwinnerF1C100STarget();
+        Assert.Equal(800, target.Display.DefaultWidth);
+        Assert.Equal(480, target.Display.DefaultHeight);
     }
 
     [Fact]
@@ -55,9 +55,9 @@ public class HardwareTargetTests
     }
 
     [Fact]
-    public void T113_ValidateProject_HighResolution_ReturnsWarning()
+    public void F1C100S_ValidateProject_HighResolution_ReturnsWarning()
     {
-        var target = new AllwinnerT113Target();
+        var target = new AllwinnerF1C100STarget();
         var project = new HmiProject();
         var screen = new HmiScreen { Name = "Big", Width = 1280, Height = 800 };
         project.Screens.Add(screen);
@@ -68,11 +68,12 @@ public class HardwareTargetTests
     }
 
     [Fact]
-    public void T113_GetTemplateParameters_ContainsColorDepth()
+    public void F1C100S_GenerateInitializationCode_ContainsDisplayCreate()
     {
-        var target = new AllwinnerT113Target();
-        var params_ = target.GetTemplateParameters();
-        Assert.Equal(32, params_["color_depth"]);
+        var target = new AllwinnerF1C100STarget();
+        var code = target.GenerateInitializationCode(new HmiProject());
+        Assert.Contains("lv_display_create", code);
+        Assert.Contains("800, 480", code);
     }
 
     [Fact]
@@ -83,15 +84,6 @@ public class HardwareTargetTests
     }
 
     [Fact]
-    public void T113_GenerateInitializationCode_ContainsDisplayCreate()
-    {
-        var target = new AllwinnerT113Target();
-        var code = target.GenerateInitializationCode(new HmiProject());
-        Assert.Contains("lv_display_create", code);
-        Assert.Contains("1024, 600", code);
-    }
-
-    [Fact]
     public void Registry_GetTarget_UnknownId_ReturnsNull()
     {
         var registry = new HardwareTargetRegistry();
@@ -99,20 +91,20 @@ public class HardwareTargetTests
     }
 
     [Fact]
-    public void T113_RecommendedInterfaces_ContainsSerialAndEthernet()
+    public void F1C100S_RecommendedInterfaces_ContainsSerialOnly()
     {
-        var target = new AllwinnerT113Target();
+        var target = new AllwinnerF1C100STarget();
         Assert.Contains(CommunicationInterface.Serial, target.RecommendedInterfaces);
-        Assert.Contains(CommunicationInterface.Ethernet, target.RecommendedInterfaces);
+        Assert.DoesNotContain(CommunicationInterface.Ethernet, target.RecommendedInterfaces);
     }
 
     [Fact]
-    public void T113_SupportedCommunicationDrivers_ContainsModbusAndMqtt()
+    public void F1C100S_SupportedCommunicationDrivers_OnlyModbusRtu()
     {
-        var target = new AllwinnerT113Target();
+        // chenge-rt 当前只有 modbus_rtu.c（HMI_WITH_COMM=0），驱动清单按"运行时已有源码"声明
+        var target = new AllwinnerF1C100STarget();
+        Assert.Single(target.SupportedCommunicationDrivers);
         Assert.Contains("modbus-rtu", target.SupportedCommunicationDrivers);
-        Assert.Contains("modbus-tcp", target.SupportedCommunicationDrivers);
-        Assert.Contains("mqtt", target.SupportedCommunicationDrivers);
     }
 
     [Fact]

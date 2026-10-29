@@ -463,30 +463,9 @@
                     <ScrollViewer Background="{StaticResource HmiBgPanelBrush}" CornerRadius="8">
                         <Border Padding="24,20">
                             <StackPanel Spacing="14">
-                                <TextBlock Text="{res:Loc settings.device.title}"
-                                           Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="{res:Loc settings.device.desc}"
-                                           Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
-
-                                <TextBlock Text="{res:Loc settings.device.sdk.dir}"
-                                           Foreground="{StaticResource HmiTextPrimarySoftBrush}" FontSize="13" Margin="0,8,0,4"/>
-                                <TextBox x:Name="TxtT113SdkRoot"
-                                         PlaceholderText="{res:Loc settings.device.sdk.hint}"
-                                         Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                         CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
-                                         Padding="10,8"/>
-
-                                <TextBlock Text="{res:Loc settings.device.toolchain.dir}"
-                                           Foreground="{StaticResource HmiTextPrimarySoftBrush}" FontSize="13" Margin="0,8,0,4"/>
-                                <TextBox x:Name="TxtT113Toolchain"
-                                         PlaceholderText="{res:Loc settings.device.toolchain.hint}"
-                                         Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                         CornerRadius="6" BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1"
-                                         Padding="10,8"/>
-
                                 <!-- kinseal（F1C100S）：工具链与设备侧运行时目录，均为空 = 用安装包内置 SDK -->
                                 <TextBlock Text="{res:Loc settings.device.kinseal.title}"
-                                           Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="16" FontWeight="SemiBold" Margin="0,20,0,0"/>
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" FontSize="16" FontWeight="SemiBold"/>
                                 <TextBlock Text="{res:Loc settings.device.kinseal.desc}"
                                            Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
 

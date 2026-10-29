@@ -233,12 +233,6 @@ public partial class ProjectSettingsView : ChromeWindow
         var registry = new HardwareTargetRegistry();
         registry.LoadFirmwareTargets(Path.Combine(AppContext.BaseDirectory, "firmware"));
 
-        // 固件目录缺失或为空时回退到内置 T113 型号，保证型号始终可用
-        if (!registry.GetAllTargets().Any())
-        {
-            registry.Register(new AllwinnerT113Target());
-        }
-
         // kinseal 是内置目标（运行时在姊妹仓库 chenge-rt，无 firmware JSON，
         // LVGL/ABI 契约版本由 C# 类声明；与 MainWindow.LoadHardwareTargets 同一路径）
         registry.Register(new AllwinnerF1C100STarget());

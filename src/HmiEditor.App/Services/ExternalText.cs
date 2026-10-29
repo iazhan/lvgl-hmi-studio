@@ -18,7 +18,7 @@ namespace HmiEditor.App.Services;
 /// 而界面要显示的是"按约定推导键 → 查字典模板 → 填参数 → 查不到才用原文"的结果。
 /// 这个动作必须**只有一份实现** —— 写两份必然漂移，而漂移的表现正是
 /// **守卫绿着、界面却是中文**（这个坑本项目已经踩过一次，见
-/// <c>docs/2026-09-18-plugin-text-and-lang-usage-guards.md</c>）。</para>
+/// <c>LocalizationKeyReachabilityGuardTests</c> 的 M10 判据）。</para>
 ///
 /// <para><b>键约定</b>（每条前缀一张码表，前缀清单由判据钉住）：</para>
 /// <list type="bullet">
@@ -117,7 +117,7 @@ internal static class ExternalText
     /// <para>与 <see cref="ScriptIssueKey"/> 同形，**单一来源** —— 视图与
     /// <c>AiIssueLocalizationGuardTests</c> / <c>LocalizationKeyReachabilityGuardTests</c>
     /// 都调它，不各写一份（推导规则分家过的亏本项目吃过，
-    /// 见 <c>docs/2026-09-18-plugin-text-and-lang-usage-guards.md</c>）。</para>
+    /// 见 <c>LocalizationKeyReachabilityGuardTests</c> 的 M10 判据）。</para>
     /// </summary>
     internal static string AiIssueKey(string code) => AiIssueKeyPrefix + code.ToLowerInvariant();
 
@@ -144,7 +144,7 @@ internal static class ExternalText
     /// <c>SystemIssueLocalizationGuardTests</c> 与
     /// <c>LocalizationKeyReachabilityGuardTests</c> 的 M10 都调它，不各写一份推导规则
     /// （推导规则分家过的亏本项目吃过，见
-    /// <c>docs/2026-09-18-plugin-text-and-lang-usage-guards.md</c>）。</para>
+    /// <c>LocalizationKeyReachabilityGuardTests</c> 的 M10 判据）。</para>
     /// </summary>
     internal static string SystemIssueKey(string code) => SystemIssueKeyPrefix + code.ToLowerInvariant();
 
@@ -219,7 +219,7 @@ internal static class ExternalText
     /// <c>CsvImportIssueLocalizationGuardTests</c> 与
     /// <c>LocalizationKeyReachabilityGuardTests</c> 的 M12 都调它，不各写一份推导规则
     /// （推导规则分家过的亏本项目吃过，见
-    /// <c>docs/2026-09-18-plugin-text-and-lang-usage-guards.md</c>）。</para>
+    /// <c>LocalizationKeyReachabilityGuardTests</c> 的 M10 判据）。</para>
     ///
     /// <para><b>⚠ 这一族与 SVG 那条是同一个教训</b>（登记 <b>#61f</b>，阶段 88）：
     /// <see cref="CsvVariableImporter"/> 是**纯函数**、失败是**返回值**
@@ -592,7 +592,7 @@ internal static class ExternalText
     /// 它们把失败做成**返回值**、根本不抛异常，所以「加码表 + 带码异常」这个模板在它们的站点上
     /// **无处安放**（站点 catch 到的是 IO / UI 的异常），得走「**返回值带码**」那条
     /// （<see cref="Describe(SvgParseError)"/> 就是它的渲染出口）。逐站实测表与三条支线的重排见
-    /// <c>docs/2026-09-23-exception-passthrough-triage.md</c> §87。</para>
+    /// 异常直通面的判据（<c>ExceptionMessagePassthroughFaceTests</c>）。</para>
     /// </summary>
     internal static string FailureReason(Exception ex)
     {

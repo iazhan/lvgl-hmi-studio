@@ -75,7 +75,7 @@ public class ResourceDashboardWiringTests
 
         var loader = MethodBody(text, "private static HardwareTargetRegistry LoadHardwareTargets()");
         Assert.Contains("LoadFirmwareTargets", loader, StringComparison.Ordinal);
-        // 固件目录缺失时回落内置 T113（与工程设置面板同一条路径）
-        Assert.Contains("AllwinnerT113Target", loader, StringComparison.Ordinal);
+        // 内置型号只有 kinseal（与工程设置面板同一条路径）
+        Assert.Contains("AllwinnerF1C100STarget", loader, StringComparison.Ordinal);
     }
 }

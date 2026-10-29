@@ -113,11 +113,6 @@ public sealed class SettingsService : IDisposable
     public SimulatorSettings Simulator => new(this);
 
     /// <summary>
-    /// 获取 T113 真机部署（.so 交叉编译）设置。
-    /// </summary>
-    public DeviceSettings Device => new(this);
-
-    /// <summary>
     /// 获取 kinseal（F1C100S）真机部署（.so 交叉编译）设置。
     /// </summary>
     public KinSealSettings KinSeal => new(this);
@@ -466,24 +461,6 @@ public sealed class SettingsService : IDisposable
         /// <summary>模拟器工程工作目录。空 = 系统临时目录。</summary>
         public string WorkDir => _parent.Get(nameof(WorkDir), "");
         public void SetWorkDir(string value) => _parent.Set(nameof(WorkDir), value);
-    }
-
-    /// <summary>
-    /// T113 真机部署设置 —— libhmi_ui.so 交叉编译。
-    /// 目录留空时自动探测（环境变量 ZHSHU_HMI_SDK / 仓库内 firmware/Tina-SDK、Tina-Linux）。
-    /// </summary>
-    public sealed class DeviceSettings
-    {
-        private readonly SettingsService _parent;
-        internal DeviceSettings(SettingsService parent) => _parent = parent;
-
-        /// <summary>Tina SDK 根目录（含 package/gui/lvgl 与 out/）。空 = 自动探测。</summary>
-        public string T113SdkRoot => _parent.Get(nameof(T113SdkRoot), "");
-        public void SetT113SdkRoot(string value) => _parent.Set(nameof(T113SdkRoot), value);
-
-        /// <summary>交叉编译器完整路径（arm-openwrt-linux-*-gcc）。空 = SDK 内自动查找。</summary>
-        public string T113ToolchainGcc => _parent.Get(nameof(T113ToolchainGcc), "");
-        public void SetT113ToolchainGcc(string value) => _parent.Set(nameof(T113ToolchainGcc), value);
     }
 
     /// <summary>

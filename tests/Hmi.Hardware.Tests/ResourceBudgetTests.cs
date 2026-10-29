@@ -12,9 +12,9 @@ namespace Hmi.Hardware.Tests;
 /// <para>这项登记的原文是"<c>ResourceConstraints</c> 只有声明值，无『实测 vs 预算』判据"。
 /// 本类钉两件事：</para>
 /// <list type="number">
-///   <item><b>声明值必须与它的硬件证据对得上</b> —— T113 的 Flash 预算曾写成 16 MiB，
-///         而板上是 W25N01GV（1 Gbit = 128 MiB）、真实整包 54.8 MiB；
-///         这条用原理图 BOM 与板级 README 的文本把它锁住（错了立刻红）；</item>
+///   <item><b>声明值必须与它的硬件证据对得上</b> —— kinseal 的内存预算取自板级事实表
+///         （32 MiB 内置 DDR，无 swap）；这条用
+///         <c>docs/hardware/f1c100s-kinseal/01-board-facts.md</c> 的表格行锁住（错了立刻红）；</item>
 ///   <item><b>判读规则本身</b> —— <see cref="ResourceBudget"/> 的阈值/未知预算语义
 ///         （仪表盘与实测工具共用同一处）。</item>
 /// </list>
@@ -28,28 +28,20 @@ public class ResourceBudgetTests
         Path.Combine(new[] { SourceScanner.RepoRoot }.Concat(parts).ToArray());
 
     [Fact]
-    public void T113DeclaredFlash_MatchesTheBoardBomAndReadme()
+    public void KinsealDeclaredRam_MatchesTheBoardFactsTable()
     {
-        var declared = new AllwinnerT113Target().Resources.FlashSizeBytes;
+        var declared = new AllwinnerF1C100STarget().Resources.RamSizeBytes;
 
-        // ① 原理图 BOM：U8 = W25N01GVZEIG（1 Gbit SPI NAND）
-        var bom = File.ReadAllText(RepoFile("hardware", "hmi-control-board-t113", "lceda-import", "hmi-board.csv"));
-        Assert.Contains("W25N01GVZEIG", bom, StringComparison.Ordinal);
-
-        // ② 板级 README 的容量文本：抓住 "SPI NAND <N>MB" 的那个 N，与常量比
-        var readme = File.ReadAllText(RepoFile("hardware", "hmi-control-board-t113", "README.md"));
-        var match = Regex.Match(readme, @"SPI\s+NAND\s+(\d+)\s*MB", RegexOptions.IgnoreCase);
-        Assert.True(match.Success, "板级 README 里找不到 'SPI NAND <N>MB' 这条容量声明");
+        // 板级事实表的固定形状：| `Resources.RamSizeBytes` | 32 MiB | ...
+        var doc = File.ReadAllText(RepoFile("docs", "hardware", "f1c100s-kinseal", "01-board-facts.md"));
+        var match = Regex.Match(doc, @"`Resources\.RamSizeBytes`[^|]*\|\s*(\d+)\s*MiB",
+            RegexOptions.IgnoreCase);
+        Assert.True(match.Success,
+            "01-board-facts.md 里找不到 '| `Resources.RamSizeBytes` | <N> MiB |' 这条声明");
         Assert.Equal(declared / 1024 / 1024, long.Parse(match.Groups[1].Value));
 
-        // ③ 固件侧 README 不许再抄一个别的数（它曾经也写着 16MB）
-        var firmwareReadme = File.ReadAllText(RepoFile("firmware", "t113", "README.md"));
-        var fwMatch = Regex.Match(firmwareReadme, @"(\d+)\s*MB\s+SPI\s+NAND", RegexOptions.IgnoreCase);
-        Assert.True(fwMatch.Success, "firmware/t113/README.md 的存储行不再是 '<N>MB SPI NAND' 形状");
-        Assert.Equal(declared / 1024 / 1024, long.Parse(fwMatch.Groups[1].Value));
-
-        // 128 MiB 这个具体值也钉一下：上面三条都改错成同一个错值时仍能红
-        Assert.Equal(128L * 1024 * 1024, declared);
+        // 32 MiB 这个具体值也钉一下：文档与常量同时改错时仍能红
+        Assert.Equal(32L * 1024 * 1024, declared);
     }
 
     [Fact]

@@ -2396,8 +2396,6 @@ public partial class MainWindow : Window
     {
         var registry = new HardwareTargetRegistry();
         registry.LoadFirmwareTargets(Path.Combine(AppContext.BaseDirectory, "firmware"));
-        if (!registry.GetAllTargets().Any())
-            registry.Register(new AllwinnerT113Target());
         registry.Register(new AllwinnerF1C100STarget());  // kinseal：内置目标，无 firmware JSON（LVGL/ABI 契约版本只能由 C# 类声明）
         return registry;
     }

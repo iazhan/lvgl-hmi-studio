@@ -57,7 +57,7 @@ public class PluginTextLocalizationGuardTests
         }
 
         // ② 硬件目标校验结果：真的把两种规则**触发出来**再收 Code（不是抄源码里的字面量）
-        foreach (var target in new IHmiHardwareTargetProbe[] { new T113Probe(), new F1C100SProbe(), new Rk3506Probe() })
+        foreach (var target in new IHmiHardwareTargetProbe[] { new F1C100SProbe(), new Rk3506Probe() })
         foreach (var code in target.TriggeredIssueCodes())
             keys.Add(("hw-issue", PluginTextKeys.IssueKey(code)));
 
@@ -153,7 +153,7 @@ public class PluginTextLocalizationGuardTests
     ///
     /// <para>为什么是一张显式表、而不是去反射驱动源码里的字符串字面量：本族的码住在
     /// **插件程序集**（<c>Hmi.Communication.Builtin</c>），App 侧拿不到它们的声明面 ——
-    /// 只能**真触发**一遍校验规则把码收上来（与硬件族的 <c>T113Probe</c> / <c>Rk3506Probe</c>
+    /// 只能**真触发**一遍校验规则把码收上来（与硬件族的 <c>F1C100SProbe</c> / <c>Rk3506Probe</c>
     /// 同一个做法）。而"触发面"天生会漏（换个人写探针就可能漏掉一条规则）
     /// ⇒ 用这张表**双向**夹住它：驱动里多出一个码而没登记 ⇒ 红；登记表里留着一个再也产不出的
     /// 码 ⇒ 也红。⚠ 这是同族**第三态为空**的情形 —— 9 条全部产得出，所以没有
@@ -461,7 +461,6 @@ public class PluginTextLocalizationGuardTests
         { "src/Hmi.Communication.Builtin/ModbusTcpRuntimeDriver.cs", 2 },
         { "src/Hmi.Communication.Builtin/OpcUaRuntimeDriver.cs", 2 },
         { "src/Hmi.Hardware.Loader/HardwareTargetRegistry.cs", 2 },
-        { "src/Hmi.Hardware.Builtin/AllwinnerT113Target.cs", 1 },
         { "src/Hmi.Hardware.Builtin/AllwinnerF1C100STarget.cs", 1 },
         { "src/Hmi.Hardware.Builtin/RockchipRK3506Target.cs", 1 },
     };
@@ -575,17 +574,6 @@ public class PluginTextLocalizationGuardTests
     private interface IHmiHardwareTargetProbe
     {
         IReadOnlyList<string> TriggeredIssueCodes();
-    }
-
-    private sealed class T113Probe : IHmiHardwareTargetProbe
-    {
-        public IReadOnlyList<string> TriggeredIssueCodes()
-        {
-            var target = new AllwinnerT113Target();
-            var project = new HmiProject { LvglVersion = "8.3" }; // 与板载 9.5 主版本不同 → Error
-            project.Screens.Add(new HmiScreen { Name = "Big", Width = 4096, Height = 4096 });
-            return target.ValidateProject(project).Issues.Select(i => i.Code).Distinct().ToList();
-        }
     }
 
     private sealed class F1C100SProbe : IHmiHardwareTargetProbe

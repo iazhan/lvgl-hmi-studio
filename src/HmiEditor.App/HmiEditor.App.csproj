@@ -76,9 +76,7 @@
     <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- 固件型号定义：每套固件（firmware/*/firmware.json）生成一个固定型号 -->
-    <None Include="..\..\firmware\*\firmware.json" Link="firmware\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-
-  </ItemGroup>
+  <!-- 固件型号定义（firmware/*/firmware.json 随包复制）在本仓库当前为空：
+       型号由代码注册（kinseal 的 AllwinnerF1C100STarget）。若将来重新收固件资产，
+       在这里恢复一行 ItemGroup 即可，注册链 HardwareTargetRegistry.LoadFirmwareTargets 仍在。 -->
 </Project>
