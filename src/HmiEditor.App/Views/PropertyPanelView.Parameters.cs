@@ -35,6 +35,7 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblSelectedIndex, SelectedIndexBox, false);
         SetParamRow(LblPlaceholder, PlaceholderBox, false);
         SetParamRow(LblMaxLength, MaxLengthBox, false);
+        SetParamRow(LblInputDecimals, InputDecimalsBox, false);
         SetParamRow(LblPassword, PasswordCheck, false);
         SetParamRow(LblTickCount, TickCountBox, false);
         SetParamRow(LblRowCount, RowCountBox, false);
@@ -44,7 +45,6 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblStretch, StretchCombo, false);
         SetParamRow(LblBrightness, BrightnessBox, false);
         SetParamRow(LblSpinSpeed, SpinSpeedBox, false);
-        SetParamRow(LblLongMode, LongModeCombo, false);
         SetParamRow(LblImageAsset, ImageAssetCombo, false);
         SetParamRow(LblSvgAsset, SvgAssetCombo, false);
         // I7: 过程图形控件专属字段
@@ -73,22 +73,20 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblCgTrendGroup, CgTrendGroupBox, false);
         SetParamRow(LblCgSpanMin, CgSpanMinBox, false);
         SetParamRow(LblCgCurveVars, CgCurveVarsBox, false);
-        // 批次 1a：仪表 / 指示灯 / 按钮的细节属性（独立 Expander，行数够，不与参数区挤）
+        // 批次 1a：仪表 / 指示灯的细节属性（独立 Expander，行数够，不与参数区挤）
+        // 按钮的确认/长按、输入框的提交时机、开关的三色、Label 的文字排版都不在这里 ——
+        // 前两组属交互（动作与高级区），后两组属外观（外观样式组）。
         ShowGaugeRows(false);
         ShowLampRows(false);
+        // 交互行（动作与高级区）：按钮的确认/长按 + 输入框的提交时机
         ShowButtonRows(false);
-        // 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签
-        SetParamRow(LblSwitchOn, SwitchColorOnBox, false);
-        SetParamRow(LblSwitchOff, SwitchColorOffBox, false);
-        SetParamRow(LblSwitchKnob, SwitchKnobColorBox, false);
+        RowInputCommit.IsVisible = false;
+        InteractionExpander.IsVisible = false;
+        // 批次 1b：进度条 / 加载圈 / 旋钮 / 页签
         SetParamRow(LblBarDirection, BarDirectionCombo, false);
         SetParamRow(LblBarPercent, BarShowPercentCheck, false);
         SetParamRow(LblSpinnerArcLen, SpinnerArcLenBox, false);
         SetParamRow(LblSpinnerArcWidth, SpinnerArcWidthBox, false);
-        SetParamRow(LblLabelFontStyle, LabelFontStyleCombo, false);
-        SetParamRow(LblLetterSpacing, LetterSpacingBox, false);
-        SetParamRow(LblLineSpacing, LineSpacingBox, false);
-        SetParamRow(LblInputCommit, InputCommitCombo, false);
         SetParamRow(LblKnobArcWidth, KnobArcWidthBox, false);
         SetParamRow(LblTabHeight, TabHeightBox, false);
         SetParamRow(LblTabPos, TabPosCombo, false);
@@ -104,7 +102,6 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblHistoryS, HistorySBox, false);
         ShowAlarmBarRows(false);
 
-        bool anyVisible = true;
         switch (control.Type)
         {
             case HmiControlType.Slider:
@@ -113,10 +110,7 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblStepValue, StepValueBox, true);
                 break;
             case HmiControlType.Switch:
-                SetParamRow(LblSwitchOn, SwitchColorOnBox, true);
-                SetParamRow(LblSwitchOff, SwitchColorOffBox, true);
-                SetParamRow(LblSwitchKnob, SwitchKnobColorBox, true);
-                DetailParamExpander.IsVisible = true;
+                // 开关没有数据参数：三段颜色在外观组，开关本身也没有细节行
                 break;
             case HmiControlType.Bar:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -127,12 +121,7 @@ public partial class PropertyPanelView : UserControl
                 DetailParamExpander.IsVisible = true;
                 break;
             case HmiControlType.Label:
-                SetParamRow(LblLongMode, LongModeCombo, true);
-                // 批次 1b：字形 / 字距 / 行距
-                SetParamRow(LblLabelFontStyle, LabelFontStyleCombo, true);
-                SetParamRow(LblLetterSpacing, LetterSpacingBox, true);
-                SetParamRow(LblLineSpacing, LineSpacingBox, true);
-                DetailParamExpander.IsVisible = true;
+                // 文字排版（字形/字距/行距/超长处理）在外观组，本区只剩值显示
                 break;
             case HmiControlType.Gauge:
                 SetParamRow(LblMinValue, MinValueBox, true);
@@ -162,8 +151,9 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblPlaceholder, PlaceholderBox, true);
                 SetParamRow(LblMaxLength, MaxLengthBox, true);
                 SetParamRow(LblPassword, PasswordCheck, true);
-                SetParamRow(LblInputCommit, InputCommitCombo, true);
-                DetailParamExpander.IsVisible = true;
+                // 提交时机（回车/失焦）是交互，在动作与高级区
+                RowInputCommit.IsVisible = true;
+                InteractionExpander.IsVisible = true;
                 break;
             case HmiControlType.Table:
                 SetParamRow(LblRowCount, RowCountBox, true);
@@ -252,10 +242,10 @@ public partial class PropertyPanelView : UserControl
                 SetParamRow(LblMaxValue, MaxValueBox, true);
                 SetParamRow(LblValveType, ValveTypeCombo, true);
                 break;
-            // 批次 1a：按钮（二次确认 / 长按 / 禁用表现）
+            // 批次 1a：按钮（二次确认 / 长按 / 禁用表现）—— 全在动作与高级区的交互行为组
             case HmiControlType.Button:
                 ShowButtonRows(true);
-                DetailParamExpander.IsVisible = true;
+                InteractionExpander.IsVisible = true;
                 break;
             // chenge-runtime 目标新增
             case HmiControlType.Value:
@@ -312,7 +302,6 @@ public partial class PropertyPanelView : UserControl
                 ShowContentRowsFor(control.Type);
                 break;
             default:
-                anyVisible = false;
                 break;
         }
 
@@ -340,12 +329,13 @@ public partial class PropertyPanelView : UserControl
         SetParamRow(LblMirrorH, MirrorHCheck, hasMirror);
         SetParamRow(LblMirrorV, MirrorVCheck, hasMirror);
         BtnResetRotation.IsVisible = hasTransform;
-        anyVisible |= hasTransform;
 
-        ControlParamExpander.IsVisible = anyVisible;
-        if (!anyVisible) return;
+        // 「控件功能参数」有没有行可显示：按行上的实际结果收口。旋转/镜像虽然在上面一起切了
+        // 显隐，但它们画在「位置与大小」区 —— 把它们算进来只会给"只有变换行"的类型留一张空卡片。
+        ControlParamExpander.IsVisible = ControlParamGrid.Children.Any(c => c.IsVisible);
 
-        // 恢复字段值
+        // 恢复字段值。这里不按 ControlParamExpander 的可见性早退：旋转/镜像行、图上放着但本区
+        // 不显示的字段都要回填，否则切类型后编辑器里留着上一个控件的值。
         RotationBox.Value = control.Rotation;
         SelectComboByTag(RotationDirCombo, control.RotationDirection, 0);
         MirrorHCheck.IsChecked = control.MirrorX;

@@ -554,6 +554,51 @@
                                 <ComboBoxItem Content="{res:Loc prop.visual.state.valign.bottom}" Tag="Bottom"/>
                             </ComboBox>
                         </Grid>
+                        <!-- 文字排版（仅 Label）：字形 / 字距 / 行距 / 超长处理。
+                             与字号、对齐是同一件事，必须同处一组 —— 分开摆的话配一段文字
+                             要开两个折叠面板。 -->
+                        <Grid x:Name="RowLabelFontStyle" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblLabelFontStyle" Text="{res:Loc prop.detail.label.font}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="LabelFontStyleCombo" Grid.Column="1"
+                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
+                                      HorizontalAlignment="Stretch"
+                                      SelectedIndex="0" SelectionChanged="OnPropertyChanged">
+                                <ComboBoxItem Content="{res:Loc prop.detail.label.font.normal}" Tag="normal"/>
+                                <ComboBoxItem Content="{res:Loc prop.detail.label.font.bold}" Tag="bold"/>
+                                <ComboBoxItem Content="{res:Loc prop.detail.label.font.italic}" Tag="italic"/>
+                            </ComboBox>
+                        </Grid>
+                        <Grid x:Name="RowLetterSpacing" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblLetterSpacing" Text="{res:Loc prop.detail.label.letter}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="LetterSpacingBox" Grid.Column="1"
+                                            Value="0" Minimum="0" Maximum="32"
+                                            SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                        </Grid>
+                        <Grid x:Name="RowLineSpacing" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblLineSpacing" Text="{res:Loc prop.detail.label.line}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <fa:FANumberBox x:Name="LineSpacingBox" Grid.Column="1"
+                                            Value="0" Minimum="0" Maximum="64"
+                                            SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                        </Grid>
+                        <Grid x:Name="RowLongMode" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblLongMode" Text="{res:Loc prop.param.longmode}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="LongModeCombo" Grid.Column="1"
+                                      Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                      BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="12"
+                                      HorizontalAlignment="Stretch"
+                                      SelectedIndex="0" SelectionChanged="OnPropertyChanged">
+                                <ComboBoxItem Content="{res:Loc prop.param.longmode.wrap}" Tag="Wrap"/>
+                                <ComboBoxItem Content="{res:Loc prop.param.longmode.dots}" Tag="Dots"/>
+                                <ComboBoxItem Content="{res:Loc prop.param.longmode.scroll}" Tag="Scroll"/>
+                                <ComboBoxItem Content="{res:Loc prop.param.longmode.scrollcirc}" Tag="ScrollCircular"/>
+                                <ComboBoxItem Content="{res:Loc prop.param.longmode.clip}" Tag="Clip"/>
+                            </ComboBox>
+                        </Grid>
                         <!-- 指示器颜色（仅 Slider/Bar/Switch/Gauge/Knob） -->
                         <Grid x:Name="RowIndicatorColor" ColumnDefinitions="62,*,28" IsVisible="False">
                             <TextBlock x:Name="LblIndicatorColor" Text="{res:Loc prop.indicator.color}" Grid.Column="0"
@@ -568,12 +613,27 @@
                                     PointerPressed="OnColorSwatchClicked"
                                     Tag="IndicatorColor" Cursor="Hand"/>
                         </Grid>
-                        <!-- 选中状态（仅 CheckBox/Switch） -->
-                        <Grid x:Name="RowIsChecked" ColumnDefinitions="62,*" IsVisible="False">
-                            <TextBlock x:Name="LblIsChecked" Text="{res:Loc prop.selected}" Grid.Column="0"
+                        <!-- 开关的三段颜色（仅 Switch）：打开轨道 / 关闭轨道 / 滑块 -->
+                        <Grid x:Name="RowSwitchColorOn" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblSwitchOn" Text="{res:Loc prop.detail.switch.on}" Grid.Column="0"
                                        Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="PropIsChecked" Grid.Column="1"
-                                      IsCheckedChanged="OnPropertyChanged"/>
+                            <TextBox x:Name="SwitchColorOnBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowSwitchColorOff" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblSwitchOff" Text="{res:Loc prop.detail.switch.off}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="SwitchColorOffBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
+                        </Grid>
+                        <Grid x:Name="RowSwitchKnob" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblSwitchKnob" Text="{res:Loc prop.detail.switch.knob}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBox x:Name="SwitchKnobColorBox" Grid.Column="1"
+                                     Text="" TextChanged="OnPropertyChanged"
+                                     PlaceholderText="{res:Loc prop.color.hint}"/>
                         </Grid>
                         </StackPanel>
                     </StackPanel>
@@ -744,6 +804,14 @@
                                    Foreground="{StaticResource HmiTextSecondaryBrush}" FontSize="11"
                                    TextWrapping="Wrap"/>
                         </StackPanel>
+                        <!-- 初始选中（仅 CheckBox/Switch）：导出成 checked，是「目标属性=IsChecked」
+                             那条绑定的初值，不是外观样式。 -->
+                        <Grid x:Name="RowIsChecked" ColumnDefinitions="62,*" IsVisible="False">
+                            <TextBlock x:Name="LblIsChecked" Text="{res:Loc prop.selected}" Grid.Column="0"
+                                       Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                            <CheckBox x:Name="PropIsChecked" Grid.Column="1"
+                                      IsCheckedChanged="OnPropertyChanged"/>
+                        </Grid>
                     </StackPanel>
                 </Expander>
 
@@ -810,9 +878,10 @@
                     </StackPanel>
                         <!-- 控件专属数据参数 -->
                         <StackPanel x:Name="ControlParamExpander" Spacing="4" IsVisible="False">
-                    <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..43）。
+                    <!-- 行数要 ≥ 下面最大的 Grid.Row+1（当前 0..59）。
                          少一行不会报错，但多出来的控件会**全部叠在最后一行**上，肉眼像"属性丢了"。 -->
-                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                    <Grid x:Name="ControlParamGrid"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnDefinitions="70,*" RowSpacing="0" Margin="0,4,0,0">
                         <!-- 必须显式 RowSpacing="0"：本表大部分行对某个控件类型是隐藏的，而
                              RowSpacing 对 0 高度的隐藏行照样生效（88 行 × 4px ≈ 350px 空白）。
@@ -912,19 +981,6 @@
                         <fa:FANumberBox x:Name="SpinSpeedBox" Grid.Row="15" Grid.Column="1"
                                         Value="1000" Minimum="100" Maximum="10000"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblLongMode" Text="{res:Loc prop.param.longmode}" Grid.Row="19" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="LongModeCombo" Grid.Row="19" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False"
-                                  SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.param.longmode.wrap}" Tag="Wrap"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.longmode.dots}" Tag="Dots"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.longmode.scroll}" Tag="Scroll"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.longmode.scrollcirc}" Tag="ScrollCircular"/>
-                            <ComboBoxItem Content="{res:Loc prop.param.longmode.clip}" Tag="Clip"/>
-                        </ComboBox>
                         <TextBlock x:Name="LblPipeDirection" Text="{res:Loc prop.param.pipe.direction}" Grid.Row="22" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <ComboBox x:Name="PipeDirectionCombo" Grid.Row="22" Grid.Column="1"
@@ -1204,67 +1260,7 @@
                                  BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
                                  PlaceholderText="{res:Loc prop.detail.ranges.hint}"
                                  TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblBtnConfirm" Text="{res:Loc prop.detail.button.confirm}" Grid.Row="9" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="ConfirmTextBox" Grid.Row="9" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblBtnConfirmYes" Text="{res:Loc prop.detail.button.yes}" Grid.Row="10" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="ConfirmYesBox" Grid.Row="10" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblBtnConfirmNo" Text="{res:Loc prop.detail.button.no}" Grid.Row="11" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="ConfirmNoBox" Grid.Row="11" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblBtnConfirmWait" Text="{res:Loc prop.detail.button.wait}" Grid.Row="12" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="ConfirmWaitMsBox" Grid.Row="12" Grid.Column="1"
-                                        Value="0" Minimum="0" Maximum="600000"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblBtnHold" Text="{res:Loc prop.detail.button.hold}" Grid.Row="13" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="HoldMsBox" Grid.Row="13" Grid.Column="1"
-                                        Value="0" Minimum="0" Maximum="5000"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblBtnLongPress" Text="{res:Loc prop.detail.button.longpress}" Grid.Row="14" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="LongPressMsBox" Grid.Row="14" Grid.Column="1"
-                                        Value="800" Minimum="300" Maximum="5000"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblBtnOffStyle" Text="{res:Loc prop.detail.button.offstyle}" Grid.Row="15" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="OffStyleCombo" Grid.Row="15" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.dim}" Tag="dim"/>
-                            <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.hide}" Tag="hide"/>
-                        </ComboBox>
-                        <!-- 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签 -->
-                        <TextBlock x:Name="LblSwitchOn" Text="{res:Loc prop.detail.switch.on}" Grid.Row="16" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="SwitchColorOnBox" Grid.Row="16" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblSwitchOff" Text="{res:Loc prop.detail.switch.off}" Grid.Row="17" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="SwitchColorOffBox" Grid.Row="17" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
-                        <TextBlock x:Name="LblSwitchKnob" Text="{res:Loc prop.detail.switch.knob}" Grid.Row="18" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <TextBox x:Name="SwitchKnobColorBox" Grid.Row="18" Grid.Column="1" FontSize="13" Margin="0,2"
-                                 Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                 BorderBrush="{StaticResource HmiInputBorderBrush}" IsVisible="False"
-                                 PlaceholderText="{res:Loc prop.color.hint}" TextChanged="OnPropertyChanged"/>
+                        <!-- 批次 1b：进度条 / 加载圈 / 旋钮 / 页签 -->
                         <TextBlock x:Name="LblBarDirection" Text="{res:Loc prop.detail.bar.dir}" Grid.Row="19" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <ComboBox x:Name="BarDirectionCombo" Grid.Row="19" Grid.Column="1"
@@ -1296,35 +1292,6 @@
                         <fa:FANumberBox x:Name="SpinnerArcWidthBox" Grid.Row="23" Grid.Column="1"
                                         Value="4" Minimum="1" Maximum="32"
                                         SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblLabelFontStyle" Text="{res:Loc prop.detail.label.font}" Grid.Row="24" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="LabelFontStyleCombo" Grid.Row="24" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.normal}" Tag="normal"/>
-                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.bold}" Tag="bold"/>
-                            <ComboBoxItem Content="{res:Loc prop.detail.label.font.italic}" Tag="italic"/>
-                        </ComboBox>
-                        <TextBlock x:Name="LblLetterSpacing" Text="{res:Loc prop.detail.label.letter}" Grid.Row="25" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="LetterSpacingBox" Grid.Row="25" Grid.Column="1"
-                                        Value="0" Minimum="0" Maximum="32"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblLineSpacing" Text="{res:Loc prop.detail.label.line}" Grid.Row="26" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <fa:FANumberBox x:Name="LineSpacingBox" Grid.Row="26" Grid.Column="1"
-                                        Value="0" Minimum="0" Maximum="64"
-                                        SpinButtonPlacementMode="Compact" Margin="0,2" IsVisible="False"/>
-                        <TextBlock x:Name="LblInputCommit" Text="{res:Loc prop.detail.input.commit}" Grid.Row="27" Grid.Column="0"
-                                   Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
-                        <ComboBox x:Name="InputCommitCombo" Grid.Row="27" Grid.Column="1"
-                                  Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
-                                  BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
-                                  SelectedIndex="0" IsVisible="False" SelectionChanged="OnPropertyChanged">
-                            <ComboBoxItem Content="{res:Loc prop.detail.input.commit.ok}" Tag="ok"/>
-                            <ComboBoxItem Content="{res:Loc prop.detail.input.commit.blur}" Tag="blur"/>
-                        </ComboBox>
                         <TextBlock x:Name="LblKnobArcWidth" Text="{res:Loc prop.detail.knob.arcwidth}" Grid.Row="28" Grid.Column="0"
                                    Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center" IsVisible="False"/>
                         <fa:FANumberBox x:Name="KnobArcWidthBox" Grid.Row="28" Grid.Column="1"
@@ -1927,6 +1894,76 @@
                             <TextBox x:Name="TooltipBox" Grid.Column="1"
                                      TextChanged="OnPropertyChanged" MaxLength="64"/>
                         </Grid>
+                        <!-- 交互行为：二次确认 / 按下保持 / 长按触发 / 禁用表现 / 输入框提交时机。
+                             这几行裁决"点下去会发生什么"，与数据参数无关，因此跟长按提示、动作同处一区。 -->
+                        <StackPanel x:Name="InteractionExpander" Spacing="4" IsVisible="False">
+                            <TextBlock Text="{res:Loc prop.section.interaction}"
+                                       Foreground="{StaticResource HmiLinkBrush}" FontSize="11" FontWeight="SemiBold"/>
+                            <Grid x:Name="RowBtnConfirm" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnConfirm" Text="{res:Loc prop.detail.button.confirm}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="ConfirmTextBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnConfirmYes" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnConfirmYes" Text="{res:Loc prop.detail.button.yes}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="ConfirmYesBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnConfirmNo" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnConfirmNo" Text="{res:Loc prop.detail.button.no}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <TextBox x:Name="ConfirmNoBox" Grid.Column="1" FontSize="13" Margin="0,2"
+                                         Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                         BorderBrush="{StaticResource HmiInputBorderBrush}" TextChanged="OnPropertyChanged"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnConfirmWait" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnConfirmWait" Text="{res:Loc prop.detail.button.wait}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="ConfirmWaitMsBox" Grid.Column="1"
+                                                Value="0" Minimum="0" Maximum="600000"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnHold" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnHold" Text="{res:Loc prop.detail.button.hold}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="HoldMsBox" Grid.Column="1"
+                                                Value="0" Minimum="0" Maximum="5000"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnLongPress" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnLongPress" Text="{res:Loc prop.detail.button.longpress}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <fa:FANumberBox x:Name="LongPressMsBox" Grid.Column="1"
+                                                Value="800" Minimum="300" Maximum="5000"
+                                                SpinButtonPlacementMode="Compact" Margin="0,2"/>
+                            </Grid>
+                            <Grid x:Name="RowBtnOffStyle" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblBtnOffStyle" Text="{res:Loc prop.detail.button.offstyle}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="OffStyleCombo" Grid.Column="1"
+                                          Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                          BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                          SelectedIndex="0" SelectionChanged="OnPropertyChanged">
+                                    <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.dim}" Tag="dim"/>
+                                    <ComboBoxItem Content="{res:Loc prop.detail.button.offstyle.hide}" Tag="hide"/>
+                                </ComboBox>
+                            </Grid>
+                            <Grid x:Name="RowInputCommit" ColumnDefinitions="62,*" IsVisible="False">
+                                <TextBlock x:Name="LblInputCommit" Text="{res:Loc prop.detail.input.commit}" Grid.Column="0"
+                                           Foreground="{StaticResource HmiTextPrimaryBrush}" VerticalAlignment="Center"/>
+                                <ComboBox x:Name="InputCommitCombo" Grid.Column="1"
+                                          Background="{StaticResource HmiBgPanelBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                          BorderBrush="{StaticResource HmiInputBorderBrush}" FontSize="13"
+                                          SelectedIndex="0" SelectionChanged="OnPropertyChanged">
+                                    <ComboBoxItem Content="{res:Loc prop.detail.input.commit.ok}" Tag="ok"/>
+                                    <ComboBoxItem Content="{res:Loc prop.detail.input.commit.blur}" Tag="blur"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
                         <StackPanel x:Name="FaceplateParamExpander" Spacing="6" IsVisible="False">
                     <StackPanel x:Name="FaceplateParamPanel" Spacing="6" Margin="0,4,0,0">
                         <TextBlock x:Name="FaceplateTemplateName" Text=""

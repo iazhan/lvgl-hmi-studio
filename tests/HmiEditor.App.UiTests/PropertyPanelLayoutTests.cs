@@ -174,8 +174,8 @@ public class PropertyPanelLayoutTests
                      {
                          // 指示器颜色 + 背景/圆角/边框×2 + 不透明度（visible 已归入 GeometryExpander）
                          (HmiControlType.Slider, 6),
-                         // 背景/圆角/边框×2/文字色/字号/对齐×2 + 不透明度
-                         (HmiControlType.Label, 9),
+                         // 背景/圆角/边框×2/文字色/字号/对齐×2/字形/字距/行距/超长 + 不透明度
+                         (HmiControlType.Label, 13),
                      })
             {
                 var screen = new HmiScreen { Id = "s1", Name = "S1", Width = 1024, Height = 600 };

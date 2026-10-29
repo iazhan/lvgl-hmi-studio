@@ -48,12 +48,26 @@ public partial class PropertyPanelView
         // 字体族：导出器只写 font_size（SetFont），从不读 FontFamily ⇒ 全类型隐藏
         any |= SetRow(RowFontFamily, false);
 
+        // 文字排版：字形 / 字距 / 行距 / 超长处理。契约里只有 label 有这四条键，
+        // 跟字号、对齐同属一件事，所以同组（行在「外观样式」里，与数据参数分开）。
+        var isText = type == HmiControlType.Label;
+        any |= SetRow(RowLabelFontStyle, isText);
+        any |= SetRow(RowLetterSpacing, isText);
+        any |= SetRow(RowLineSpacing, isText);
+        any |= SetRow(RowLongMode, isText);
+
+        // 开关的三段颜色：只有 switch 导出 color_on / color_off / knob_color
+        var isSwitch = type == HmiControlType.Switch;
+        any |= SetRow(RowSwitchColorOn, isSwitch);
+        any |= SetRow(RowSwitchColorOff, isSwitch);
+        any |= SetRow(RowSwitchKnob, isSwitch);
+
         // 不透明度：props.opacity 由建页收口统一应用（0..255）。
         any |= SetRow(RowOpacity, AppearanceSupport.IsExported(type));
 
-        // 这两行的显隐由 BindControl 按"支持指示器色 / 支持选中态"决定（不在本表里），
-        // 但只要它们可见，外观组就不能收起。
-        AppearanceExpander.IsVisible = any || RowIndicatorColor.IsVisible || RowIsChecked.IsVisible;
+        // 指示器色这一行的显隐由 BindControl 按"支持指示器色"决定（不在本表里），
+        // 但只要它可见，外观组就不能收起。
+        AppearanceExpander.IsVisible = any || RowIndicatorColor.IsVisible;
     }
 
     /// <summary>整行显隐；返回该行是否可见。</summary>

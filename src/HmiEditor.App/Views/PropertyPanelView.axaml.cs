@@ -240,6 +240,7 @@ public partial class PropertyPanelView : UserControl
             BindingStateSection.IsVisible = false;
             DataDisplaySection.IsVisible = false;
             ActionsAdvancedSection.IsVisible = false;
+            InteractionExpander.IsVisible = false;
             ValueDisplayExpander.IsVisible = false;
             ControlParamExpander.IsVisible = false;
             DataDisplaySection.IsVisible = false;
@@ -363,8 +364,11 @@ public partial class PropertyPanelView : UserControl
 
             // 加载控件功能参数（按类型显示相关行）
             LoadControlParameters(control);
+            // 判据要把本区的**每个子分组**都算进来：历史表 / 配方表 / 报警条的数据行整块在
+            // 「控件细节」组里，漏了它这一区会对这些类型整块不显示。
             DataDisplaySection.IsVisible = supportsValueDisplay || ControlParamExpander.IsVisible
-                || CurveParamExpander.IsVisible || ExclusiveParamExpander.IsVisible;
+                || DetailParamExpander.IsVisible || CurveParamExpander.IsVisible
+                || ExclusiveParamExpander.IsVisible;
         }
 
         _isUpdating = false;

@@ -1049,6 +1049,7 @@
   "prop.section.content.text": "Content & Text",
   "prop.section.binding.state": "Binding & State",
   "prop.section.actions.advanced": "Actions & Advanced",
+  "prop.section.interaction": "Interaction",
   "prop.behavior.title": "Behavior & Media",
   "prop.exclusive.title": "Specific",
   "prop.exclusive.gauge.labelpos": "Value pos",

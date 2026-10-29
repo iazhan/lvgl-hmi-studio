@@ -1049,6 +1049,7 @@
   "prop.section.content.text": "内容与文字",
   "prop.section.binding.state": "绑定与状态",
   "prop.section.actions.advanced": "动作与高级",
+  "prop.section.interaction": "交互行为",
   "prop.behavior.title": "行为与媒体",
   "prop.exclusive.title": "专属参数",
   "prop.exclusive.gauge.labelpos": "数值位置",

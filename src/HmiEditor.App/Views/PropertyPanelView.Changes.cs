@@ -160,6 +160,24 @@ public partial class PropertyPanelView : UserControl
             ValidateAndWrite(nameof(HmiControl.Opacity), OpacityBox.Value, v =>
                 _currentControl.Opacity = (double)v!);
 
+        // 文字排版（字形 / 字距 / 行距 / 超长处理）：行在外观组里，按行显隐写回
+        if (RowLabelFontStyle.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.LabelFontStyle), GetComboTag(LabelFontStyleCombo), v => _currentControl.LabelFontStyle = v);
+        if (RowLetterSpacing.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.LabelLetterSpacing), (int)LetterSpacingBox.Value, v => _currentControl.LabelLetterSpacing = v);
+        if (RowLineSpacing.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.LabelLineSpacing), (int)LineSpacingBox.Value, v => _currentControl.LabelLineSpacing = v);
+        if (RowLongMode.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.LabelLongMode), GetComboTag(LongModeCombo), v => _currentControl.LabelLongMode = v);
+
+        // 开关三段颜色（color_on / color_off / knob_color）：同样按行显隐写回
+        if (RowSwitchColorOn.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.SwitchColorOn), string.IsNullOrWhiteSpace(SwitchColorOnBox.Text) ? null : SwitchColorOnBox.Text.Trim(), v => _currentControl.SwitchColorOn = v);
+        if (RowSwitchColorOff.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.SwitchColorOff), string.IsNullOrWhiteSpace(SwitchColorOffBox.Text) ? null : SwitchColorOffBox.Text.Trim(), v => _currentControl.SwitchColorOff = v);
+        if (RowSwitchKnob.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.SwitchKnobColor), string.IsNullOrWhiteSpace(SwitchKnobColorBox.Text) ? null : SwitchKnobColorBox.Text.Trim(), v => _currentControl.SwitchKnobColor = v);
+
         // 值显示配置（仅显示型控件加载，面板可见时保存）
         if (ValueDisplayExpander.IsVisible)
         {
@@ -173,8 +191,10 @@ public partial class PropertyPanelView : UserControl
             ValidateAndWrite(nameof(HmiControl.ValueSuffix), string.IsNullOrEmpty(ValueSuffixBox.Text) ? null : ValueSuffixBox.Text, v => _currentControl.ValueSuffix = v);
         }
 
-        // 控件功能参数（仅显示型面板加载，Expander 可见时保存）
-        if (ControlParamExpander.IsVisible)
+        // 「数据与显示」区各行的写回。闸门是**这一区是否显示**，区内的每个字段仍逐行判自己
+        // 的可见性（隐藏行里留的是上一个控件的值）。不能只挂「控件功能参数」那一个分组的可见性：
+        // 历史表 / 配方表 / 报警条的数据行整块在兄弟分组里，挂上去就是"改了不生效"。
+        if (DataDisplaySection.IsVisible)
         {
             if (MinValueBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.MinValue), MinValueBox.Value, v => _currentControl.MinValue = v);
@@ -209,8 +229,6 @@ public partial class PropertyPanelView : UserControl
             if (TabTitlesBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.TabTitles), string.IsNullOrWhiteSpace(TabTitlesBox.Text) ? null : TabTitlesBox.Text.Trim(), v => _currentControl.TabTitles = v);
             // chenge-runtime 数据控件参数（面板可见时才写，避免把无关字段清空）
-            if (UnitBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.Unit), string.IsNullOrWhiteSpace(UnitBox.Text) ? null : UnitBox.Text.Trim(), v => _currentControl.Unit = v);
             if (CgAlarmGroupBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.AlarmGroupFilter), string.IsNullOrWhiteSpace(CgAlarmGroupBox.Text) ? null : CgAlarmGroupBox.Text.Trim(), v => _currentControl.AlarmGroupFilter = v);
             if (CgAlarmModeCombo.IsVisible)
@@ -238,27 +256,7 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.GaugeShowValue), GaugeShowValueCheck.IsChecked == true, v => _currentControl.GaugeShowValue = v);
             if (LampSizeBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.LampSize), (int)LampSizeBox.Value, v => _currentControl.LampSize = v);
-            if (ConfirmTextBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonConfirmText), string.IsNullOrWhiteSpace(ConfirmTextBox.Text) ? null : ConfirmTextBox.Text.Trim(), v => _currentControl.ButtonConfirmText = v);
-            if (ConfirmYesBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonConfirmYes), string.IsNullOrWhiteSpace(ConfirmYesBox.Text) ? null : ConfirmYesBox.Text.Trim(), v => _currentControl.ButtonConfirmYes = v);
-            if (ConfirmNoBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonConfirmNo), string.IsNullOrWhiteSpace(ConfirmNoBox.Text) ? null : ConfirmNoBox.Text.Trim(), v => _currentControl.ButtonConfirmNo = v);
-            if (ConfirmWaitMsBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonConfirmWaitMs), (int)ConfirmWaitMsBox.Value, v => _currentControl.ButtonConfirmWaitMs = v);
-            if (HoldMsBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonHoldMs), (int)HoldMsBox.Value, v => _currentControl.ButtonHoldMs = v);
-            if (LongPressMsBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonLongPressMs), (int)LongPressMsBox.Value, v => _currentControl.ButtonLongPressMs = v);
-            if (OffStyleCombo.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.ButtonOffStyle), GetComboTag(OffStyleCombo), v => _currentControl.ButtonOffStyle = v);
-            // 批次 1b：开关 / 进度条 / 加载圈 / 文本 / 输入框 / 旋钮 / 页签
-            if (SwitchColorOnBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.SwitchColorOn), string.IsNullOrWhiteSpace(SwitchColorOnBox.Text) ? null : SwitchColorOnBox.Text.Trim(), v => _currentControl.SwitchColorOn = v);
-            if (SwitchColorOffBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.SwitchColorOff), string.IsNullOrWhiteSpace(SwitchColorOffBox.Text) ? null : SwitchColorOffBox.Text.Trim(), v => _currentControl.SwitchColorOff = v);
-            if (SwitchKnobColorBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.SwitchKnobColor), string.IsNullOrWhiteSpace(SwitchKnobColorBox.Text) ? null : SwitchKnobColorBox.Text.Trim(), v => _currentControl.SwitchKnobColor = v);
+            // 批次 1b：进度条 / 加载圈 / 旋钮 / 页签
             if (BarDirectionCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.BarDirection), GetComboTag(BarDirectionCombo), v => _currentControl.BarDirection = v);
             if (BarShowPercentCheck.IsVisible)
@@ -267,14 +265,6 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.SpinnerArcLen), (int)SpinnerArcLenBox.Value, v => _currentControl.SpinnerArcLen = v);
             if (SpinnerArcWidthBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.SpinnerArcWidth), (int)SpinnerArcWidthBox.Value, v => _currentControl.SpinnerArcWidth = v);
-            if (LabelFontStyleCombo.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.LabelFontStyle), GetComboTag(LabelFontStyleCombo), v => _currentControl.LabelFontStyle = v);
-            if (LetterSpacingBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.LabelLetterSpacing), (int)LetterSpacingBox.Value, v => _currentControl.LabelLetterSpacing = v);
-            if (LineSpacingBox.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.LabelLineSpacing), (int)LineSpacingBox.Value, v => _currentControl.LabelLineSpacing = v);
-            if (InputCommitCombo.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.InputCommit), GetComboTag(InputCommitCombo), v => _currentControl.InputCommit = v);
             if (KnobArcWidthBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.KnobArcWidth), (int)KnobArcWidthBox.Value, v => _currentControl.KnobArcWidth = v);
             if (TabHeightBox.IsVisible)
@@ -389,19 +379,8 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.ShowTicks), ShowTicksCheck.IsChecked ?? false, v => _currentControl.ShowTicks = v);
             if (ShowPointerCheck.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ShowPointer), ShowPointerCheck.IsChecked ?? false, v => _currentControl.ShowPointer = v);
-            // 旋转/镜像：运行时只对部分类型支持（AppearanceSupport.HasTransform），
-            // 不支持的类型连行都不出现 —— 隐藏行里的旧值绝不能写回新控件。
-            if (RotationBox.IsVisible)
-            {
-                ValidateAndWrite(nameof(HmiControl.Rotation), RotationBox.Value, v => _currentControl.Rotation = v);
-                ValidateAndWrite(nameof(HmiControl.RotationDirection), GetComboTag(RotationDirCombo), v => _currentControl.RotationDirection = v);
-                ValidateAndWrite(nameof(HmiControl.MirrorX), MirrorHCheck.IsChecked ?? false, v => _currentControl.MirrorX = v);
-                ValidateAndWrite(nameof(HmiControl.MirrorY), MirrorVCheck.IsChecked ?? false, v => _currentControl.MirrorY = v);
-            }
             if (SpinSpeedBox.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.SpinSpeed), (int)SpinSpeedBox.Value, v => _currentControl.SpinSpeed = v);
-            if (LongModeCombo.IsVisible)
-                ValidateAndWrite(nameof(HmiControl.LabelLongMode), GetComboTag(LongModeCombo), v => _currentControl.LabelLongMode = v);
             if (ImageAssetCombo.IsVisible)
                 ValidateAndWrite(nameof(HmiControl.ImageAssetId), GetComboTag(ImageAssetCombo), v => _currentControl.ImageAssetId = v);
             if (PipeDirectionCombo.IsVisible)
@@ -416,8 +395,26 @@ public partial class PropertyPanelView : UserControl
                 ValidateAndWrite(nameof(HmiControl.ValveType), GetComboTag(ValveTypeCombo), v => _currentControl.ValveType = v);
         }
 
+        // 这两行的编辑器不在「控件功能参数」里：旋转/镜像画在「位置与大小」，
+        // 单位在值显示组。因此不能受本区可见性约束 —— 否则本区一行都不显示的类型
+        // （Label / Button / Value）改了它们不生效。
+        // 旋转/镜像：运行时只对部分类型支持（AppearanceSupport.HasTransform），
+        // 不支持的类型连行都不出现 —— 隐藏行里的旧值绝不能写回新控件。
+        if (RotationBox.IsVisible)
+        {
+            ValidateAndWrite(nameof(HmiControl.Rotation), RotationBox.Value, v => _currentControl.Rotation = v);
+            ValidateAndWrite(nameof(HmiControl.RotationDirection), GetComboTag(RotationDirCombo), v => _currentControl.RotationDirection = v);
+            ValidateAndWrite(nameof(HmiControl.MirrorX), MirrorHCheck.IsChecked ?? false, v => _currentControl.MirrorX = v);
+            ValidateAndWrite(nameof(HmiControl.MirrorY), MirrorVCheck.IsChecked ?? false, v => _currentControl.MirrorY = v);
+        }
+        if (UnitBox.IsVisible)
+            ValidateAndWrite(nameof(HmiControl.Unit), string.IsNullOrWhiteSpace(UnitBox.Text) ? null : UnitBox.Text.Trim(), v => _currentControl.Unit = v);
+
         // 专属参数区：同样按行可见性写回（不可见不写）
         SaveExclusiveRows();
+
+        // 交互行为组在「动作与高级」区，闸门是它自己那几行
+        SaveInteractionRows();
 
         SaveAction();
 

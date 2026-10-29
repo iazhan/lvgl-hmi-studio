@@ -357,9 +357,14 @@ public static class WidgetPropertyCoverage
         ["mirror_y"] = "geometry", ["opacity"] = "appearance", ["bg_color"] = "appearance",
         ["border_color"] = "appearance", ["border_width"] = "appearance", ["radius"] = "appearance",
         ["color"] = "appearance", ["font_size"] = "appearance", ["align"] = "appearance",
-        ["valign"] = "appearance", ["enabled"] = "behavior", ["tooltip"] = "advanced",
+        ["valign"] = "appearance", ["font_style"] = "appearance", ["letter_spacing"] = "appearance",
+        ["line_spacing"] = "appearance", ["long_mode"] = "appearance",
+        ["color_on"] = "appearance", ["color_off"] = "appearance", ["knob_color"] = "appearance",
+        // 可用与可见同处「位置与大小」：两者都是静态显隐，且「绑定与状态」整区在部分类型上不出现
+        ["enabled"] = "geometry", ["tooltip"] = "advanced",
         ["checked"] = "behavior", ["pressed"] = "behavior", ["confirm"] = "behavior",
         ["hold_ms"] = "behavior", ["long_press_ms"] = "behavior", ["off_style"] = "behavior",
+        ["commit"] = "behavior",
     };
 
     /// <summary>公共属性（widgets 的 common）。图元另有一套 figure_common，见 <see cref="FigureCommon"/>。</summary>

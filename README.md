@@ -9,7 +9,7 @@
 | 目标板 | 全志 F1C100S（kinseal）：800×480 RGB666 电阻触摸、32 MiB DDR、SD 卡启动 |
 | 设备侧运行时 | `chenge-runtime`（LVGL 9.5 / ABI 3），在姊妹仓库 `f1c100s-project` |
 | 导出产物 | chenge 工程目录（格式 0.6），可打成 `.cgpkg` 由 U 盘导入 |
-| 编辑器版本 | `2.27.0`，唯一来源 `src/HmiEditor.Core/VersionInfo.cs` |
+| 编辑器版本 | `2.27.1`，唯一来源 `src/HmiEditor.Core/VersionInfo.cs` |
 
 ## 仓库结构
 

@@ -29,15 +29,19 @@ public partial class PropertyPanelView
         SetParamRow(LblLampSize, LampSizeBox, visible);
     }
 
+    /// <summary>
+    /// 按钮的交互行。它们在「动作与高级」的交互行为组里，各行是一个具名 <c>Grid</c>，
+    /// 显隐切整行（切行内元素会在 StackPanel 里留空白）。
+    /// </summary>
     private void ShowButtonRows(bool visible)
     {
-        SetParamRow(LblBtnConfirm, ConfirmTextBox, visible);
-        SetParamRow(LblBtnConfirmYes, ConfirmYesBox, visible);
-        SetParamRow(LblBtnConfirmNo, ConfirmNoBox, visible);
-        SetParamRow(LblBtnConfirmWait, ConfirmWaitMsBox, visible);
-        SetParamRow(LblBtnHold, HoldMsBox, visible);
-        SetParamRow(LblBtnLongPress, LongPressMsBox, visible);
-        SetParamRow(LblBtnOffStyle, OffStyleCombo, visible);
+        RowBtnConfirm.IsVisible = visible;
+        RowBtnConfirmYes.IsVisible = visible;
+        RowBtnConfirmNo.IsVisible = visible;
+        RowBtnConfirmWait.IsVisible = visible;
+        RowBtnHold.IsVisible = visible;
+        RowBtnLongPress.IsVisible = visible;
+        RowBtnOffStyle.IsVisible = visible;
     }
 
     /// <summary>仪表 / 指示灯 / 按钮那些行的回填（值与显隐无关，一律填）。</summary>
