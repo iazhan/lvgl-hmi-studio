@@ -62,7 +62,44 @@ public sealed class ChengeExportResult
     public IReadOnlyDictionary<string, string> PageIds { get; init; } =
         new Dictionary<string, string>();
 
+    /// <summary>
+    /// 本次建页累加出来的 manifest 派生声明（<c>features</c> / <c>font_sizes</c>）。
+    ///
+    /// <para>不建页的导出（<see cref="ChengeExporter.ExportMetaOnly"/>）拿不到它们，只能照这份
+    /// 上一轮的记过来 —— manifest 少声明一项能力，宿主建页期就会拒载仍在跑的那一页。</para>
+    /// </summary>
+    public ChengePageStats PageStats { get; init; } = ChengePageStats.Empty;
+
+    /// <summary>
+    /// 按 tag id 排列的页面可见指纹（<c>名字|类型</c>）。页面 JSON 只引用 tag 序号，
+    /// 序号背后换了变量就意味着那一页过期 —— 设计画布据此决定增量重载要带哪些页。
+    /// </summary>
+    public IReadOnlyList<string> TagFingerprints { get; init; } = Array.Empty<string>();
+
     public string Summary =>
         $"页面 {PageCount} / 控件 {WidgetCount} / 变量 {TagCount} / 设备 {DeviceCount}" +
         $"；错误 {Issues.ErrorCount}，警告 {Issues.WarningCount}";
+}
+
+/// <summary>
+/// 建页期累加出来的 manifest 派生声明：<c>features</c>（控件要什么能力）与
+/// <c>font_sizes</c>（用到的字号档位）。
+///
+/// <para><b>为什么单独一个类型</b>：这两项只有 mapper 真正建页时才知道（控件类型 → 能力、
+/// 控件字号 → 档位）。设计画布只重发元数据 + 若干页时拿不到它们，必须把上一份整包导出的
+/// 结果原样带进 manifest —— 少声明一项能力，宿主建页期会以"需要 manifest.features 声明 X"
+/// 拒载，而那一页此刻正在宿主里跑着。</para>
+/// </summary>
+public sealed class ChengePageStats
+{
+    public static ChengePageStats Empty { get; } = new(Array.Empty<string>(), Array.Empty<int>());
+
+    public ChengePageStats(IEnumerable<string> features, IEnumerable<int> fontSizes)
+    {
+        Features = features.Distinct(StringComparer.Ordinal).OrderBy(f => f, StringComparer.Ordinal).ToArray();
+        FontSizes = fontSizes.Distinct().OrderBy(s => s).ToArray();
+    }
+
+    public IReadOnlyList<string> Features { get; }
+    public IReadOnlyList<int> FontSizes { get; }
 }

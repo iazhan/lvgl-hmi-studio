@@ -33,7 +33,8 @@ public sealed class ChengeExporter
 
     public ChengeExportResult Export(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
         string outputDir, string? projectDirectory = null)
-        => ExportCore(project, assets, options, projectDirectory, new DirectoryExportSink(outputDir));
+        => ExportCore(project, assets, options, projectDirectory, new DirectoryExportSink(outputDir),
+            includePages: true, pageStats: null);
 
     /// <summary>
     /// 导出到内存：预览用（运行时直接吃字节，不落盘）。返回 相对路径 → 文件内容；
@@ -44,23 +45,55 @@ public sealed class ChengeExporter
     {
         var sink = new MemoryExportSink();
 
-        result = ExportCore(project, assets, options, projectDirectory, sink);
-        if (result.Success && sink.Files.TryGetValue("manifest.json", out var manifestBytes))
-        {
-            var manifest = JsonNode.Parse(manifestBytes) as JsonObject;
-            if (manifest?["features"] is JsonArray features)
-            {
-                // 设计画布的 J 重载只能替换页面 JSON，不能更新已加载的 manifest；预览包预声明
-                // 可由编辑器在会话中动态加入的扩展控件能力，正式落盘工程仍保持精确声明。
-                foreach (var feature in new[] { "table", "curves", "pipe", "widgets_ext" })
-                {
-                    if (!features.Any(node => string.Equals(node?.GetValue<string>(), feature, StringComparison.Ordinal)))
-                        features.Add(feature);
-                }
-                sink.Files["manifest.json"] = Encoding.UTF8.GetBytes(manifest.ToJsonString(WriteOptions));
-            }
-        }
+        result = ExportCore(project, assets, options, projectDirectory, sink,
+            includePages: true, pageStats: null);
+        if (result.Success) AugmentPreviewFeatures(sink.Files);
         return sink.Files;
+    }
+
+    /// <summary>
+    /// 只导出**非页面、非资产**的工程文件：manifest / ports / devices / tags / alarms /
+    /// strings / savecfg / users。设计画布的增量重载（宿主 <c>K</c>）用它换掉元数据部分，
+    /// 页面与图片仍留在宿主里那份。
+    ///
+    /// <para><b>为什么与整包同一批 Build*</b>：tag id 由变量顺序决定，页面里的绑定存的是
+    /// tag 序号。只要元数据的构建路径与整包不是同一份代码，增量包与整包就可能给同一个变量
+    /// 不同的序号 —— 那种错不白屏、只让画面显示别的变量的值。</para>
+    ///
+    /// <para><b>manifest 描述的是整份工程，不是这一包</b>：<c>counts.pages</c> 仍按工程里的
+    /// 页数写；<c>features</c>/<c>font_sizes</c> 由调用方传上一份整包导出的
+    /// <paramref name="pageStats"/>（本包不建页，自己算不出来）。</para>
+    /// </summary>
+    public Dictionary<string, byte[]> ExportMetaOnly(HmiProject project, AssetLibrary? assets,
+        ChengeExportOptions options, string? projectDirectory, ChengePageStats pageStats,
+        out ChengeExportResult result)
+    {
+        var sink = new MemoryExportSink();
+
+        result = ExportCore(project, assets, options, projectDirectory, sink,
+            includePages: false, pageStats);
+        if (result.Success) AugmentPreviewFeatures(sink.Files);
+        return sink.Files;
+    }
+
+    /// <summary>
+    /// 预览包的 manifest 预声明可被扩展控件用到的那几项能力。
+    ///
+    /// <para>设计画布的 <c>J</c> 重载只能替换页面 JSON，带不动已加载的 manifest；所以会话里
+    /// 新加一个表格/曲线控件时必须已经声明过。正式落盘工程仍保持精确声明。</para>
+    /// </summary>
+    private static void AugmentPreviewFeatures(Dictionary<string, byte[]> files)
+    {
+        if (!files.TryGetValue("manifest.json", out var manifestBytes)) return;
+        if (JsonNode.Parse(manifestBytes) is not JsonObject manifest) return;
+        if (manifest["features"] is not JsonArray features) return;
+
+        foreach (var feature in new[] { "table", "curves", "pipe", "widgets_ext" })
+        {
+            if (!features.Any(node => string.Equals(node?.GetValue<string>(), feature, StringComparison.Ordinal)))
+                features.Add(feature);
+        }
+        files["manifest.json"] = Encoding.UTF8.GetBytes(manifest.ToJsonString(WriteOptions));
     }
 
     /// <summary>
@@ -128,8 +161,13 @@ public sealed class ChengeExporter
         return System.Text.Encoding.UTF8.GetBytes(doc.ToJsonString(WriteOptions));
     }
 
+    /// <summary>
+    /// 导出主体。<paramref name="includePages"/> 为 false 时不建页、不转资产，只出元数据
+    /// （<see cref="ExportMetaOnly"/>）；此时 manifest 的能力与字号档位来自
+    /// <paramref name="pageStats"/>。
+    /// </summary>
     private ChengeExportResult ExportCore(HmiProject project, AssetLibrary? assets, ChengeExportOptions options,
-        string? projectDirectory, IChengeExportSink sink)
+        string? projectDirectory, IChengeExportSink sink, bool includePages, ChengePageStats? pageStats)
     {
         // 同一个导出器实例会被复用（预览 → 正式导出）：文本表必须每次从空开始，
         // 否则上一个工程的报警文本会漏进这一份 strings.json。
@@ -158,15 +196,26 @@ public sealed class ChengeExporter
 
         // 控件 Id → 导出 widget id：设计画布的几何补丁要靠它寻址（两种 id 不是一回事）
         var widgetIds = new Dictionary<string, string>(StringComparer.Ordinal);
-        var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, fontSizes,
-            screenWidth, screenHeight, widgetIds);
         var pageDocs = new List<(string Path, JsonNode Node)>();
         var widgetCount = 0;
-        foreach (var screen in screens)
+        if (includePages)
         {
-            var pageId = maps.PageIdByScreenId[screen.Id];
-            var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features, issues, ref widgetCount);
-            pageDocs.Add(($"pages/{pageId}.json", doc));
+            var mapper = new ChengeWidgetMapper(_schema, issues, colors, assetStore, maps, features, fontSizes,
+                screenWidth, screenHeight, widgetIds);
+            foreach (var screen in screens)
+            {
+                var pageId = maps.PageIdByScreenId[screen.Id];
+                var doc = BuildPage(project, screen, pageId, maps, mapper, colors, assetStore, features, issues, ref widgetCount);
+                pageDocs.Add(($"pages/{pageId}.json", doc));
+            }
+        }
+        else if (pageStats != null)
+        {
+            // 本包不含页面，但 manifest 描述的是整份工程：能力与字号档位照上一份整包导出的
+            // 结果声明。少一项能力 = 宿主建页期拒载仍在跑的那一页（ui_page.c 的
+            // "需要 manifest.features 声明 X"）。
+            foreach (var feature in pageStats.Features) features.Add(feature);
+            foreach (var size in pageStats.FontSizes) fontSizes.Add(size);
         }
 
         files["ports.json"] = ports;
@@ -212,6 +261,11 @@ public sealed class ChengeExporter
         }
 
         ValidateFontSizes(fontSizes, issues);
+        // counts.pages 描述的是工程里的页数，不是这一包里带了几页：增量包只带若干页，
+        // 写成本包页数会让 manifest 与宿主里那份工程对不上（37 §8 拿它交叉校验）。
+        var pageCount = includePages ? pageDocs.Count : screens.Count;
+        var tagFingerprints = TagFingerprintsOf(maps, tags.Count);
+        var pageStatsOut = new ChengePageStats(features, fontSizes);
         var hwProfile = ResolveHwProfile(project, options, issues);
         var (projectId, projectIdGenerated) = ResolveProjectId(project, issues);
         var manifest = new JsonObject
@@ -239,7 +293,7 @@ public sealed class ChengeExporter
             ["counts"] = new JsonObject
             {
                 ["tags"] = tags.Count,
-                ["pages"] = pageDocs.Count,
+                ["pages"] = pageCount,
                 ["devices"] = devices.Count,
                 ["scripts"] = 0,
             },
@@ -252,7 +306,7 @@ public sealed class ChengeExporter
         {
             Issues = issues,
             OutputDirectory = sink.Description,
-            PageCount = pageDocs.Count,
+            PageCount = pageCount,
             WidgetCount = widgetCount,
             TagCount = tags.Count,
             DeviceCount = devices.Count,
@@ -260,6 +314,8 @@ public sealed class ChengeExporter
             PageIds = maps.PageIdByScreenId,
             ProjectId = projectId,
             ProjectIdGenerated = projectIdGenerated,
+            PageStats = pageStatsOut,
+            TagFingerprints = tagFingerprints,
         };
 
         if (issues.HasErrors) return result;
@@ -269,7 +325,7 @@ public sealed class ChengeExporter
         {
             Issues = issues,
             OutputDirectory = sink.Description,
-            PageCount = pageDocs.Count,
+            PageCount = pageCount,
             WidgetCount = widgetCount,
             TagCount = tags.Count,
             DeviceCount = devices.Count,
@@ -278,7 +334,24 @@ public sealed class ChengeExporter
             PageIds = maps.PageIdByScreenId,
             ProjectId = projectId,
             ProjectIdGenerated = projectIdGenerated,
+            PageStats = pageStatsOut,
+            TagFingerprints = tagFingerprints,
         };
+    }
+
+    /// <summary>
+    /// 按 tag id 排列的 <c>名字|类型</c>。页面 JSON 只记 tag 序号、不记变量名，所以"这一页过期
+    /// 了没有"只能按序号背后的东西判：同名同类型 = 页里的绑定含义没变。
+    /// </summary>
+    private static string[] TagFingerprintsOf(ChengeMaps maps, int count)
+    {
+        var fingerprints = new string[count];
+        for (var i = 0; i < count; i++)
+        {
+            fingerprints[i] = (maps.NameByTag.TryGetValue(i, out var name) ? name : "")
+                              + "|" + (maps.TypeByTag.TryGetValue(i, out var type) ? type : "");
+        }
+        return fingerprints;
     }
 
     // ── 页面 ──

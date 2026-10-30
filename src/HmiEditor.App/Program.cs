@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using HmiEditor.App.Services;
 using HmiEditor.Core.Diagnostics;
 using HmiEditor.Core.Services;
+using HmiEditor.Export.Chenge;
 using System;
 using System.IO;
 using System.Threading;
@@ -35,6 +36,13 @@ class Program
         if (args.Length > 0 && args[0] == "--selftest-host")
         {
             Environment.ExitCode = RunHostSelftest(args);
+            return;
+        }
+
+        // 设计画布增量重载自检（K）：改一个变量的前后，比字节/耗时，并用真宿主切页比像素。
+        if (args.Length > 0 && args[0] == "--selftest-kdelta")
+        {
+            Environment.ExitCode = RunKDeltaSelftest(args);
             return;
         }
 
@@ -417,6 +425,293 @@ class Program
         }
         return files;
     }
+
+    /// <summary>
+    /// `--selftest-kdelta`：设计画布增量重载（<c>K</c>）的自检，判据全用真宿主。
+    ///
+    /// <para>工程是现场造的：<c>pages</c> 页，只有一页的 Bar 绑定了某个变量。然后
+    /// ① 整包导出一次；② 删掉那个变量（后面的 tag 序号整体前移，被绑页必然过期）；
+    /// ③ 走 <see cref="DesignIncrementalReload"/> 算增量包并比字节/耗时；
+    /// ④ 两个宿主 A/B 对拍：A 打开最终整包当"正确答案"，B 打开旧整包再发增量 <c>K</c>，
+    /// 都切到被绑那一页取帧比像素；⑤ 负对照：把增量包里的页去掉再发一次，画面必须与 A 不同
+    /// —— 这一条证明"缺页 = 宿主里那页还是旧的"，不是可以省的优化。</para>
+    /// </summary>
+    private static int RunKDeltaSelftest(string[] args)
+    {
+        var pages = 20;
+        for (var i = 1; i < args.Length; i++)
+            if (args[i] == "--pages" && i + 1 < args.Length && int.TryParse(args[i + 1], out var n) && n >= 2)
+                pages = n;
+
+        var runtime = ChengeExportService.LocateRuntime(null);
+        if (runtime == null || !ChengeProcessSession.TryLocate(runtime.RuntimeDir, out var hostExe))
+        {
+            Console.WriteLine("FAIL: 找不到隔离宿主（设置里指运行时目录，或 CHENGE_RUNTIME_DIR）");
+            return 2;
+        }
+
+        var options = new ChengeExportOptions();
+        var project = BuildKDeltaProject(pages);
+        const string currentScreen = "s00";
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var beforePack = new ChengeExporter().ExportToMemory(project, null, options, null, out var beforeResult);
+        var beforeMs = watch.ElapsedMilliseconds;
+        if (!beforeResult.Success)
+        {
+            Console.WriteLine("FAIL: 整包导出失败：" + beforeResult.Summary);
+            return 3;
+        }
+        var pageRefs = ChengeIncrementalExport.PageTagRefsOf(beforePack);
+        var boundPage = KDeltaPage;
+        Console.WriteLine($"页面 tag 引用：" + string.Join(", ",
+            pageRefs.Where(kv => kv.Value.Count > 0).Select(kv => $"{kv.Key}={kv.Value.Count}")) +
+            $"（共 {pageRefs.Count} 页）");
+        if (pageRefs.TryGetValue(boundPage, out var boundRefs) && boundRefs.Count == 0)
+        {
+            Console.WriteLine("导出问题：" + string.Join(" | ", beforeResult.Issues.Items.Select(i => $"{i.Severity} {i.Code}@{i.Location}:{i.Message}")));
+            Console.WriteLine($"FAIL: {boundPage} 里没有任何 tag 引用，绑定没导出成功");
+            return 3;
+        }
+
+        // 删掉被引用的变量：所有引用过它的页（以及序号被顶掉的页）都会过期。
+        // 引用它的地方要一并清掉 —— 编辑器删变量就是这么做的，留着会让导出直接报
+        // bind.tag_missing（那样就没有"改完继续跑"可言了）。
+        var victim = project.VariableManager.Variables.First(v => v.Id == KDeltaBoundVariable);
+        project.VariableManager.Variables.Remove(victim);
+        foreach (var control in project.Screens.SelectMany(s => s.Controls))
+            control.VariableBindings.Clear();
+        var afterPack = new ChengeExporter().ExportToMemory(project, null, options, null, out var afterResult);
+        if (!afterResult.Success)
+        {
+            Console.WriteLine("FAIL: 删变量后整包导出失败：" + afterResult.Summary);
+            return 3;
+        }
+
+        watch.Restart();
+        var plan = DesignIncrementalReload.Build(project, null, null, options, currentScreen,
+            beforeResult.PageStats, beforeResult.TagFingerprints, pageRefs);
+        var planMs = watch.ElapsedMilliseconds;
+        if (plan.Failed)
+        {
+            Console.WriteLine("FAIL: 增量包导出失败：" + plan.Result.Summary);
+            return 3;
+        }
+
+        var beforeBytes = beforePack.Sum(kv => (long)kv.Value.Length);
+        var afterBytes = afterPack.Sum(kv => (long)kv.Value.Length);
+        var planBytes = plan.Payload.Sum(kv => (long)kv.Value.Length);
+        Console.WriteLine($"导出：整包 {beforePack.Count} 文件 {beforeBytes} B / {beforeMs}ms；" +
+                          $"删变量后整包 {afterPack.Count} 文件 {afterBytes} B；" +
+                          $"增量 {plan.Payload.Count} 文件 {planBytes} B / {planMs}ms");
+        Console.WriteLine($"增量包页面：{string.Join(",", plan.IncludedPageIds)}（判据：{plan.Reason}，" +
+                          $"整包模式={plan.WholeProject}）");
+        if (plan.WholeProject || planBytes * 3 > beforeBytes)
+        {
+            Console.WriteLine("FAIL: 增量包没有变便宜（退化整包或字节数没降下来）");
+            return 4;
+        }
+        if (!plan.IncludedPageIds.Contains(boundPage))
+        {
+            Console.WriteLine($"FAIL: 受影响页 {boundPage} 没进增量包");
+            return 4;
+        }
+
+        // 两版该页的 JSON 差在哪（切页像素一样时，先确认"内容本身是不是真的一样"）
+        {
+            var key = $"pages/{boundPage}.json";
+            var oldJson = System.Text.Encoding.UTF8.GetString(beforePack[key]);
+            var newJson = System.Text.Encoding.UTF8.GetString(afterPack[key]);
+            Console.WriteLine($"{boundPage} JSON：改动前 {oldJson.Length} B（bind×{oldJson.Split("\"bind\"").Length - 1}），" +
+                              $"改动后 {newJson.Length} B（bind×{newJson.Split("\"bind\"").Length - 1}）");
+        }
+
+        var dataRoot = AppPaths.TempSubdir("chenge-kdelta");
+        var truth = CapturePage(hostExe, Path.Combine(dataRoot, "truth"), afterPack, null, boundPage);
+        if (truth.Pixels == null)
+        {
+            Console.WriteLine("FAIL: 正确答案宿主取帧失败：" + truth.Log);
+            return 5;
+        }
+
+        var incremental = CapturePage(hostExe, Path.Combine(dataRoot, "incremental"), beforePack,
+            plan.Payload, boundPage);
+        if (incremental.Pixels == null)
+        {
+            Console.WriteLine("FAIL: 增量宿主取帧失败：" + incremental.Log);
+            return 5;
+        }
+
+        var noPages = new Dictionary<string, byte[]>(plan.Payload.Where(kv =>
+            !kv.Key.StartsWith("pages/", StringComparison.Ordinal)), StringComparer.Ordinal);
+        var missing = CapturePage(hostExe, Path.Combine(dataRoot, "missing-pages"), beforePack,
+            noPages, boundPage);
+        if (missing.Pixels == null)
+        {
+            Console.WriteLine("FAIL: 负对照宿主取帧失败：" + missing.Log);
+            return 5;
+        }
+
+        var sameIncremental = DiffPixels(truth.Pixels, incremental.Pixels);
+        var sameMissing = DiffPixels(truth.Pixels, missing.Pixels);
+        Console.WriteLine($"切页：真值 [{truth.Log}] / 增量 [{incremental.Log}] / 漏页 [{missing.Log}]");
+        // 前两路必须真的切过去；漏页那一路"切不过去（建页失败）"也是合格结果 ——
+        // 那正是"宿主里留着旧页"的表现，比画面略有不同更严重。
+        if (!truth.Log.Contains("切页生效=True", StringComparison.Ordinal)
+            || !incremental.Log.Contains("切页生效=True", StringComparison.Ordinal))
+        {
+            Console.WriteLine("FAIL: 真值/增量那两路切页没生效（画面还停在上一页），像素对比无意义");
+            return 5;
+        }
+        Console.WriteLine($"切页比像素（{boundPage}）：增量包 vs 整包 差异 {sameIncremental} px；" +
+                          $"只发元数据（漏页） vs 整包 差异 {sameMissing} px");
+        Console.WriteLine($"帧非黑比：真值 {Lit(truth.Pixels):P1} / 增量 {Lit(incremental.Pixels):P1}" +
+                          $" / 漏页 {Lit(missing.Pixels):P1}");
+        if (sameIncremental != 0)
+        {
+            Console.WriteLine("FAIL: 增量包切页后的画面与整包不一致（受影响页没带对）");
+            return 6;
+        }
+        var missingSwitched = missing.Log.Contains("切页生效=True", StringComparison.Ordinal);
+        if (missingSwitched && sameMissing == 0)
+        {
+            Console.WriteLine("FAIL: 漏带受影响页竟然也一致 —— 判据失效，别信这一条");
+            return 6;
+        }
+
+        Console.WriteLine("OK: 增量负载显著小于整包；受影响页切页画面与整包逐像素一致；漏页必错");
+        return 0;
+    }
+
+    /// <summary>
+    /// 起一个宿主、可选先发一次 <c>K</c>、再切到指定页取一帧。
+    ///
+    /// <para>用**仿真**模式而不是 <c>--design</c>：<c>L &lt;epoch&gt; &lt;page&gt;</c> 在宿主里只是
+    /// 挂一个切页请求（<c>page_mgr_script_open</c> → pending op），要 <c>runtime_tick</c> 才执行，
+    /// 而 <c>--design</c> 恰恰不推进时间 —— 那样切页永远不生效，三份工程都会拍到同一页。</para>
+    ///
+    /// <para>页里的变量是内部变量（无设备），仿真的 tick 不会改它们，所以画面静止可比像素。</para>
+    /// </summary>
+    private static (byte[]? Pixels, string Log) CapturePage(string hostExe, string dataDir,
+        IReadOnlyDictionary<string, byte[]> pack, IReadOnlyDictionary<string, byte[]>? kPayload, string pageId)
+    {
+        Directory.CreateDirectory(dataDir);
+        using var proc = new ChengeProcessSession(hostExe, dataDir, designMode: false);
+        if (!proc.OpenWithBlob(pack)) return (null, "open: " + proc.LastError);
+
+        var deadline = Environment.TickCount64 + 8000;
+        while (proc.FrameVersion == 0 && Environment.TickCount64 < deadline) Thread.Sleep(20);
+        if (proc.FrameVersion == 0) return (null, "no first frame: " + proc.LogTail);
+
+        if (kPayload != null)
+        {
+            if (!proc.ReloadProject(1000, kPayload)) return (null, "K send failed");
+            Thread.Sleep(600);
+            var rejected = proc.Log.Any(l => l.Contains("rc=-", StringComparison.Ordinal));
+            if (rejected) return (null, "K rejected: " + proc.LogTail);
+        }
+
+        var buf = new byte[proc.Stride * proc.Height];
+        if (!proc.TryCopyFrame(buf)) return (null, "frame copy failed");
+        var before = buf.ToArray();
+
+        var mark = proc.FrameVersion;
+        proc.ReloadPage(1001, pageId);
+        var pageDeadline = Environment.TickCount64 + 3000;
+        while (Environment.TickCount64 < pageDeadline) Thread.Sleep(50);
+        if (!proc.TryCopyFrame(buf)) return (null, "frame copy failed");
+
+        // 切页真的生效了吗：切页前后的帧必须不同（切页无效时 seq 也会因重绘而前进，
+        // 只看 seq 会把"还停在首页"当成切成功 —— 这一点踩过）
+        var switched = DiffPixels(before, buf) > 0;
+        return (buf, $"seq {mark}->{proc.FrameVersion} 切页生效={switched} " +
+                     $"hash={Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(buf))[..12]}");
+    }
+
+    /// <summary>帧里非黑像素的占比（判断"这一帧到底画了东西没有"）。</summary>
+    private static double Lit(byte[] pixels)
+    {
+        var hit = 0;
+        var total = 0;
+        for (var i = 0; i + 3 < pixels.Length; i += 4 * 97, total++)
+            if (pixels[i] != 0 || pixels[i + 1] != 0 || pixels[i + 2] != 0) hit++;
+        return total == 0 ? 0 : (double)hit / total;
+    }
+
+    /// <summary>两份帧里不同的像素个数（逐 4 字节像素比）。</summary>
+    private static int DiffPixels(byte[] a, byte[] b)
+    {
+        var n = Math.Min(a.Length, b.Length);
+        var diff = 0;
+        for (var i = 0; i + 3 < n; i += 4)
+            if (a[i] != b[i] || a[i + 1] != b[i + 1] || a[i + 2] != b[i + 2]) diff++;
+        return diff + Math.Abs(a.Length - b.Length) / 4;
+    }
+
+    /// <summary>自检里被删的那个变量（第 7 页引用它；取末尾那位，删掉后旧页的 tag 序号越界）。</summary>
+    private const string KDeltaBoundVariable = "v7";
+
+    /// <summary>自检里绑了变量的那一页。</summary>
+    private const string KDeltaPage = "p07";
+
+    /// <summary>自检用的工程：<paramref name="pages"/> 页，只有第 7 页绑一个变量（其余页只有标签）。</summary>
+    private static HmiEditor.Core.Models.HmiProject BuildKDeltaProject(int pages)
+    {
+        var project = new HmiEditor.Core.Models.HmiProject
+        {
+            Name = "kdelta",
+            HardwareTargetId = "f1c100s-kinseal",
+            ProjectVersion = "1.0.0",
+        };
+        for (var i = 0; i < 8; i++)
+        {
+            project.VariableManager.Variables.Add(new HmiEditor.Core.Models.Variable
+            {
+                Id = "v" + i, Name = "变量" + i, DataType = "Int16", Access = "rw",
+                SimulatedValue = (i * 10).ToString(),
+            });
+        }
+        for (var p = 0; p < pages; p++)
+        {
+            var screen = new HmiEditor.Core.Models.HmiScreen
+            {
+                Id = $"s{p:00}", Name = $"p{p:00}", Width = 800, Height = 480,
+                BgColor = p % 2 == 0 ? "#101820" : "#203040",
+            };
+            screen.Controls.Add(new HmiEditor.Core.Models.HmiControl
+            {
+                Id = $"lbl{p:00}", Type = HmiEditor.Core.Models.HmiControlType.Label,
+                Name = $"Lbl{p:00}", X = 20, Y = 20, Width = 400, Height = 40,
+                Text = $"页面 {p:00}", FontSize = 24, TextColor = "#FFFFFF",
+            });
+            if (p == 7)
+            {
+                // 绑的是**最后一个**变量：它被删掉后，旧页里的 tag 序号直接越界，
+                // 宿主建页失败 —— 这是"缺页 = 旧内容"唯一能稳定看出来的现象。
+                // 不用实时曲线：折线随时间取样，两台宿主跑的时间不同就不是同一张图，
+                // 像素对比会假红。也不用 value 控件：契约里它不能绑 value（只有
+                // text/color/bg_color/visible/enabled）。
+                screen.Controls.Add(new HmiEditor.Core.Models.HmiControl
+                {
+                    Id = "bar1", Type = HmiEditor.Core.Models.HmiControlType.Bar,
+                    Name = "Bar1", X = 40, Y = 100, Width = 400, Height = 40,
+                    MinValue = 0, MaxValue = 100, IndicatorColor = "#00E676",
+                    VariableBindings =
+                    {
+                        new HmiEditor.Core.Models.VariableBindingData
+                        {
+                            PropertyName = "Value", VariableId = KDeltaBoundVariable,
+                            Direction = HmiEditor.Core.Models.BindingDirection.ReadOnly,
+                        },
+                    },
+                });
+            }
+            project.Screens.Add(screen);
+        }
+        return project;
+    }
+
+    /// <summary>安装文件日志器（写 %APPDATA%/chenge-hmi/logs）。</summary>
 
     /// <summary>安装文件日志器（写 %APPDATA%/chenge-hmi/logs）。</summary>
     private static void InstallLogging()

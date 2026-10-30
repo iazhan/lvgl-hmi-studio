@@ -54,6 +54,21 @@ public sealed class ChengeExportService
         => _exporter.ExportToMemory(project, assets, options, projectDirectory, out result);
 
     /// <summary>
+    /// 只导出元数据到内存（设计画布增量重载用）：manifest/tags/devices/ports/strings/
+    /// alarms/savecfg/users，不含页面与资产。
+    /// </summary>
+    public Dictionary<string, byte[]> ExportMetaOnly(HmiProject project, AssetLibrary? assets,
+        string? projectDirectory, ChengeExportOptions options, ChengePageStats pageStats,
+        out ChengeExportResult result)
+        => _exporter.ExportMetaOnly(project, assets, options, projectDirectory, pageStats, out result);
+
+    /// <summary>只导出某一页的页面 JSON（设计画布推当前页/受影响页用）。</summary>
+    public byte[]? ExportPageOnly(HmiProject project, AssetLibrary? assets, string? projectDirectory,
+        ChengeExportOptions options, string screenId, out ChengeExportResult result,
+        out Dictionary<string, string> widgetIds)
+        => _exporter.ExportPageOnly(project, assets, options, projectDirectory, screenId, out result, out widgetIds);
+
+    /// <summary>
     /// 把一个**已导出**的 37 工程目录打成 `.cgpkg`（37 §13）。U 盘里放这个文件即可，
     /// 板端「维护 → 更新组态」会解包并切为活动工程。
     ///

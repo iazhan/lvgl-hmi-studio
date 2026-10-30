@@ -74,9 +74,18 @@ public sealed class DesignHostPreview : IDisposable
     /// <summary>
     /// 启动那一刻的整包指纹（变量表 / 设备 / 报警组），见 <see cref="SnapshotSignature"/>。
     /// 这三样只在 <c>OpenWithBlob</c> 时推过一次，后面设计画布只推页面 JSON（命令 <c>J</c>），
-    /// 带不动它们 —— 一变就必须整包重载（命令 <c>K</c>）。
+    /// 带不动它们 —— 一变就必须走 <c>K</c> 重载。
     /// </summary>
     private string _snapshotSignature = "";
+
+    /// <summary>上一份整包导出算出的 manifest 派生声明（增量包的 manifest 要照它写）。</summary>
+    private ChengePageStats _pageStats = ChengePageStats.Empty;
+
+    /// <summary>宿主里那份 tags.json 的页面可见指纹（按 tag id 排列的 名字|类型）。</summary>
+    private IReadOnlyList<string> _tagFingerprints = Array.Empty<string>();
+
+    /// <summary>宿主里每页引用的 tag id：判断"元数据一变，哪些页的 JSON 过期了"。</summary>
+    private Dictionary<string, HashSet<int>> _pageTagRefs = new(StringComparer.Ordinal);
 
     public bool IsRunning => _session?.IsOpen == true;
 
@@ -128,6 +137,11 @@ public sealed class DesignHostPreview : IDisposable
         _options = options;
         // 这一份整包（tags/devices/strings）已经推给宿主了，指纹留到下次对比
         _snapshotSignature = SnapshotSignature(project);
+        // 增量重载要用的记账：manifest 的派生声明、tag 指纹、每页引用了哪些 tag。
+        // 全部从**这一份产物**里取，不另算一遍 —— 另算就有第二份真相。
+        _pageStats = export.PageStats;
+        _tagFingerprints = export.TagFingerprints;
+        _pageTagRefs = ChengeIncrementalExport.PageTagRefsOf(blobs);
         // 当前屏导出成了哪个页 id：只有导出器知道（PageIds），不能按字母序猜 ——
         // 猜错的话切屏后推给宿主的是别的页 JSON，画面会是另一页的内容。
         _pageId = options.StartPageId ?? "";
@@ -268,7 +282,7 @@ public sealed class DesignHostPreview : IDisposable
             // 变量表/设备表/报警文本变了：宿主里那几份 JSON 都是启动时的快照，而绑定、
             // 趋势、存盘、配方、报警与 Modbus 轮询表存的都是**变量位置 id** ——
             // 只推页面 JSON 会让这些 id 指到别的变量上（不白屏、只是显示错值，更难发现）。
-            // 整包重载（K）在宿主里就地换：先校验、后切换，失败时旧工程一字不动。
+            // 重载（K）在宿主里就地换：先校验、后切换，失败时旧工程一字不动。
             //
             // 判据只看"指纹不等"：指纹相等就说明宿主那份与模型同源，直接走单页通道。
             // 不能拿一个"是否可信"的布尔量把单页通道整个关掉 —— 那个量一旦漏置位，
@@ -276,7 +290,7 @@ public sealed class DesignHostPreview : IDisposable
             var signature = SnapshotSignature(project);
             if (!string.Equals(signature, _snapshotSignature, StringComparison.Ordinal))
             {
-                if (await ReloadWholeProjectAsync(signature)) return;
+                if (await ReloadIncrementalAsync(signature)) return;
             }
 
             // 只导出当前页：整包导出会把所有页面 BuildPage 一遍、还要转换图片资产，
@@ -331,6 +345,9 @@ public sealed class DesignHostPreview : IDisposable
                 EditorLog.Line($"[design] J 内容变化 {_lastPayload.Length}→{bytes.Length} 字节 @{at}：{Snippet(bytes, at)}");
             }
             _lastPayload = bytes;
+            // 这一页现在在宿主里就是这份 JSON：它的 tag 引用记账也要跟着换，
+            // 否则下次元数据变化时会按旧引用判"这页没受影响"，把过期页留在宿主里。
+            if (_pageId.Length > 0) _pageTagRefs[_pageId] = ChengeIncrementalExport.TagIdsOf(bytes);
 
             // 导出告警进日志：设计画布画的只是宿主里那一份 JSON，而导出器会**丢掉**
             // 不在「编辑器嵌入副本 schema」里的属性（代码 prop.not_in_schema）——
@@ -537,43 +554,52 @@ public sealed class DesignHostPreview : IDisposable
     }
 
     /// <summary>
-    /// 整包重载：重新导出整包 → 走宿主 <c>K</c> 命令就地换掉（不重启进程）。
+    /// 元数据重载：算出增量载荷（元数据 + 当前页 + 受影响页）→ 走宿主 <c>K</c> 命令就地换掉
+    /// （不重启进程）。判不出受影响页时载荷退化成整包。
     ///
     /// <para>宿主侧先校验后切换：新包不合法时旧工程一字不动，画面停在原样。
     /// 返回 true 表示"这一轮已经处理完，调用方不要再用旧的页面 JSON 通道"。</para>
     /// </summary>
-    private async Task<bool> ReloadWholeProjectAsync(string signature)
+    private async Task<bool> ReloadIncrementalAsync(string signature)
     {
         var project = _project;
         var assets = _assets;
         var dir = _projectDirectory;
         var options = _options;
-        if (project == null || options == null || _session == null) return false;
+        var session = _session;
+        if (project == null || options == null || session == null) return false;
 
-        var service = new ChengeExportService();
-        var (export, blobs) = await Task.Run(() =>
-        {
-            var mem = service.ExportToMemory(project, assets, dir, options, out var res);
-            return (Result: res, Files: mem);
-        });
+        var started = Environment.TickCount64;
+        var plan = await Task.Run(() => DesignIncrementalReload.Build(
+            project, assets, dir, options, _screenId, _pageStats, _tagFingerprints, _pageTagRefs));
+        var exportMs = Environment.TickCount64 - started;
 
-        if (!export.Success)
+        if (plan.Failed)
         {
-            LastError = ChengeExportService.DescribeIssues(export);
-            EditorLog.Line($"[design] 整包重载前导出失败：{LastError}");
+            LastError = ChengeExportService.DescribeIssues(plan.Result);
+            EditorLog.Line($"[design] 元数据重载前导出失败（{plan.Reason}）：{LastError}");
             return true;      /* 模型有问题，重试没意义；等下一次改动 */
         }
 
-        _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
+        // 只换当前页的映射：widget id 每页都从 w1 起编，跨页合并会让补丁寻到别的页的控件上。
+        if (plan.CurrentPageWidgetIds.Count > 0)
+            _widgetIds = new Dictionary<string, string>(plan.CurrentPageWidgetIds, StringComparer.Ordinal);
+        _pageStats = plan.Result.PageStats;
+        _tagFingerprints = plan.Result.TagFingerprints;
+        _pageTagRefs = new Dictionary<string, HashSet<int>>(plan.PageTagRefs, StringComparer.Ordinal);
         _snapshotSignature = signature;
-        _lastPayload = null;      /* 换包后旧的"内容没变"记账全部作废 */
+        // 当前页已随包推过，内容记账直接对齐它：否则下一次同内容的 J 会白重建一次。
+        _lastPayload = plan.CurrentPageJson;
         _epoch++;
 
-        if (!_session.ReloadProject(_epoch, blobs))
+        var bytes = plan.Payload.Sum(kv => (long)kv.Value.Length);
+        var sendStart = Environment.TickCount64;
+        if (!session.ReloadProject(_epoch, plan.Payload))
         {
-            EditorLog.Line("[design] 整包重载发送失败（宿主已退出？）");
+            EditorLog.Line("[design] 元数据重载发送失败（宿主已退出？）");
             return true;
         }
+        var sendMs = Environment.TickCount64 - sendStart;
 
         await Task.Delay(150);
         var verdict = HostTailLines(6);
@@ -581,10 +607,16 @@ public sealed class DesignHostPreview : IDisposable
         // 拿中文日志去认状态，宿主文案一改就静默失效。
         var rejected = verdict.Contains("rc=-", StringComparison.Ordinal)
                        || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase);
+        var pack = plan.WholeProject ? "整包" : "增量";
+        var pages = plan.IncludedPageIds.Count == 0
+            ? "-"
+            : string.Join(",", plan.IncludedPageIds);
+        var line = $"[design] K epoch={_epoch} {pack} files={plan.Payload.Count} bytes={bytes} " +
+                   $"pages={pages} export_ms={exportMs} send_ms={sendMs} 判据={plan.Reason}";
         if (rejected)
-            EditorLog.Line($"[design] 整包重载 epoch={_epoch} 文件 {blobs.Count} 个 —— 宿主拒绝：{verdict}");
+            EditorLog.Line($"{line} —— 宿主拒绝：{verdict}");
         else
-            EditorLog.Line($"[design] 整包重载 epoch={_epoch} 文件 {blobs.Count} 个");
+            EditorLog.Line(line);
 
         // 宿主拒绝时把指纹清空：否则同样的模型不会再试，画面永远停在旧包上。
         // 清空的直接后果是下一轮还会走 K（重试），而不是退回页面 JSON 去猜。
