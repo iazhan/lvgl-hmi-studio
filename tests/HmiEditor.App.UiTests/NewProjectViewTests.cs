@@ -3,6 +3,7 @@ using System.IO;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using HmiEditor.App.Views;
+using HmiEditor.TestSupport;
 using Xunit;
 
 namespace HmiEditor.App.UiTests;
@@ -16,12 +17,7 @@ namespace HmiEditor.App.UiTests;
 /// </summary>
 public class NewProjectViewTests
 {
-    private static string NewTempDir()
-    {
-        var dir = Path.Combine(Path.GetTempPath(), "chenge-newproj-" + Guid.NewGuid().ToString("N")[..8]);
-        Directory.CreateDirectory(dir);
-        return dir;
-    }
+    private static string NewTempDir() => TestTempDir.NewDir("chenge-newproj");
 
     private static void Click(Window view, string name) =>
         view.FindControl<Button>(name)!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -94,7 +90,7 @@ public class NewProjectViewTests
             finally
             {
                 Dispose(view);
-                Directory.Delete(dir, recursive: true);
+                TestTempDir.DeleteDir(dir);
             }
         });
     }
@@ -126,7 +122,7 @@ public class NewProjectViewTests
             finally
             {
                 Dispose(view);
-                Directory.Delete(dir, recursive: true);
+                TestTempDir.DeleteDir(dir);
             }
         });
     }

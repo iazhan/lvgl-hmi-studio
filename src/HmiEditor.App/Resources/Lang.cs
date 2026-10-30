@@ -1659,12 +1659,6 @@ public static class Lang
     public const string SettingsSimulatorWorkDir   = "settings.simulator.work.dir";
     public const string SettingsSimulatorWorkHint  = "settings.simulator.work.hint";
     public const string SettingsDeviceNav          = "settings.device.nav";
-    public const string SettingsDeviceTitle        = "settings.device.title";
-    public const string SettingsDeviceDesc         = "settings.device.desc";
-    public const string SettingsDeviceSdkDir       = "settings.device.sdk.dir";
-    public const string SettingsDeviceSdkHint      = "settings.device.sdk.hint";
-    public const string SettingsDeviceToolchainDir = "settings.device.toolchain.dir";
-    public const string SettingsDeviceToolchainHint = "settings.device.toolchain.hint";
 
     // ── ScriptEditorView Lua 帮助文本 ──
     public const string ScriptLuaTemplate   = "script.lua.template";

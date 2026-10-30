@@ -689,6 +689,7 @@
   "audit.chenge.export": "导出 chenge 工程：{0}",
   "chenge.export.no_project": "请先新建或打开工程",
   "chenge.export.runtime_missing": "找不到宿主运行时 chenge-runtime（安装包应随带 chenge-runtime 目录；开发环境请在 chenge-runtime 里 make HOST=1，或在设置里填「运行时目录」）",
+  "chenge.preview.click_unsupported": "当前运行时入口是预览宿主，暂不支持自动点击注入：本次截图未执行 clickSequence",
   "chenge.export.runtime_missing.tried": "已找过这些目录：",
   "settings.chenge.runtime.dir": "chenge-runtime 运行时目录（导出预览用）",
   "settings.chenge.runtime.hint": "含 chenge-runtime 可执行文件的目录（先在该目录 make HOST=1）；留空则用环境变量 CHENGE_RUNTIME_DIR 或安装目录内置",

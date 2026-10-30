@@ -52,7 +52,7 @@ public class SingleFileSizeGuardTests
         //      MainWindow.CanvasHost.cs / DesignHostPreview.cs，主文件只留调用）
         // -49（绘图工具的选中/取消与工具栏·工具箱高亮移进 Wiring.CanvasTools.cs：
         //   那是它本来的归属，主文件只留调用点）
-        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2809 },
+        { Path.Combine("src", "HmiEditor.App", "MainWindow.axaml.cs"), 2780 },
     };
 
     /// <summary>

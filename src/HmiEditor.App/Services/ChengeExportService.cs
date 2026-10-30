@@ -200,7 +200,7 @@ public sealed class ChengeExportService
             // 宿主版的自动点击（HMI_HOST_CLICK 那套）还没接：宁可明确说"没点"，
             // 也不要让调用方以为点过了（导出 e2e 判据靠这个结论）。
             if (!string.IsNullOrWhiteSpace(clickSequence))
-                log.AppendLine("[preview] 当前运行时入口是预览宿主，暂不支持自动点击注入，已忽略 clickSequence");
+                log.AppendLine(AppLocalization.Service["chenge.preview.click_unsupported"]);
         }
         else
         {

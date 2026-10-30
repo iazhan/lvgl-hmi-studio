@@ -230,7 +230,12 @@ public class SelectionFaceClassificationGuardTests
         // ⚠ `FaceplateLibraryView` 阶段 133 起**不在本表里** —— 已升格为第 16 个宿主。
         // ⚠ `LayerPanelView` 阶段 128 起**不在本表里** —— 已升格为第 12 个宿主。
         // ⚠ `ProjectExplorerView` 阶段 129 起**不在本表里** —— 已升格为第 13 个宿主。
-        ("PropertyPanelView", 46),     // 🩸 面外最大的一处：整体由**选中项**驱动（chenge 数据控件 + 批次 1a 的按钮禁用表现下拉
+        ("PropertyPanelView", 44),     // 2026-10-30 复核：原记 46，实测 44（XAML 42 / code 2 / 注入 0）。
+                                       //   少的两个是被 2.27~2.28 那几轮属性面板重排删掉的接线，
+                                       //   具体控件名已无法回溯（本表只存个数）；当前 44 个的名单由
+                                       //   守卫的读数逐次打印（AlarmAckOnCombo … VsTextVAlign），
+                                       //   下次动这块面板时按那串名字核对，别再只看数字。
+                                       // 🩸 面外最大的一处：整体由**选中项**驱动（chenge 数据控件 + 批次 1a 的按钮禁用表现下拉
                                        //    + 消息条级别下拉）。
                                        //    ⚠ 但它**不是**「最该扩」的那一处 —— 见上方注释里
                                        //    阶段 118 的三条实测（已被 PropertyPanelWiringTests

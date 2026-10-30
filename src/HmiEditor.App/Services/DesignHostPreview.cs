@@ -607,12 +607,13 @@ public sealed class DesignHostPreview : IDisposable
         // 拿中文日志去认状态，宿主文案一改就静默失效。
         var rejected = verdict.Contains("rc=-", StringComparison.Ordinal)
                        || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase);
-        var pack = plan.WholeProject ? "整包" : "增量";
+        // 日志行用 ASCII 标记（full/delta）：日志不随界面语言翻译，翻译会让人搜不到
+        var pack = plan.WholeProject ? "full" : "delta";
         var pages = plan.IncludedPageIds.Count == 0
             ? "-"
             : string.Join(",", plan.IncludedPageIds);
         var line = $"[design] K epoch={_epoch} {pack} files={plan.Payload.Count} bytes={bytes} " +
-                   $"pages={pages} export_ms={exportMs} send_ms={sendMs} 判据={plan.Reason}";
+                   $"pages={pages} export_ms={exportMs} send_ms={sendMs} reason={plan.Reason}";
         if (rejected)
             EditorLog.Line($"{line} —— 宿主拒绝：{verdict}");
         else

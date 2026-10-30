@@ -284,7 +284,7 @@ public class LangConstantUsageGuardTests
     /// 这 32 个常量此前**都不在本集里**（它们靠 `{res:Loc}` 花括号或面板代码引用活着）——
     /// 数字变小是因为<b>面板代码不再引用它们、而常量也跟着删了</b>，两头同减。</para>
     /// </summary>
-    internal const int UnusedBaseline = 996;
+    internal const int UnusedBaseline = 990;
 
     /// <summary>引用集合的取法。生产判据只用 <see cref="Code"/>；另两档是自检/单调性用的对照面。</summary>
     private enum ReferenceFace
@@ -327,8 +327,9 @@ public class LangConstantUsageGuardTests
     /// "为改数字而改测试"。保留的断言都不是数字抄写，而是**关系**：
     /// ① 机制面非空（否则整张表会退化成"全部无机制"）；
     /// ② 分类**完备**（各桶之和 = 总数，漏桶/重复计数都会红）；
-    /// ③ 交叉核对：**没有机制担保的键**在常量侧的投影必须**恰好**是键可达性守卫的差异表
-    ///    （<c>KeptUnreachable</c>）—— 两侧数的是同一批例外。</para>
+    /// ③ 交叉核对：**没有机制担保的键**在常量侧的投影必须**全部落在**键可达性守卫的差异表
+    ///    （<c>KeptUnreachable</c>）里，且差异表多出来的那些键必须**确实没有常量**
+    ///    （`prop.figure.*` 由 catalog 运行时拼接，常量侧结构上不可能出现）。</para>
     /// </summary>
     [Fact]
     public void UnusedConstants_ClassifiedByKeyMechanism()
@@ -360,16 +361,30 @@ public class LangConstantUsageGuardTests
         // ② 分类完备：桶之和 = 总数（分类写错/重复归桶都会红）
         Assert.Equal(unused.Count, byKinds.Sum(g => g.Count()));
 
-        // ③ 交叉核对（同源）：无机制担保的键 ⇄ 差异表，两个方向都要对得上
+        // ③ 交叉核对（同源）：无机制担保的键必须**全部**落在差异表里，两个方向都要对得上。
+        //    ⚠ 反向不能要求完全相等：差异表里有一批键**压根没有 Lang 常量**（如 `prop.figure.*`
+        //    由 FigurePropertyCatalog 运行时拼），它们在常量侧结构上不可能出现 —— 旧断言写的是
+        //    `SequenceEqual`，于是这批键让两侧永远对不上（长期红灯）。这里改成：
+        //    常量侧 ⊆ 差异表；差异表多出来的必须**确实没有常量**（否则就是常量侧漏报）。
         var noMechanism = unused.Where(c => !mechanisms.ContainsKey(values[c]))
             .Select(c => values[c]).OrderBy(k => k, StringComparer.Ordinal).ToList();
         var kept = LocalizationKeyReachabilityGuardTests.KeptUnreachableKeys
             .OrderBy(k => k, StringComparer.Ordinal).ToList();
-        Assert.True(noMechanism.SequenceEqual(kept),
-            "常量侧「键无任何机制」的集合与键可达性守卫的差异表不一致（两侧数的是同一批例外）：\n"
-            + $"  常量侧 {noMechanism.Count} 个：{string.Join(", ", noMechanism)}\n"
-            + $"  差异表 {kept.Count} 个：{string.Join(", ", kept)}\n"
-            + "⇒ 上表少了 = 那个键的常量已不是「没人读」（该从差异表删）；多了 = 有一侧漏了或成了过期抄写");
+
+        var notInTable = noMechanism.Except(kept, StringComparer.Ordinal).ToList();
+        Assert.True(notInTable.Count == 0,
+            "这些键在常量侧「无任何机制」，却不在键可达性守卫的差异表里（该从差异表补齐或删常量）：\n  "
+            + string.Join("\n  ", notInTable));
+
+        var constantKeysAll = values.Values.ToHashSet(StringComparer.Ordinal);
+        var tableWithoutConstant = kept.Where(k => !constantKeysAll.Contains(k)).ToList();
+        var tableWithConstantButNoMechanism = kept
+            .Where(k => constantKeysAll.Contains(k) && !noMechanism.Contains(k, StringComparer.Ordinal))
+            .ToList();
+        Assert.True(tableWithConstantButNoMechanism.Count == 0,
+            "这些键在差异表里、且有对应常量，但常量侧并不认为它「无机制」（两侧口径漂了）：\n  "
+            + string.Join("\n  ", tableWithConstantButNoMechanism));
+        var tableReading = $"    差异表 {kept.Count,5} 条 = 有常量 {noMechanism.Count} + 无常量（如 prop.figure.*）{tableWithoutConstant.Count}";
 
         var constantKeys = values.Values.ToHashSet(StringComparer.Ordinal);
         var withConstant = dictionaryKeys.Count(constantKeys.Contains);
@@ -384,6 +399,7 @@ public class LangConstantUsageGuardTests
         };
         lines.AddRange(byKinds.Select(g =>
             $"    {g.Key,-24} {g.Count(),5}   例：{string.Join(" · ", g.Select(c => values[c]).Take(3))}"));
+        lines.Add(tableReading);
         JudgeReadings.Write(null, "无代码引用的 Lang 常量（按担保机制分桶）", lines);
     }
 

@@ -66,7 +66,9 @@ public class AppTextBoxWiringCensusTests
         //   TxtKinSealSdkManifestUrl 三个输入框（「编译转换」与 SDK 首次安装要用），
         ///   三条手势已在 SettingsTextBoxWiringTests.Specs 里逐条驱动。
         // 11：再加 TxtChengeRuntimeDir（导出预览用的宿主运行时目录）。
-        new("SettingsDialog.axaml", 11, "driven", "SettingsTextBoxWiringTests.cs"),
+        // 9（2026-10-30 复核，原记 11）：目标板切到 kinseal 时删掉了 T113 的两个输入框
+        //   （TxtT113SdkRoot / TxtT113Toolchain），面板上现在是 9 个具名 TextBox，全部有接线。
+        new("SettingsDialog.axaml", 9, "driven", "SettingsTextBoxWiringTests.cs"),
         new("SimulatorView.axaml", 7, "driven", "SimulatorTextBoxWiringTests.cs"),             // 阶段 191
         new("ScriptEditorView.axaml", 3, "driven", "ScriptEditorTextBoxWiringTests.cs"),       // 阶段 192（修 #89）
 
@@ -74,7 +76,8 @@ public class AppTextBoxWiringCensusTests
         new("CommunicationConfigView.axaml", 4, "driven", "CommunicationConfigTextBoxWiringTests.cs"),
         new("Editors/VariablePicker.axaml", 1, "driven", "VariablePickerTextBoxWiringTests.cs"),
         new("ProjectSettingsView.axaml", 4, "driven", "ProjectSettingsTextBoxWiringTests.cs"),
-        new("PropertyPanelView.axaml", 1, "driven", "PropertyPanelTextBoxWiringTests.cs"),
+        // 2 = ExpressionInput + TooltipBox（后者由 OnTooltipChanged 单独写回，驱动面已逐条点名）
+        new("PropertyPanelView.axaml", 2, "driven", "PropertyPanelTextBoxWiringTests.cs"),
         new("RecipeEditorView.axaml", 6, "driven", "RecipeEditorTextBoxWiringTests.cs"),
     };
 

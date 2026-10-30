@@ -54,6 +54,9 @@ public class EnUsMechanicalAuditTests
         ["ai.provider.claude"] = "Claude",
         ["cb.resolution.1024x600"] = "1024x600",
         ["cb.resolution.1280x800"] = "1280x800",
+        // 新建工程对话框的型号参数摘要：这两项是**单位/器件名**（RAM、Flash），中英都这么写。
+        ["new.project.summary.ram"] = "RAM 是器件名，两语都写 RAM",
+        ["new.project.summary.flash"] = "Flash 是器件名，两语都写 Flash",
         ["data.type.bool"] = "Bool",
         ["data.type.float32"] = "Float32",
         ["data.type.int16"] = "Int16",

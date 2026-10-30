@@ -54,13 +54,19 @@ public class ColorDepthSourceOfTruthTests
     private static readonly Regex HardcodedDepthArray =
         new(@"new\[\]\s*\{[^}]*""(RGB565|ARGB8888|Indexed8)""", RegexOptions.Compiled);
 
+    /// <summary>
+    /// 工程设置面板**不再让用户选色深**：色深是硬件目标的属性（`Display.SupportedColorDepths`，
+    /// kinseal 只有 ARGB8888），原来那个下拉既没被导出器读过、也没下发到设备，
+    /// 留着只会让人以为"改成 RGB565 能省内存"。真相只在硬件目标那一处声明。
+    /// </summary>
     [Fact]
-    public void SettingsPanel_TakesColorDepthOptionsFromEnum()
+    public void SettingsPanel_OffersNoColorDepthPicker()
     {
         var path = Path.Combine(SourceScanner.RepoRoot, SettingsPanelRelativePath);
         var code = SourceScanner.ReadCode(path);
 
-        Assert.Contains("Enum.GetNames(typeof(Hmi.Hardware.Contracts.ColorDepth))", code);
+        Assert.DoesNotContain("CmbColorDepth", code);
+        Assert.DoesNotContain("Enum.GetNames(typeof(Hmi.Hardware.Contracts.ColorDepth))", code);
     }
 
     [Fact]
