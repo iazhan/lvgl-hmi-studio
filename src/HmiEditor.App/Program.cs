@@ -141,7 +141,43 @@ class Program
             Console.WriteLine(got ? $"变量监视：启动 = {tagValue}" : "FAIL: 变量监视读不到");
             if (!got || tagValue != "1") return 8;
 
-            Console.WriteLine("OK: 隔离宿主 帧 + 点击写变量 + 变量监视 全部通过");
+            // 整包重载（K）：同一份工程再推一次，进程不重启、画面还在。
+            // 这条通道是"改变量表不白屏"的唯一安全路径，接线错了要在这里拦住。
+            {
+                var epoch = (uint)Environment.TickCount;
+                var reloaded = proc.ReloadProject(epoch, ReadProjectFiles(projectDir));
+                Thread.Sleep(600);
+                var tail = proc.Log.Where(l => l.Contains("reload:") || l.Contains("K epoch")).ToList();
+
+                if (!reloaded)
+                {
+                    Console.WriteLine("FAIL: 整包重载发送失败");
+                    return 9;
+                }
+                if (proc.HostExited)
+                {
+                    Console.WriteLine($"FAIL: 整包重载后宿主退出（code={proc.HostExitCode}）：{proc.LogTail}");
+                    return 9;
+                }
+                if (!proc.TryCopyFrame(buf))
+                {
+                    Console.WriteLine("FAIL: 整包重载后读不到帧");
+                    return 9;
+                }
+                nz = 0;
+                total = 0;
+                for (var i = 0; i + 2 < buf.Length; i += step, total++)
+                    if (buf[i] != 0 || buf[i + 1] != 0 || buf[i + 2] != 0) nz++;
+                var ratio = total == 0 ? 0 : (double)nz / total;
+                Console.WriteLine($"整包重载后 非黑 {ratio:P1}  {string.Join(" | ", tail)}");
+                if (ratio < 0.01)
+                {
+                    Console.WriteLine("FAIL: 整包重载后画面是黑的");
+                    return 9;
+                }
+            }
+
+            Console.WriteLine("OK: 隔离宿主 帧 + 点击写变量 + 变量监视 + 整包重载 全部通过");
             return 0;
         }
 
@@ -326,8 +362,47 @@ class Program
                               ? "（推进了 —— stdin 指针通道通）"
                               : "（没推进：指针没接上，或这个位置没有会变的控件）"));
 
+        // 整包重载（K）：改变量表后"不重启进程也不白屏"靠这条通道。
+        // 用同一份工程重推一次，只验接线与"画面还在"；语义（按名字保值）在
+        // 运行时的 repro 脚本里逐情形验过。
+        {
+            var epoch = (uint)Environment.TickCount;
+            var files = ReadProjectFiles(projectDir);
+            var sent = proc.ReloadProject(epoch, files);
+            Thread.Sleep(700);
+            var reloadLog = proc.Log.Where(l => l.Contains("reload:") || l.Contains("K epoch")).ToList();
+
+            if (!sent)
+            {
+                Console.WriteLine("FAIL: 整包重载发送失败（K 命令写不进 stdin）");
+                return 8;
+            }
+            if (proc.HostExited)
+            {
+                Console.WriteLine($"FAIL: 整包重载后宿主退出（code={proc.HostExitCode}）");
+                Console.WriteLine("宿主日志：\n" + proc.LogTail);
+                return 8;
+            }
+            if (!proc.TryCopyFrame(buf))
+            {
+                Console.WriteLine("FAIL: 整包重载后读不到帧");
+                return 8;
+            }
+            nz = 0;
+            total = 0;
+            for (var i = 0; i + 2 < buf.Length; i += step, total++)
+                if (buf[i] != 0 || buf[i + 1] != 0 || buf[i + 2] != 0) nz++;
+            var after = (double)nz / Math.Max(total, 1);
+            Console.WriteLine($"重载  ：非黑 {after:P1}　{string.Join(" | ", reloadLog)}");
+            if (after < 0.01)
+            {
+                Console.WriteLine("FAIL: 整包重载后画面是黑的");
+                return 8;
+            }
+        }
+
         Console.WriteLine("宿主日志（尾部）：\n" + proc.LogTail);
-        Console.WriteLine("OK: 隔离宿主可用（定位 / 起进程 / 出帧 / 指针 四步都过了）");
+        Console.WriteLine("OK: 隔离宿主可用（定位 / 起进程 / 出帧 / 指针 / 整包重载 五步都过了）");
         return 0;
     }
 

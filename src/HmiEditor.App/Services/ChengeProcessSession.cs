@@ -653,6 +653,44 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     }
 
     /// <summary>
+    /// 整包重载：把新导出的一整套工程文件推给宿主，就地换掉（**不重启进程**）。
+    ///
+    /// <para><b>为什么改变量必须走这条</b>：页面绑定、趋势、存盘、配方、报警与
+    /// Modbus 轮询表存的都是变量位置 id，而 id 由 tags.json 的顺序决定。
+    /// 只推一张 tags（或只推页面 JSON）会让这些 id 指到别的变量上 —— 不白屏、
+    /// 不报错，画面显示的是另一个变量的值，比白屏更难发现。</para>
+    ///
+    /// <para>宿主侧先校验再换：失败时旧工程一字不动，画面停在原样。</para>
+    /// </summary>
+    public bool ReloadProject(uint epoch, IReadOnlyDictionary<string, byte[]> files)
+    {
+        if (_proc is not { HasExited: false } || files.Count == 0) return false;
+        try
+        {
+            lock (_stdinLock)
+            {
+                var head = Encoding.UTF8.GetBytes($"K {epoch}\n");
+                _stdin!.Write(head, 0, head.Length);
+                foreach (var (rel, bytes) in files)
+                {
+                    var chunk = Encoding.UTF8.GetBytes($"F {rel} {bytes.Length}\n");
+                    _stdin.Write(chunk, 0, chunk.Length);
+                    _stdin.Write(bytes, 0, bytes.Length);
+                    _stdin.WriteByte((byte)'\n');
+                }
+                _stdin.WriteByte((byte)'E');
+                _stdin.WriteByte((byte)'\n');
+                _stdin.Flush();
+            }
+            return true;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// 整页重载：<paramref name="pageId"/> 为空 = 重建当前页（改绑定/权限的慢路径）。
     /// epoch 由客户端递增，宿主据此把更旧的补丁丢掉（补丁接上后才有消费者）。
     /// </summary>

@@ -104,11 +104,18 @@
 - **判据**：宿主 stderr 里这一对连着的行 ——
   `page: 用推送的 JSON 重建 <页> 失败：控件 <id>: 绑定的 tag N 不存在`，紧跟着
   `preview-host: J epoch=.. len=.. rc=-1`。编辑器日志（前缀 `[design]`）会抄一段 `host says:`。
-- **处置**：变量表一变（新增/删除/改名/换序）编辑器就整会话重启宿主，不需要人再点两次
-  「设计画布用真机渲染」；宿主侧对这类被拒的页面会回落到工程快照，画面不会停在空白。
-- **依据**：`src/HmiEditor.App/Services/DesignHostPreview.cs` 的 `VariableSignature` /
-  `RestartHostAsync`，运行时的 `chenge-runtime/src/ui/ui_page.c`（`page_mgr_reload_json`）
-  与 `src/preview_host.c` 的 `J` 分支。
+- **处置**：变量表、通讯配置或报警文本一变（新增/删除/改名/换序/改地址/改从站/改文案），
+  编辑器就发一条 `K` **整包重载**：宿主先校验新包，通过才就地换掉，失败时旧工程一字不动。
+  不需要人再点两次「设计画布用真机渲染」，也不重启进程。宿主侧对被拒的单页 JSON 还会
+  回落到工程快照，画面不会停在空白。
+- **为什么不是"只推一份 tags.json"**：页面绑定、趋势、存盘、配方、报警规则与 Modbus
+  轮询表存的都是**变量位置 id**，而 id 由 tags.json 的顺序决定。只换那张表会让这些 id
+  指到别的变量上 —— 不白屏、不报错，画面显示的是另一个变量的值，比白屏更难发现。
+  重载因此以"整包"为原子单位，旧值按**变量名**回填（id 会变、名字不会；类型不一致不搬）。
+- **依据**：`src/HmiEditor.App/Services/DesignHostPreview.cs` 的 `SnapshotSignature` /
+  `ReloadWholeProjectAsync`、`ChengeProcessSession.ReloadProject`；运行时的
+  `src/runtime_boot.c`（`runtime_reload`）、`src/core/vfs.c`（暂存表）、
+  `src/preview_host.c` 的 `K` 分支。
 - **日志在哪**：Linux 终端直接可见；Windows 上编辑器没有控制台，全部落盘到
   `%APPDATA%\chenge-hmi\logs\app-yyyyMMdd.log`（`[design]` 是编辑器，`[host]` 是宿主 stderr）。
 

@@ -72,12 +72,11 @@ public sealed class DesignHostPreview : IDisposable
     private string _screenId = "";
 
     /// <summary>
-    /// 启动那一刻的变量表指纹。宿主里的 <c>tags.json</c> 只在 <c>OpenWithBlob</c> 时
-    /// 推过一次（<c>tagdb_init(tags_count)</c>），后续设计画布只推页面 JSON（命令 <c>J</c>），
-    /// 没有更新变量表的通路 —— 变量表一变，页面里的 <c>bind.tag</c> 在宿主里就越界，
-    /// 整页建页失败。见 <see cref="ReloadWithFreshJsonAsync"/>。
+    /// 启动那一刻的整包指纹（变量表 / 设备 / 报警组），见 <see cref="SnapshotSignature"/>。
+    /// 这三样只在 <c>OpenWithBlob</c> 时推过一次，后面设计画布只推页面 JSON（命令 <c>J</c>），
+    /// 带不动它们 —— 一变就必须整包重载（命令 <c>K</c>）。
     /// </summary>
-    private string _variableSignature = "";
+    private string _snapshotSignature = "";
 
     public bool IsRunning => _session?.IsOpen == true;
 
@@ -127,8 +126,8 @@ public sealed class DesignHostPreview : IDisposable
         _assets = assets;
         _projectDirectory = projectDirectory;
         _options = options;
-        // 这一份 tags.json 已经推给宿主了，指纹留到下次重载时对比
-        _variableSignature = VariableSignature(project);
+        // 这一份整包（tags/devices/strings）已经推给宿主了，指纹留到下次对比
+        _snapshotSignature = SnapshotSignature(project);
         // 当前屏导出成了哪个页 id：只有导出器知道（PageIds），不能按字母序猜 ——
         // 猜错的话切屏后推给宿主的是别的页 JSON，画面会是另一页的内容。
         _pageId = options.StartPageId ?? "";
@@ -266,18 +265,18 @@ public sealed class DesignHostPreview : IDisposable
             var options = _options;
             if (project == null || options == null || _session == null) return;
 
-            // 变量表变了（新增/删除/改名/换序）只能整会话重启：宿主里的 tags.json 是
-            // 启动那一刻的快照，tagdb 按它分配；页面 JSON 里的 bind.tag 一旦指向新的
-            // 变量 id，建页期就判"绑定的 tag N 不存在"，而建页是"先拆后建" ——
-            // 结果是画布一片空白，只有重启宿主才恢复。这里把"要靠人点两次真机渲染开关"
-            // 换成一句日志 + 一次自动重启。
-            var variableSignature = VariableSignature(project);
-            if (!string.Equals(variableSignature, _variableSignature, StringComparison.Ordinal))
+            // 变量表/设备表/报警文本变了：宿主里那几份 JSON 都是启动时的快照，而绑定、
+            // 趋势、存盘、配方、报警与 Modbus 轮询表存的都是**变量位置 id** ——
+            // 只推页面 JSON 会让这些 id 指到别的变量上（不白屏、只是显示错值，更难发现）。
+            // 整包重载（K）在宿主里就地换：先校验、后切换，失败时旧工程一字不动。
+            //
+            // 判据只看"指纹不等"：指纹相等就说明宿主那份与模型同源，直接走单页通道。
+            // 不能拿一个"是否可信"的布尔量把单页通道整个关掉 —— 那个量一旦漏置位，
+            // 表现就是"拖控件上去什么都不出现"，而日志里一条错都没有。
+            var signature = SnapshotSignature(project);
+            if (!string.Equals(signature, _snapshotSignature, StringComparison.Ordinal))
             {
-                EditorLog.Line($"[design] 变量表变了（宿主那份 tags.json 已过期）→ 重启宿主 " +
-                               $"tags={project.VariableManager.Variables.Count}");
-                await RestartHostAsync();
-                return;
+                if (await ReloadWholeProjectAsync(signature)) return;
             }
 
             // 只导出当前页：整包导出会把所有页面 BuildPage 一遍、还要转换图片资产，
@@ -493,38 +492,104 @@ public sealed class DesignHostPreview : IDisposable
     }
 
     /// <summary>
-    /// 变量表指纹：宿主里那份 <c>tags.json</c> 能不能继续用来建页，就看它变没变。
-    /// 取的是导出器实际遍历的那份顺序（变量集合 + Id/名字/类型），任何一项变动都会
-    /// 让 tag id 或它的含义变掉 —— 页面 JSON 里的 <c>bind.tag</c> 是按 id 寻址的。
-    /// 多算（某个变量其实被导出器跳过）只会多重启一次，少算就是白屏，宁可多算。
+    /// 宿主里那些**只在会话启动时推过一次**的东西的指纹：变量表、设备/连接、文本表。
+    ///
+    /// <para>为什么是这三样：它们决定了宿主里的 tag id 分配（tags.json 顺序）、
+    /// Modbus 轮询表（devices/ports）、以及报警与页面文案（strings）。页面 JSON
+    /// 带不动它们，改了就必须整包重载 —— 只改其中一份会让 id 与索引错位。</para>
+    ///
+    /// <para>多算（某个变量其实被导出器跳过）只会多重载一次，代价是一次校验；
+    /// 少算就是让画面显示别的变量的值，那种错没人能一眼看出来。</para>
     /// </summary>
-    private static string VariableSignature(HmiProject project)
+    private static string SnapshotSignature(HmiProject project)
     {
         var sb = new System.Text.StringBuilder();
+
+        // 变量的地址/类型/所属连接都会进 tags.json：任一项变，tag 的含义就变
         foreach (var v in project.VariableManager.Variables)
-            sb.Append(v.Id).Append('\u001f').Append(v.Name).Append('\u001f')
-              .Append(v.DataType).Append('\u001f').Append(v.IsUdtInstance ? '1' : '0').Append('\n');
+            sb.Append("v|").Append(v.Id).Append('\u001f').Append(v.Name).Append('\u001f')
+              .Append(v.DataType).Append('\u001f').Append(v.Address).Append('\u001f')
+              .Append(v.ConnectionId).Append('\u001f').Append(v.SlaveId).Append('\u001f')
+              .Append(v.IsUdtInstance ? '1' : '0').Append('\n');
+
+        foreach (var c in project.VariableManager.Connections)
+        {
+            sb.Append("c|").Append(c.Id).Append('\u001f').Append(c.Name).Append('\u001f')
+              .Append(c.DriverId).Append('\u001f').Append(c.IsEnabled ? '1' : '0').Append('\n');
+            foreach (var s in c.Slaves)
+                sb.Append("s|").Append(s.Id).Append('\u001f').Append(s.Name).Append('\u001f')
+                  .Append(s.SlaveAddress).Append('\u001f').Append(s.IsEnabled ? '1' : '0').Append('\n');
+            foreach (var kv in c.Config.OrderBy(k => k.Key, StringComparer.Ordinal))
+                sb.Append("k|").Append(kv.Key).Append('=').Append(kv.Value).Append('\n');
+        }
+
+        // strings.json 由报警文案汇总而成；报警组/规则一改，宿主那份文本表就过期
+        foreach (var g in project.AlarmGroups)
+        {
+            sb.Append("a|").Append(g.Id).Append('\u001f').Append(g.Name).Append('\n');
+            foreach (var a in g.Alarms)
+                sb.Append("r|").Append(a.Id).Append('\u001f').Append(a.Name).Append('\u001f')
+                  .Append(a.TextId).Append('\u001f').Append(a.TextClear).Append('\u001f')
+                  .Append(a.Severity).Append('\u001f').Append(a.IsEnabled ? '1' : '0').Append('\n');
+        }
+
         return sb.ToString();
     }
 
     /// <summary>
-    /// 整会话重启：重新导出整包（含新的 tags.json）→ 新宿主 → 等首帧。
-    /// 设计画布只有这一条路能换掉宿主里的变量表（页面 JSON 通道带不了 tag 定义）。
-    /// 失败保持原样并记日志：画布会停在上一帧，不要再叠加一个空白会话。
+    /// 整包重载：重新导出整包 → 走宿主 <c>K</c> 命令就地换掉（不重启进程）。
+    ///
+    /// <para>宿主侧先校验后切换：新包不合法时旧工程一字不动，画面停在原样。
+    /// 返回 true 表示"这一轮已经处理完，调用方不要再用旧的页面 JSON 通道"。</para>
     /// </summary>
-    private async Task RestartHostAsync()
+    private async Task<bool> ReloadWholeProjectAsync(string signature)
     {
         var project = _project;
         var assets = _assets;
         var dir = _projectDirectory;
         var options = _options;
-        var canvas = _canvas;
-        var screen = _screenId;
-        if (project == null || options == null || canvas == null) return;
+        if (project == null || options == null || _session == null) return false;
 
-        var ok = await StartAsync(project, assets, dir, options, _settings, screen, canvas);
-        if (ok) EditorLog.Line($"[design] 重启完成 screen={screen} tags={project.VariableManager.Variables.Count}");
-        else EditorLog.Line($"[design] 重启宿主失败：{LastError}");
+        var service = new ChengeExportService();
+        var (export, blobs) = await Task.Run(() =>
+        {
+            var mem = service.ExportToMemory(project, assets, dir, options, out var res);
+            return (Result: res, Files: mem);
+        });
+
+        if (!export.Success)
+        {
+            LastError = ChengeExportService.DescribeIssues(export);
+            EditorLog.Line($"[design] 整包重载前导出失败：{LastError}");
+            return true;      /* 模型有问题，重试没意义；等下一次改动 */
+        }
+
+        _widgetIds = new Dictionary<string, string>(export.WidgetIds, StringComparer.Ordinal);
+        _snapshotSignature = signature;
+        _lastPayload = null;      /* 换包后旧的"内容没变"记账全部作废 */
+        _epoch++;
+
+        if (!_session.ReloadProject(_epoch, blobs))
+        {
+            EditorLog.Line("[design] 整包重载发送失败（宿主已退出？）");
+            return true;
+        }
+
+        await Task.Delay(150);
+        var verdict = HostTailLines(6);
+        // 判据只用协议里那两个 ASCII 标记（宿主回 E / 日志写 rc=-1）：
+        // 拿中文日志去认状态，宿主文案一改就静默失效。
+        var rejected = verdict.Contains("rc=-", StringComparison.Ordinal)
+                       || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase);
+        if (rejected)
+            EditorLog.Line($"[design] 整包重载 epoch={_epoch} 文件 {blobs.Count} 个 —— 宿主拒绝：{verdict}");
+        else
+            EditorLog.Line($"[design] 整包重载 epoch={_epoch} 文件 {blobs.Count} 个");
+
+        // 宿主拒绝时把指纹清空：否则同样的模型不会再试，画面永远停在旧包上。
+        // 清空的直接后果是下一轮还会走 K（重试），而不是退回页面 JSON 去猜。
+        if (rejected) _snapshotSignature = "";
+        return true;
     }
 
     public void Stop()
