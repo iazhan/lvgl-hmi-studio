@@ -37,7 +37,7 @@ public class ProjectSettingsRuntimeUserUiTests
     private const string SomeHash = "AAECAwQFBgcICQoLDA0ODw==:wNu1hDVTcb2XOXidGgkb4c9GEr6wxjDGAGaH2VWrOLk=";
 
     /// <summary>安全分类在左侧分类列表里的下标（与 <c>InitializeCategoryList</c> 的顺序一致）。</summary>
-    private const int SecurityCategoryIndex = 5;
+    private const int SecurityCategoryIndex = 4;   // 通讯设置分类已下架
 
     private static RuntimeUser User(
         string username,

@@ -1409,38 +1409,15 @@ public class HostButtonEffectUiTests
             d => new Views.ProjectSettingsView(d.Project),
             new[]
             {
-                // 10 个「只标脏」的复选框各自的模型落点（`SaveToProject` 的读点）
-                Num("通讯·写合并", c => c.Depot.Project.VariableManager.EnableWriteCoalescing ? 1 : 0),
-                Num("运行·崩溃转储", c => c.Depot.Project.RuntimeConfig.EnableCrashDump ? 1 : 0),
-                Num("运行·重启", c => c.Depot.Project.RuntimeConfig.EnableHmiReboot ? 1 : 0),
-                Num("导出·调试符号", c => c.Depot.Project.ExportConfig.GenerateDebugSymbols ? 1 : 0),
-                Num("导出·注释", c => c.Depot.Project.ExportConfig.IncludeComments ? 1 : 0),
-                Num("导出·合并资源", c => c.Depot.Project.ExportConfig.MergeResources ? 1 : 0),
-                Num("导出·LGPL", c => c.Depot.Project.ExportConfig.IncludeLgplDisclaimer ? 1 : 0),
+                // 只标脏、值在 SaveToProject 里被读走的两个复选框
                 Num("安全·审计", c => c.Depot.Project.SecurityConfig.EnableAuditLog ? 1 : 0),
                 Num("安全·自动登出", c => c.Depot.Project.SecurityConfig.AutoLogoutEnabled ? 1 : 0),
-                Num("安全·防篡改", c => c.Depot.Project.SecurityConfig.EnableTamperDetection ? 1 : 0),
                 // 用户表两条通道：草稿（窗口列表）vs 模型（只有 ApplyInternal 写）
                 Num("用户草稿列表", c => Items(c.Window, "RuntimeUserList")),
                 Num("用户·模型", c => c.Depot.Project.SecurityConfig.RuntimeUsers?.Count ?? 0),
-                // 屏幕尺寸：`BtnApplySizeToAll` 唯一的写入面
-                Num("屏宽", c => (int)c.Depot.Project.Screens[0].Width),
-                Num("屏高", c => (int)c.Depot.Project.Screens[0].Height),
                 // ── 「选择族」的眼睛（阶段 115）──
                 Str("基本信息面板", c => Control<Panel>(c.Window, "PanelBasicInfo").IsVisible ? "开" : "关"),
                 Str("显示设置面板", c => Control<Panel>(c.Window, "PanelDisplaySettings").IsVisible ? "开" : "关"),
-                // ⚠ 这两枚读的是**数字框**（控件），不是 `屏宽`/`屏高`（模型）—— 预置尺寸改的是控件，
-                // 模型要等 `BtnApplySizeToAll` / `BtnApply`。选那两枚会把 CmbScreenPreset 那条写成恒真。
-                // ⚠ 类型必须是 `FANumberBox`：它**不是** `NumericUpDown` 的子类（首跑实测抛
-                // 「Expected control 'NumScreenWidth' to be 'Avalonia.Controls.NumericUpDown but it was
-                // 'FluentAvalonia.UI.Controls.FANumberBox'」）⇒ `Control<T>` 的 `is T` 过不去。
-                // ⚠ 它的 `.Value` 是 **非可空的 `double`**（二次编译报
-                // `CS0019: 运算符“??”无法应用于“double”和“int”` 即是证据）—— 别照抄 `SettingsDialog` 里
-                // 那种 `Value ?? 0`：那边 `NumLeftPanel` 是 **Avalonia 的 `NumericUpDown`**，两种控件的成员形状不同。
-                Num("屏宽框", c => (int)Control<FluentAvalonia.UI.Controls.FANumberBox>(
-                    c.Window, "NumScreenWidth").Value),
-                Num("屏高框", c => (int)Control<FluentAvalonia.UI.Controls.FANumberBox>(
-                    c.Window, "NumScreenHeight").Value),
                 Str("硬件校验", c => BannerState(c.Window, "TxtHardwareValidation")),
                 // ⚠ 环境事实（部署目录里 `firmware/*/firmware.json` 有几份），不是行为分量：它永不变化。
                 Num("硬件目标项数", c => Control<ComboBox>(c.Window, "CmbHardwareTarget").ItemCount),
@@ -1464,15 +1441,6 @@ public class HostButtonEffectUiTests
                     + "（末尾那句是显式 `ShowPanel(0)`）⇒ 初态 `SelectedIndex` 是 -1，拨到 1 一定引发事件",
                     ("基本信息面板", "关"), ("显示设置面板", "开")),
 
-                SelMoves("CmbScreenPreset", 0, "CmbScreenPreset_SelectionChanged（XAML 里 `SelectionChanged=`）："
-                    + "拨到第 1 项（480 × 272）⇒ 处理器把宽高两个数字框写成 480 / 272。"
-                    + "🩸 见证刻意选**两个数字框**而不是 `屏宽`/`屏高`（那两枚读 `_project`）—— "
-                    + "预置尺寸只改控件、**模型要等 `BtnApplySizeToAll`**（草稿语义的又一处）；"
-                    + "选那两枚会写成一条恒真的声明。⚠ 初值 1024 / 600：`SelectedIndex = 3` 是装配期设的"
-                    + "（处理器当时还没订阅），框里的值是 `LoadProjectIntoUi` 写的。"
-                    + "⚠ 它同时**解锁**了后面 `BtnApplySizeToAll` 那条（此前它只能记成「写入同值」）",
-                    ("屏宽框", "480"), ("屏高框", "272")),
-
                 SelMoves("CmbHardwareTarget", 0, "ValidateHardwareTarget（**代码里** `SelectionChanged +=` 接的）："
                     + "拨到第 1 个型号 ⇒ 处理器重跑 `ValidateProject` 并把结果写进那条校验行。"
                     + "⚠ 这条手势**能被拨动**的前提是「初态没有选中项」：`LoadProjectIntoUi` 用 "
@@ -1486,33 +1454,15 @@ public class HostButtonEffectUiTests
                 //    它的值要等 `BtnApply` 才显形）⇒ 理由写的是「点下去确实什么都没写」，
                 //    而**不是**「没接线」。⚠ 反过来：若有人给它们接上写模型的线，这 10 条会当场变红
                 //    逼人改声明 —— 这正是它们该有的行为。
-                Inert("ChkWriteCoalescing", "AttachChangeHandler 只做 `_hasChanges = true`（private 字段、"
-                    + "当场没有任何模型字段被写）；它的值由 SaveToProject 读走，本序列在 BtnApply 那条见证"),
-                Inert("ChkCrashDump", "同上：只标脏。落点在 `RuntimeConfig.EnableCrashDump`（见 BtnApply 的声明）"),
-                Inert("ChkEnableReboot", "同上：只标脏。落点在 `RuntimeConfig.EnableHmiReboot`"),
-                Inert("ChkDebugSymbols", "同上：只标脏。落点在 `ExportConfig.GenerateDebugSymbols`"),
-                Inert("ChkIncludeComments", "同上：只标脏。落点在 `ExportConfig.IncludeComments`"),
-                Inert("ChkMergeResources", "同上：只标脏。落点在 `ExportConfig.MergeResources`"),
-                Inert("ChkLicense", "同上：只标脏。落点在 `ExportConfig.IncludeLgplDisclaimer`"),
                 Inert("ChkAuditLog", "同上：只标脏。落点在 `SecurityConfig.EnableAuditLog`"),
                 Inert("ChkAutoLogout", "同上：只标脏。落点在 `SecurityConfig.AutoLogoutEnabled`"),
-                Inert("ChkTamper", "同上：只标脏。落点在 `SecurityConfig.EnableTamperDetection`"),
 
                 // ── 同源的 14 条下拉：同一个「变更跟踪」辅助函数的 `cmb` 分支 ──
                 //   ⚠ 它们排在这里（而不是任意处）只有一个理由：与上面 10 个复选框是**同一族**，
                 //   放一起读得出来。选哪一项都不影响其它声明 —— 处理器只写 `_hasChanges`。
                 SelInert("CmbLvglVersion", 1, DirtyOnly("`_project.LvglVersion`")),
-                SelInert("CmbColorDepth", 1, DirtyOnly("`ScreenDefaultsConfig.DefaultColorDepth`")),
-                SelInert("CmbOrientation", 1, DirtyOnly("`ScreenDefaultsConfig.DefaultOrientation`")),
                 SelInert("CmbAdaptiveMode", 1, DirtyOnly("`ScreenDefaultsConfig.DefaultAdaptiveMode`")),
-                SelInert("CmbRecoveryMode", 1, DirtyOnly("`VariableManager.ConnectionRecoveryMode`")),
-                SelInert("CmbLogLevel", 1, DirtyOnly("`RuntimeConfig.LogLevel`")),
                 SelInert("CmbBootScreen", 1, DirtyOnly("`RuntimeConfig.BootScreenId`")),
-                SelInert("CmbTargetLanguage", 1, DirtyOnly("`ExportConfig.TargetLanguage`")),
-                SelInert("CmbBuildSystem", 1, DirtyOnly("`ExportConfig.GenerateBuildSystem`")),
-                SelInert("CmbCodeStyle", 1, DirtyOnly("`ExportConfig.CodeStyle`")),
-                SelInert("CmbNaming", 1, DirtyOnly("`ExportConfig.ResourceNaming`")),
-                SelInert("CmbOptimization", 1, DirtyOnly("`ExportConfig.CodeGenOptimization`")),
                 SelInert("CmbOperationMode", 1, DirtyOnly("`SecurityConfig.OperationMode`")),
                 SelInert("CmbLockScreen", 1, DirtyOnly("`SecurityConfig.LockScreenId`")),
 
@@ -1547,24 +1497,18 @@ public class HostButtonEffectUiTests
                     + "⚠ 它排在 `BtnSetRuntimeUserPassword` 之后：前置是「草稿里有一条**且被选中**」"
                     + "（`OnAddRuntimeUser` 建的、默认角色是 operator ⇒ 拨到第 2 项真的换了人）"),
 
-                // ── 「应用到全部屏幕」：**阶段 115 起不再写同值** ──
-                Moves("BtnApplySizeToAll", "`foreach (var screen in _project.Screens)` 把每个屏的尺寸写成"
-                    + "**数字框里的当前值**。⚠ 阶段 114 时它只能记成 Inert（「夹具里屏幕尺寸本来就是默认值 ⇒ "
-                    + "写进去的是同一个数」）—— 那条 Inert 记的是**夹具巧合**、不是接线；"
-                    + "上面那条 `CmbScreenPreset` 把数字框拨成 480 × 272 之后，这一步就真的写了新值"
-                    + "（阶段 115 顺手把它从 Inert 升级成 Moves）",
-                    ("屏宽", "480"), ("屏高", "272")),
+                // ── 「应用到全部屏幕」：分辨率由型号决定 ⇒ 夹具里写入的就是同一个尺寸 ──
+                Inert("BtnApplySizeToAll", "`foreach (var screen in _project.Screens)` 把每个屏写成"
+                    + "**型号决定的分辨率**（没有型号时回落到工程默认值）。夹具工程没有型号、屏幕本来就是"
+                    + "默认尺寸 ⇒ 写进去的是同一个数，本层读不到差别 —— 记的是**夹具巧合**，不是没接线"),
 
                 // ── 核心一条：它把上面 10 个复选框的值一次性写进模型 ──
                 Moves("BtnApply", "OnApplyClicked → ApplyInternal → **SaveToProject()**（不关窗）："
-                    + "把 UI 上每个控件的当前值写回 `_project`。上面 10 个复选框虽然当场只标了脏，"
-                    + "但它们的值在这里被**读走**写进模型 ⇒ 10 个 bool 全部翻转；"
+                    + "把 UI 上每个控件的当前值写回 `_project`。上面两个复选框虽然当场只标了脏，"
+                    + "但它们的值在这里被**读走**写进模型 ⇒ 两个 bool 全部翻转；"
                     + "同时 SaveRuntimeUsers() 把草稿整体写回 ⇒ `用户·模型` 0 → 1。"
-                    + "⚠ 这是本表**唯一**能见证那 10 条的地方（两段式声明）",
-                    ("通讯·写合并", "0"), ("运行·崩溃转储", "0"), ("运行·重启", "0"),
-                    ("导出·调试符号", "1"), ("导出·注释", "0"), ("导出·合并资源", "0"),
-                    ("导出·LGPL", "0"), ("安全·审计", "0"), ("安全·自动登出", "0"),
-                    ("安全·防篡改", "1"), ("用户·模型", "1"),
+                    + "⚠ 这是本表**唯一**能见证那两条的地方（两段式声明）",
+                    ("安全·审计", "0"), ("安全·自动登出", "0"), ("用户·模型", "1"),
                     // 🩸 这一枚是**选择族**（CmbRuntimeUserRole）那条接线的唯一见证：
                     // 「模型里的角色 == 下拉当前项」当且仅当那条订阅在（摘掉它，下拉变了、草稿不变 ⇒ 归 0）。
                     ("用户角色随下拉", "1")),

@@ -170,71 +170,10 @@ public static class ConfigFieldInventory
             nameof(SettingsService.DisplaySettings.ShowPreviewOverlay), AppSurface,
             ConfigFieldStatus.NotImplemented, "ChkPreviewOverlay"),
 
-        // ══ 工程级 —— 面板：ProjectSettingsView ══
-
-        new(typeof(Core.Models.ExportConfig),
-            nameof(Core.Models.ExportConfig.CodeStyle), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "CmbCodeStyle"),
-
-        new(typeof(Core.Models.ExportConfig),
-            nameof(Core.Models.ExportConfig.ResourceNaming), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "CmbNaming"),
-
-        new(typeof(Core.Models.ExportConfig),
-            nameof(Core.Models.ExportConfig.MergeResources), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "ChkMergeResources"),
-
-        new(typeof(Core.Models.ScreenDefaultsConfig),
-            nameof(Core.Models.ScreenDefaultsConfig.DefaultOrientation), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "CmbOrientation"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.HistoryStoragePath), ProjectSurface,
-            ConfigFieldStatus.NotImplemented, "TxtHistoryPath"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.WatchdogTimeoutMs), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumWatchdog"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.HeartbeatIntervalMs), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumHeartbeat"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.EnableCrashDump), ProjectSurface,
-            ConfigFieldStatus.NotImplemented, "ChkCrashDump"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.CrashDumpSector), ProjectSurface,
-            ConfigFieldStatus.NotImplemented, "NumCrashSector"),
-
-        new(typeof(Core.Models.RuntimeConfig),
-            nameof(Core.Models.RuntimeConfig.MaxRuntimeTasks), ProjectSurface,
-            ConfigFieldStatus.NotImplemented, "NumMaxTasks"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.DefaultScanIntervalMs), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumCommScanInterval"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.DefaultTimeoutMs), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumCommTimeout"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.MaxRetryCount), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumRetryCount"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.RetryBackoffMs), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "NumRetryBackoff"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.EnableWriteCoalescing), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "ChkWriteCoalescing"),
-
-        new(typeof(Core.Models.VariableManager),
-            nameof(Core.Models.VariableManager.ConnectionRecoveryMode), ProjectSurface,
-            ConfigFieldStatus.StoredOnly, "CmbRecoveryMode"),
+        // ══ 工程级（ProjectSettingsView）══
+        // 这一族曾经有 16 条（导出风格/通讯默认值/看门狗与心跳/崩溃转储/历史路径…），
+        // 全部既没有编辑器消费点、也没有导出到运行时。2.31.0 起这些控件**直接下架**，
+        // 不再用「灰显 + 悬停解释」的方式占着面板 —— 清单只剩应用级。
     };
 
     /// <summary>某个 surface 下的条目。</summary>

@@ -180,76 +180,46 @@
     <Panel x:Name="PanelDisplaySettings" IsVisible="False">
         <ScrollViewer Background="{StaticResource HmiBgPanelBrush}" CornerRadius="6">
                                 <Border Padding="20,16">
-                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                                           ColumnDefinitions="140,*,140,*">
+                                        <!-- 屏幕尺寸由型号决定（kinseal = 800×480），这里只读展示：
+                                             允许自由填会做出"工程 1920×1080、实机 800×480"的组态，板上只能裁切。 -->
                                         <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.display.preset}"
+                                                   Text="{res:Loc project.settings.display.resolution}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbScreenPreset" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  SelectionChanged="CmbScreenPreset_SelectionChanged"
-                                                  Margin="0,2,0,10"/>
+                                        <TextBlock x:Name="TxtTargetResolution" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                                                   Foreground="{StaticResource HmiTextPrimaryBrush}"
+                                                   VerticalAlignment="Center" Margin="0,0,0,12"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.display.default.width}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumScreenWidth" Grid.Row="1" Grid.Column="1"
-                                                        Value="800" Minimum="1" SmallChange="1" LargeChange="10"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.display.default.height}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumScreenHeight" Grid.Row="1" Grid.Column="3"
-                                                        Value="480" Minimum="1" SmallChange="1" LargeChange="10"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.display.default.depth}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbColorDepth" Grid.Row="2" Grid.Column="1"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,12,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.display.default.orientation}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbOrientation" Grid.Row="2" Grid.Column="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Text="{res:Loc project.settings.display.default.adaptive}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbAdaptiveMode" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
+                                        <ComboBox x:Name="CmbAdaptiveMode" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
                                                   Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
                                                   BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
                                                   Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                        <TextBlock Grid.Row="2" Grid.Column="0"
                                                    Text="{res:Loc project.settings.display.default.bg.color}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="TxtDefaultBgColor" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                                        <TextBox x:Name="TxtDefaultBgColor" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
                                                  PlaceholderText="#131c31"
                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,6"
                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="0"
+                                        <TextBlock Grid.Row="3" Grid.Column="0"
                                                    Text="{res:Loc project.settings.display.default.dpi}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumDpiScale" Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="3"
+                                        <fa:FANumberBox x:Name="NumDpiScale" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
                                                         Value="1.0" Minimum="0.5" Maximum="3.0" SmallChange="0.1"
                                                         LargeChange="0.5"
                                                         SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
                                                         Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
                                                         Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="4"
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4"
                                                    TextWrapping="Wrap"
                                                    Text="{res:Loc project.settings.display.size.scope.hint}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}"
                                                    Margin="0,0,0,8"/>
-                                        <Button x:Name="BtnApplySizeToAll" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
+                                        <Button x:Name="BtnApplySizeToAll" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
                                                 Content="{res:Loc project.settings.display.apply.size.all}"
                                                 HorizontalAlignment="Left" VerticalAlignment="Center"
                                                 Padding="12,6" CornerRadius="4"
@@ -260,146 +230,19 @@
                                 </Border>
                             </ScrollViewer>
     </Panel>
-    <Panel x:Name="PanelCommSettings" IsVisible="False">
-        <ScrollViewer Background="{StaticResource HmiBgPanelBrush}" CornerRadius="6">
-                                <Border Padding="20,16">
-                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-                                          ColumnDefinitions="200,*,200,*">
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.comm.scan.interval}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumCommScanInterval" Grid.Row="1" Grid.Column="1"
-                                                        Value="100" Minimum="10" Maximum="10000" SmallChange="10"
-                                                        LargeChange="100"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.comm.timeout}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumCommTimeout" Grid.Row="1" Grid.Column="3"
-                                                        Value="500" Minimum="50" Maximum="60000" SmallChange="50"
-                                                        LargeChange="500"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.comm.retry}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumRetryCount" Grid.Row="2" Grid.Column="1"
-                                                        Value="3" Minimum="0" Maximum="20" SmallChange="1"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.comm.retry.backoff}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumRetryBackoff" Grid.Row="2" Grid.Column="3"
-                                                        Value="100" Minimum="0" Maximum="5000" SmallChange="10"
-                                                        LargeChange="100"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.comm.write.coalesce}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <CheckBox x:Name="ChkWriteCoalescing" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3"
-                                                  Content="{res:Loc project.settings.comm.write.coalesce}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.comm.recovery}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbRecoveryMode" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                    </Grid>
-                                </Border>
-                            </ScrollViewer>
-    </Panel>
+
     <Panel x:Name="PanelRuntimeSettings" IsVisible="False">
         <ScrollViewer Background="{StaticResource HmiBgPanelBrush}" CornerRadius="6">
                                 <Border Padding="20,16">
-                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                    <Grid RowDefinitions="Auto"
                                           ColumnDefinitions="200,*,200,*">
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.runtime.scan}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumRuntimeScan" Grid.Row="1" Grid.Column="1"
-                                                        Value="100" Minimum="10" Maximum="10000" SmallChange="10"
-                                                        LargeChange="100"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.runtime.log.level}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbLogLevel" Grid.Row="1" Grid.Column="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.runtime.history}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="TxtHistoryPath" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
-                                                 PlaceholderText="{res:Loc project.settings.history.path.hint}"
-                                                 Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                 BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,6"
-                                                 Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.runtime.watchdog}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumWatchdog" Grid.Row="3" Grid.Column="1"
-                                                        Value="5000" Minimum="0" Maximum="60000" SmallChange="100"
-                                                        LargeChange="1000"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.runtime.heartbeat}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumHeartbeat" Grid.Row="3" Grid.Column="3"
-                                                        Value="1000" Minimum="100" Maximum="30000" SmallChange="100"
-                                                        LargeChange="1000"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Text="{res:Loc project.settings.runtime.boot.screen}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbBootScreen" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
+                                        <ComboBox x:Name="CmbBootScreen" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
                                                   Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
                                                   BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
                                                   Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkCrashDump" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.runtime.crash.dump}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="5" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.runtime.crash.sector}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumCrashSector" Grid.Row="5" Grid.Column="3"
-                                                        Value="0" Minimum="0"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,0,10"/>
-                                        <TextBlock Grid.Row="6" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.runtime.max.tasks}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <fa:FANumberBox x:Name="NumMaxTasks" Grid.Row="6" Grid.Column="1"
-                                                        Value="32" Minimum="1" Maximum="256" SmallChange="1"
-                                                        LargeChange="8"
-                                                        SpinButtonPlacementMode="Compact" Background="{StaticResource HmiBgInputBrush}"
-                                                        Foreground="{StaticResource HmiTextPrimaryBrush}" BorderBrush="{StaticResource HmiInputBorderBrush}" CornerRadius="4"
-                                                        Margin="0,2,12,10"/>
-                                        <CheckBox x:Name="ChkEnableReboot" Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.runtime.enable.reboot}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
                                     </Grid>
                                 </Border>
                             </ScrollViewer>
@@ -407,71 +250,16 @@
     <Panel x:Name="PanelExportSettings" IsVisible="False">
         <ScrollViewer Background="{StaticResource HmiBgPanelBrush}" CornerRadius="6">
                                 <Border Padding="20,16">
-                                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                                    <Grid RowDefinitions="Auto"
                                           ColumnDefinitions="200,*,200,*">
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.export.language}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbTargetLanguage" Grid.Row="1" Grid.Column="1"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,12,10"/>
-                                        <TextBlock Grid.Row="1" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.export.build.system}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbBuildSystem" Grid.Row="1" Grid.Column="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
                                                    Text="{res:Loc project.settings.export.output}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <TextBox x:Name="TxtOutputDir" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3"
+                                        <TextBox x:Name="TxtOutputDir" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
                                                  PlaceholderText="./export"
                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,6"
                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.export.code.style}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbCodeStyle" Grid.Row="3" Grid.Column="1"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,12,10"/>
-                                        <TextBlock Grid.Row="3" Grid.Column="2"
-                                                   Text="{res:Loc project.settings.export.naming}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbNaming" Grid.Row="3" Grid.Column="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                        <TextBlock Grid.Row="4" Grid.Column="0"
-                                                   Text="{res:Loc project.settings.export.optimization}"
-                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="CmbOptimization" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="3"
-                                                  Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
-                                                  BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
-                                                  Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkDebugSymbols" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.export.debug.symbols}"
-                                                  IsChecked="False"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkIncludeComments" Grid.Row="5" Grid.Column="2" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.export.comments}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkMergeResources" Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.export.merge.resources}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkLicense" Grid.Row="6" Grid.Column="2" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.export.license}"
-                                                  IsChecked="True"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
                                     </Grid>
                                 </Border>
                             </ScrollViewer>
@@ -548,11 +336,6 @@
                                                   Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
                                                   BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,4"
                                                   Margin="0,0,0,10"/>
-                                        <CheckBox x:Name="ChkTamper" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2"
-                                                  Content="{res:Loc project.settings.security.tamper}"
-                                                  IsChecked="False"
-                                                  Foreground="{StaticResource HmiTextPrimarySoftBrush}"
-                                                  VerticalAlignment="Center" Margin="0,0,0,10"/>
                                         <TextBlock Grid.Row="7" Grid.Column="2"
                                                    Text="{res:Loc project.settings.security.default.role}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
@@ -666,12 +449,6 @@
             <!-- ═══ 底部：操作按钮 ═══ -->
             <Grid Grid.Row="1" Grid.Column="2"
                   ColumnDefinitions="*,Auto,Auto,Auto">
-                <!-- 「尚未生效」图例：本对话框有灰显项时才显示（由 MarkNotYetEffectiveFields 控制） -->
-                <TextBlock x:Name="NotEffectiveLegend" Grid.Column="0"
-                           Text="{res:Loc settings.not.effective.legend}"
-                           Foreground="{StaticResource HmiTextMutedBrush}" FontSize="11"
-                           TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
-                           IsVisible="False"/>
                 <Button x:Name="BtnOk" Grid.Column="1" Content="{res:Loc gen.ok}"
                         Background="{StaticResource HmiAccentHoverBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}"
                         BorderThickness="0" Padding="20,6" CornerRadius="4"

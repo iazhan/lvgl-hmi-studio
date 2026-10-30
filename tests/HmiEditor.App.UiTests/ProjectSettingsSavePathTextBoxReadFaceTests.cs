@@ -14,8 +14,8 @@ namespace HmiEditor.App.UiTests;
 /// <summary>
 /// **`ProjectSettingsView` 的「保存时一次性读取」框的**行为面**（TextBox 那一半）**（阶段 198）——
 /// 与 <see cref="ProjectSettingsSavePathReadFaceTests"/>（数字框那半）同形：
-/// 那一面证"15 个数字框读进了各自那一格"，这一面证**9 个文本输入框**（`TxtAuthor` / `TxtCompany` /
-/// `TxtDescription` / `TxtProjectVersion` / `TxtDefaultBgColor` / `TxtHistoryPath` / `TxtOutputDir` /
+/// 那一面证"6 个数字框读进了各自那一格"，这一面证**8 个文本输入框**（`TxtAuthor` / `TxtCompany` /
+/// `TxtDescription` / `TxtProjectVersion` / `TxtDefaultBgColor` / `TxtOutputDir` /
 /// `TxtAuditPath` / `TxtDefaultRoleId`）读进了各自那一格，**并且两条口径都对**：
 ///
 /// <list type="number">
@@ -45,8 +45,6 @@ public class ProjectSettingsSavePathTextBoxReadFaceTests
         new("TxtProjectVersion", "ProjectVersion", p => p.ProjectVersion ?? Null, "  2.3.4  ", "2.3.4"),
         new("TxtDefaultBgColor", "ScreenDefaultsConfig.DefaultBgColor",
             p => p.ScreenDefaultsConfig.DefaultBgColor ?? Null, "  #112233  ", "#112233"),
-        new("TxtHistoryPath", "RuntimeConfig.HistoryStoragePath",
-            p => p.RuntimeConfig.HistoryStoragePath ?? Null, "  /data/hist  ", "/data/hist"),
         new("TxtOutputDir", "ExportConfig.OutputDirectory",
             p => p.ExportConfig.OutputDirectory ?? Null, "  ./out  ", "./out"),
         new("TxtAuditPath", "SecurityConfig.AuditLogStoragePath",
@@ -55,7 +53,7 @@ public class ProjectSettingsSavePathTextBoxReadFaceTests
             p => p.SecurityConfig.DefaultRoleId ?? Null, "  role-engineer  ", "role-engineer"),
     };
 
-    /// <summary>清空之后**声明的兜底**（6 个 null ＋ 3 个各自的兜底值）。</summary>
+    /// <summary>清空之后**声明的兜底**（5 个 null ＋ 3 个各自的兜底值）。</summary>
     private static readonly Dictionary<string, string> EmptyFallbacks = new(StringComparer.Ordinal)
     {
         ["TxtDescription"] = Null,
@@ -63,7 +61,6 @@ public class ProjectSettingsSavePathTextBoxReadFaceTests
         ["TxtCompany"] = Null,
         ["TxtProjectVersion"] = "1.0.0",
         ["TxtDefaultBgColor"] = Null,
-        ["TxtHistoryPath"] = Null,
         ["TxtOutputDir"] = "./export",
         ["TxtAuditPath"] = Null,
         ["TxtDefaultRoleId"] = "role-operator",
@@ -178,7 +175,7 @@ public class ProjectSettingsSavePathTextBoxReadFaceTests
     [Fact]
     public void Specs_AreDistinct_AndFallbacksCoverThemAll()
     {
-        Assert.Equal(9, Specs.Length);
+        Assert.Equal(8, Specs.Length);
         Assert.Equal(Specs.Length, Specs.Select(s => s.Text).Distinct().Count());
         Assert.Equal(Specs.Length, Specs.Select(s => s.Field).Distinct().Count());
         Assert.Equal(Specs.Length, Specs.Select(s => s.Name).Distinct().Count());
@@ -189,7 +186,7 @@ public class ProjectSettingsSavePathTextBoxReadFaceTests
     }
 
     /// <summary>
-    /// **前提：这 9 个框确实没有直接的 `TextChanged` 接线**（否则它们该归接线面，本面就重复了）。
+    /// **前提：这 8 个框确实没有直接的 `TextChanged` 接线**（否则它们该归接线面，本面就重复了）。
     /// 只看这一个文件的代码，判据自带（与接线面那份表互为正反两面）。
     /// </summary>
     [Fact]

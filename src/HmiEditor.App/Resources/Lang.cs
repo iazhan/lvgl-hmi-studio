@@ -36,7 +36,6 @@ public static class Lang
     public const string ProjectSettingsTitle              = "project.settings.title";
     public const string ProjectSettingsCategoryBasic      = "project.settings.category.basic";
     public const string ProjectSettingsCategoryDisplay    = "project.settings.category.display";
-    public const string ProjectSettingsCategoryComm       = "project.settings.category.comm";
     public const string ProjectSettingsCategoryRuntime    = "project.settings.category.runtime";
     public const string ProjectSettingsCategoryExport     = "project.settings.category.export";
     public const string ProjectSettingsCategorySecurity   = "project.settings.category.security";
@@ -54,9 +53,10 @@ public static class Lang
     public const string HwTargetValidationOk             = "hw.target.validation.ok";
     public const string ProjectSettingsBasicCreated       = "project.settings.basic.created";
     public const string ProjectSettingsBasicModified      = "project.settings.basic.modified";
-    public const string ProjectSettingsDefaultWidth       = "project.settings.display.default.width";
-    public const string ProjectSettingsDefaultHeight      = "project.settings.display.default.height";
     public const string ProjectSettingsDisplayPreset      = "project.settings.display.preset";
+    // 分辨率只读行：有型号时按型号（kinseal 800×480），没型号才显示工程里存的值
+    public const string ProjectSettingsResolutionByTarget = "project.settings.display.resolution.by.target";
+    public const string ProjectSettingsResolutionNoTarget = "project.settings.display.resolution.no.target";
     public const string ProjectSettingsSizeScopeHint      = "project.settings.display.size.scope.hint";
     public const string ProjectSettingsApplySizeToAll     = "project.settings.display.apply.size.all";
     public const string ProjectSettingsApplySizeDone      = "project.settings.display.apply.size.done";
@@ -67,37 +67,11 @@ public static class Lang
     /// <summary>「尚未生效」标注：面板底部的图例。</summary>
     public const string SettingsNotEffectiveLegend        = "settings.not.effective.legend";
     public const string ScreenCustom                      = "screen.custom";
-    public const string ProjectSettingsDefaultDepth       = "project.settings.display.default.depth";
-    public const string ProjectSettingsDefaultOrientation = "project.settings.display.default.orientation";
     public const string ProjectSettingsDefaultAdaptive    = "project.settings.display.default.adaptive";
     public const string ProjectSettingsDefaultBgColor     = "project.settings.display.default.bg.color";
     public const string ProjectSettingsDefaultDpi         = "project.settings.display.default.dpi";
-    public const string ProjectSettingsCommScanInterval   = "project.settings.comm.scan.interval";
-    public const string ProjectSettingsCommTimeout        = "project.settings.comm.timeout";
-    public const string ProjectSettingsCommRetry          = "project.settings.comm.retry";
-    public const string ProjectSettingsCommRetryBackoff   = "project.settings.comm.retry.backoff";
-    public const string ProjectSettingsCommWriteCoalesce  = "project.settings.comm.write.coalesce";
-    public const string ProjectSettingsCommRecovery       = "project.settings.comm.recovery";
-    public const string ProjectSettingsRuntimeScan        = "project.settings.runtime.scan";
-    public const string ProjectSettingsRuntimeHistory     = "project.settings.runtime.history";
-    public const string ProjectSettingsRuntimeLogLevel    = "project.settings.runtime.log.level";
-    public const string ProjectSettingsRuntimeWatchdog    = "project.settings.runtime.watchdog";
-    public const string ProjectSettingsRuntimeHeartbeat   = "project.settings.runtime.heartbeat";
     public const string ProjectSettingsRuntimeBootScreen  = "project.settings.runtime.boot.screen";
-    public const string ProjectSettingsRuntimeCrashDump   = "project.settings.runtime.crash.dump";
-    public const string ProjectSettingsRuntimeCrashSector = "project.settings.runtime.crash.sector";
-    public const string ProjectSettingsRuntimeMaxTasks    = "project.settings.runtime.max.tasks";
-    public const string ProjectSettingsRuntimeEnableReboot = "project.settings.runtime.enable.reboot";
-    public const string ProjectSettingsExportLanguage     = "project.settings.export.language";
     public const string ProjectSettingsExportOutput       = "project.settings.export.output";
-    public const string ProjectSettingsExportDebugSymbols = "project.settings.export.debug.symbols";
-    public const string ProjectSettingsExportCodeStyle    = "project.settings.export.code.style";
-    public const string ProjectSettingsExportNaming       = "project.settings.export.naming";
-    public const string ProjectSettingsExportBuildSystem  = "project.settings.export.build.system";
-    public const string ProjectSettingsExportComments     = "project.settings.export.comments";
-    public const string ProjectSettingsExportMergeRes     = "project.settings.export.merge.resources";
-    public const string ProjectSettingsExportOptimization = "project.settings.export.optimization";
-    public const string ProjectSettingsExportLicense      = "project.settings.export.license";
     public const string ProjectSettingsSecurityMode       = "project.settings.security.mode";
     public const string ProjectSettingsSecurityTimeout    = "project.settings.security.timeout";
     public const string ProjectSettingsSecurityAudit      = "project.settings.security.audit";
@@ -107,7 +81,6 @@ public static class Lang
     public const string ProjectSettingsSecurityLockout    = "project.settings.security.lockout";
     public const string ProjectSettingsSecurityAutoLogout = "project.settings.security.auto.logout";
     public const string ProjectSettingsSecurityLockScreen = "project.settings.security.lock.screen";
-    public const string ProjectSettingsSecurityTamper     = "project.settings.security.tamper";
     public const string ProjectSettingsSecurityDefaultRole = "project.settings.security.default.role";
 
     // ── 变量管理 ────────────────────────────────────
@@ -1608,7 +1581,6 @@ public static class Lang
     public const string AssetTtAiSvg                  = "asset.tt.ai.svg";
 
     // ── 非 ToolTip 硬编码本地化（手动生成）──
-    public const string ProjectSettingsHistoryPathHint   = "project.settings.history.path.hint";
     public const string ProjectSettingsAuditPathHint     = "project.settings.audit.path.hint";
     public const string VarUdtNameHint                   = "var.udt.name.hint";
     public const string VarUdtFieldHint                  = "var.udt.field.hint";
@@ -1773,17 +1745,6 @@ public static class Lang
     public const string EnumAdaptiveNone           = "enum.adaptive.none";
     public const string EnumAdaptiveFit            = "enum.adaptive.fit";
     public const string EnumAdaptiveFill           = "enum.adaptive.fill";
-    public const string EnumRecoveryAuto           = "enum.recovery.auto";
-    public const string EnumRecoveryManual         = "enum.recovery.manual";
-    public const string EnumRecoveryFailFast       = "enum.recovery.failfast";
-    public const string EnumLogLevelDebug          = "enum.loglevel.debug";
-    public const string EnumLogLevelInfo           = "enum.loglevel.info";
-    public const string EnumLogLevelWarning        = "enum.loglevel.warning";
-    public const string EnumLogLevelError          = "enum.loglevel.error";
-    public const string EnumLogLevelFatal          = "enum.loglevel.fatal";
-    public const string EnumOptSize                = "enum.opt.size";
-    public const string EnumOptSpeed               = "enum.opt.speed";
-    public const string EnumOptReadability         = "enum.opt.readability";
     public const string EnumOpModeDesigner         = "enum.opmode.designer";
     public const string EnumOpModeOperator         = "enum.opmode.operator";
     public const string EnumOpModeMaintenance      = "enum.opmode.maintenance";

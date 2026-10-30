@@ -48,9 +48,6 @@ public partial class ProjectSettingsView : ChromeWindow
     /// <summary>用户是否对配置做了修改</summary>
     private bool _hasChanges;
 
-    /// <summary>批量更新 UI 时抑制变更事件</summary>
-    private bool _isUpdating;
-
     /// <summary>
     /// **运行时用户表的编辑草稿**。
     ///
@@ -87,63 +84,6 @@ public partial class ProjectSettingsView : ChromeWindow
         InitializeCategoryList();
         BindToProject();
         WireButtons();
-        MarkNotYetEffectiveFields();
-    }
-
-    // ── 「面板上有、其实不生效」的标注 ──
-
-    /// <summary>
-    /// 按受管清单 <see cref="ConfigFieldInventory"/> 给不生效的控件加标注（灰显 + 悬停原因）。
-    /// <para>键不在清单里时静默跳过 —— 说明该字段已经接线、条目已被删掉。</para>
-    /// </summary>
-    private void MarkNotYetEffectiveFields()
-    {
-        var any = false;
-
-        // ── 导出设置
-        any |= MarkNotEffective<ExportConfig>(nameof(ExportConfig.CodeStyle), CmbCodeStyle);
-        any |= MarkNotEffective<ExportConfig>(nameof(ExportConfig.ResourceNaming), CmbNaming);
-        any |= MarkNotEffective<ExportConfig>(nameof(ExportConfig.MergeResources), ChkMergeResources);
-
-        // ── 显示设置
-        any |= MarkNotEffective<ScreenDefaultsConfig>(
-            nameof(ScreenDefaultsConfig.DefaultOrientation), CmbOrientation);
-
-        // ── 运行时设置
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.HistoryStoragePath), TxtHistoryPath);
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.WatchdogTimeoutMs), NumWatchdog);
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.HeartbeatIntervalMs), NumHeartbeat);
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.EnableCrashDump), ChkCrashDump);
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.CrashDumpSector), NumCrashSector);
-        any |= MarkNotEffective<RuntimeConfig>(nameof(RuntimeConfig.MaxRuntimeTasks), NumMaxTasks);
-
-        // ── 通讯设置
-        any |= MarkNotEffective<VariableManager>(
-            nameof(VariableManager.DefaultScanIntervalMs), NumCommScanInterval);
-        any |= MarkNotEffective<VariableManager>(
-            nameof(VariableManager.DefaultTimeoutMs), NumCommTimeout);
-        any |= MarkNotEffective<VariableManager>(nameof(VariableManager.MaxRetryCount), NumRetryCount);
-        any |= MarkNotEffective<VariableManager>(
-            nameof(VariableManager.RetryBackoffMs), NumRetryBackoff);
-        any |= MarkNotEffective<VariableManager>(
-            nameof(VariableManager.EnableWriteCoalescing), ChkWriteCoalescing);
-        any |= MarkNotEffective<VariableManager>(
-            nameof(VariableManager.ConnectionRecoveryMode), CmbRecoveryMode);
-
-        NotEffectiveLegend.IsVisible = any;
-    }
-
-    /// <summary>
-    /// 给单个控件打标注：<typeparamref name="T"/> 的类型名 + <paramref name="field"/> 组成清单键。
-    /// <para>返回是否真的标了（清单里没有这条 = 已接线 ⇒ 返回 false）。</para>
-    /// </summary>
-    private static bool MarkNotEffective<T>(string field, Control? control)
-    {
-        if (control is null) return false;
-        var entry = ConfigFieldInventory.Find($"{typeof(T).Name}.{field}");
-        if (entry is null || entry.Surface != ConfigFieldInventory.ProjectSurface) return false;
-        NotYetEffective.Mark(control, entry.NoteKey);
-        return true;
     }
 
     // ──────────────────────────────────────────
@@ -152,58 +92,11 @@ public partial class ProjectSettingsView : ChromeWindow
 
     private void InitializeComboBoxes()
     {
-        // 预设屏幕尺寸（宽×高），用于快速选择
-        var screenPresets = new (int W, int H, string Name)[]
-        {
-            (480,  272,  "480 × 272"),
-            (640,  360,  "640 × 360"),
-            (800,  480,  "800 × 480"),
-            (1024, 600,  "1024 × 600"),
-            (1024, 768,  "1024 × 768"),
-            (1280, 720,  "1280 × 720"),
-            (1280, 800,  "1280 × 800"),
-            (1920, 1080, "1920 × 1080"),
-            (0,    0,    AppLocalization.Service[Lang.ScreenCustom]),
-        };
-        var presetItems = screenPresets.Select(p => new ComboBoxItem
-        {
-            Content = p.Name,
-            Tag = p
-        }).ToArray();
-        CmbScreenPreset.ItemsSource = presetItems;
-        CmbScreenPreset.SelectedIndex = 2; // 默认 800×480（对齐本 fork 的目标板 kinseal）
-
         CmbLvglVersion.ItemsSource = BuildLvglVersionItems();
-        // 色深候选项来自 Hmi.Hardware.Contracts.ColorDepth 枚举本身。
-        // 此前是硬编码的 new[] { "RGB565", "ARGB8888", "Indexed8" } —— 枚举增删成员时面板不跟着变，
-        // 而且和 Hmi.Hardware.Loader.ConfigDrivenTarget.ParseColorDepth 是两份各自维护的清单。
-        // 注意必须全限定：本文件同时 import 了 HmiEditor.Core.Services（那里也有一个 ColorDepth）。
-        CmbColorDepth.ItemsSource = Enum.GetNames(typeof(Hmi.Hardware.Contracts.ColorDepth));
-        CmbOrientation.ItemsSource = BuildEnumItems(
-            (Lang.EnumOrientationLandscape, ScreenOrientation.Landscape),
-            (Lang.EnumOrientationPortrait,  ScreenOrientation.Portrait));
         CmbAdaptiveMode.ItemsSource = BuildEnumItems(
             (Lang.EnumAdaptiveNone, ScreenAdaptiveMode.None),
             (Lang.EnumAdaptiveFit,  ScreenAdaptiveMode.Fit),
             (Lang.EnumAdaptiveFill, ScreenAdaptiveMode.Fill));
-        CmbRecoveryMode.ItemsSource = BuildEnumItems(
-            (Lang.EnumRecoveryAuto,     ConnectionRecoveryMode.AutoReconnect),
-            (Lang.EnumRecoveryManual,   ConnectionRecoveryMode.ManualReconnect),
-            (Lang.EnumRecoveryFailFast, ConnectionRecoveryMode.FailFast));
-        CmbLogLevel.ItemsSource = BuildEnumItems(
-            (Lang.EnumLogLevelDebug,   LogLevel.Debug),
-            (Lang.EnumLogLevelInfo,    LogLevel.Info),
-            (Lang.EnumLogLevelWarning, LogLevel.Warning),
-            (Lang.EnumLogLevelError,   LogLevel.Error),
-            (Lang.EnumLogLevelFatal,   LogLevel.Fatal));
-        CmbTargetLanguage.ItemsSource = Enum.GetNames<TargetLanguage>();
-        CmbBuildSystem.ItemsSource = Enum.GetNames<BuildSystem>();
-        CmbCodeStyle.ItemsSource = Enum.GetNames<CodeStyle>();
-        CmbNaming.ItemsSource = Enum.GetNames<ResourceNaming>();
-        CmbOptimization.ItemsSource = BuildEnumItems(
-            (Lang.EnumOptSize,        CodeGenOptimization.Size),
-            (Lang.EnumOptSpeed,       CodeGenOptimization.Speed),
-            (Lang.EnumOptReadability, CodeGenOptimization.Readability));
         CmbOperationMode.ItemsSource = BuildEnumItems(
             (Lang.EnumOpModeDesigner,    OperationMode.Designer),
             (Lang.EnumOpModeOperator,    OperationMode.Operator),
@@ -349,7 +242,6 @@ public partial class ProjectSettingsView : ChromeWindow
         {
             new { Key = "basic",    Name = Lang.ProjectSettingsCategoryBasic },
             new { Key = "display",  Name = Lang.ProjectSettingsCategoryDisplay },
-            new { Key = "comm",     Name = Lang.ProjectSettingsCategoryComm },
             new { Key = "runtime",  Name = Lang.ProjectSettingsCategoryRuntime },
             new { Key = "export",   Name = Lang.ProjectSettingsCategoryExport },
             new { Key = "security", Name = Lang.ProjectSettingsCategorySecurity },
@@ -421,7 +313,6 @@ public partial class ProjectSettingsView : ChromeWindow
         {
             PanelBasicInfo,
             PanelDisplaySettings,
-            PanelCommSettings,
             PanelRuntimeSettings,
             PanelExportSettings,
             PanelSecuritySettings,
@@ -455,50 +346,16 @@ public partial class ProjectSettingsView : ChromeWindow
         TxtModifiedAt.Text = _project.LastModifiedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss");
 
         // ── 显示设置
-        NumScreenWidth.Value = _project.ScreenDefaultsConfig.DefaultWidth;
-        NumScreenHeight.Value = _project.ScreenDefaultsConfig.DefaultHeight;
-        // 用 ResolveColorDepthItem 而不是直接赋值：存的值不在枚举里时（老工程手改过 JSON、
-        // 或枚举成员被删）直接赋值会留下 SelectedItem=null —— 下拉显示空白、保存却仍会写一个值，
-        // 那既是"界面在撒谎"，也让用户无从知道最终会落到哪个色深。该 helper 的文档写明了这个理由，
-        // 但此前**从未被调用过**（死代码），于是它防的那个坑一直是活的。
-        CmbColorDepth.SelectedItem = ResolveColorDepthItem(_project.ScreenDefaultsConfig.DefaultColorDepth);
-        CmbOrientation.SelectedItem = FindEnumItem(CmbOrientation, _project.ScreenDefaultsConfig.DefaultOrientation);
+        UpdateResolutionText();
         CmbAdaptiveMode.SelectedItem = FindEnumItem(CmbAdaptiveMode, _project.ScreenDefaultsConfig.DefaultAdaptiveMode);
         TxtDefaultBgColor.Text = _project.ScreenDefaultsConfig.DefaultBgColor ?? "";
         NumDpiScale.Value = _project.ScreenDefaultsConfig.DpiScale;
 
-        // ── 通讯设置
-        NumCommScanInterval.Value = _project.VariableManager.DefaultScanIntervalMs;
-        NumCommTimeout.Value = _project.VariableManager.DefaultTimeoutMs;
-        NumRetryCount.Value = _project.VariableManager.MaxRetryCount;
-        NumRetryBackoff.Value = _project.VariableManager.RetryBackoffMs;
-        ChkWriteCoalescing.IsChecked = _project.VariableManager.EnableWriteCoalescing;
-        CmbRecoveryMode.SelectedItem = FindEnumItem(CmbRecoveryMode, _project.VariableManager.ConnectionRecoveryMode);
-
         // ── 运行时设置
-        NumRuntimeScan.Value = _project.RuntimeConfig.ScanIntervalMs;
-        CmbLogLevel.SelectedItem = FindEnumItem(CmbLogLevel, _project.RuntimeConfig.LogLevel);
-        TxtHistoryPath.Text = _project.RuntimeConfig.HistoryStoragePath ?? "";
-        NumWatchdog.Value = _project.RuntimeConfig.WatchdogTimeoutMs;
-        NumHeartbeat.Value = _project.RuntimeConfig.HeartbeatIntervalMs;
-        ChkCrashDump.IsChecked = _project.RuntimeConfig.EnableCrashDump;
-        NumCrashSector.Value = _project.RuntimeConfig.CrashDumpSector;
-        NumMaxTasks.Value = _project.RuntimeConfig.MaxRuntimeTasks;
-        ChkEnableReboot.IsChecked = _project.RuntimeConfig.EnableHmiReboot;
-
         PopulateScreenCombo(CmbBootScreen, _project.RuntimeConfig.BootScreenId);
 
         // ── 导出设置
-        CmbTargetLanguage.SelectedItem = _project.ExportConfig.TargetLanguage.ToString();
-        CmbBuildSystem.SelectedItem = _project.ExportConfig.GenerateBuildSystem.ToString();
         TxtOutputDir.Text = _project.ExportConfig.OutputDirectory ?? "";
-        CmbCodeStyle.SelectedItem = _project.ExportConfig.CodeStyle.ToString();
-        CmbNaming.SelectedItem = _project.ExportConfig.ResourceNaming.ToString();
-        CmbOptimization.SelectedItem = FindEnumItem(CmbOptimization, _project.ExportConfig.CodeGenOptimization);
-        ChkDebugSymbols.IsChecked = _project.ExportConfig.GenerateDebugSymbols;
-        ChkIncludeComments.IsChecked = _project.ExportConfig.IncludeComments;
-        ChkMergeResources.IsChecked = _project.ExportConfig.MergeResources;
-        ChkLicense.IsChecked = _project.ExportConfig.IncludeLgplDisclaimer;
 
         // ── 安全设置
         CmbOperationMode.SelectedItem = FindEnumItem(CmbOperationMode, _project.SecurityConfig.OperationMode);
@@ -509,7 +366,6 @@ public partial class ProjectSettingsView : ChromeWindow
         NumMaxAttempts.Value = _project.SecurityConfig.MaxLoginAttempts;
         NumLockout.Value = _project.SecurityConfig.LockoutDurationMin;
         ChkAutoLogout.IsChecked = _project.SecurityConfig.AutoLogoutEnabled;
-        ChkTamper.IsChecked = _project.SecurityConfig.EnableTamperDetection;
         TxtDefaultRoleId.Text = _project.SecurityConfig.DefaultRoleId ?? "";
 
         PopulateScreenCombo(CmbLockScreen, _project.SecurityConfig.LockScreenId);
@@ -557,8 +413,7 @@ public partial class ProjectSettingsView : ChromeWindow
     /// </summary>
     private void OnApplySizeToAllScreensClicked(object? sender, RoutedEventArgs e)
     {
-        var width = (int)NumScreenWidth.Value;
-        var height = (int)NumScreenHeight.Value;
+        var (width, height) = TargetResolution();
         if (width <= 0 || height <= 0) return;
 
         foreach (var screen in _project.Screens)
@@ -570,6 +425,34 @@ public partial class ProjectSettingsView : ChromeWindow
         _hasChanges = true;
         BtnApplySizeToAll.Content = AppLocalization.Service.Format(
             "project.settings.display.apply.size.done", _project.Screens.Count);
+    }
+
+    /// <summary>
+    /// 工程该用的屏幕分辨率：**有型号就是型号的分辨率**（kinseal = 800×480），
+    /// 没型号（历史工程 / 清单缺失）才回落到工程里已存的值。
+    /// <para>面板上不再给宽高输入框 —— 允许自由填会做出"工程 1920×1080、实机 800×480"的组态，
+    /// 板上只能裁切，而用户看不出哪里错了。</para>
+    /// </summary>
+    private (int Width, int Height) TargetResolution()
+    {
+        var target = GetSelectedHardwareTarget();
+        if (target != null)
+            return (target.Display.DefaultWidth, target.Display.DefaultHeight);
+
+        var cfg = _project.ScreenDefaultsConfig;
+        return (cfg.DefaultWidth, cfg.DefaultHeight);
+    }
+
+    /// <summary>把「分辨率由型号决定」这件事显示出来（型号换了要跟着变）。</summary>
+    private void UpdateResolutionText()
+    {
+        if (TxtTargetResolution == null) return;
+
+        var target = GetSelectedHardwareTarget();
+        var (w, h) = TargetResolution();
+        TxtTargetResolution.Text = target == null
+            ? AppLocalization.Service.Format(Lang.ProjectSettingsResolutionNoTarget, w, h)
+            : AppLocalization.Service.Format(Lang.ProjectSettingsResolutionByTarget, w, h, target.Metadata.Name);
     }
 
     // ──────────────────────────────────────────
@@ -591,10 +474,10 @@ public partial class ProjectSettingsView : ChromeWindow
         _project.HardwareTargetId = GetHardwareTargetId();
 
         // ── 显示设置
-        _project.ScreenDefaultsConfig.DefaultWidth = (int)(NumScreenWidth.Value);
-        _project.ScreenDefaultsConfig.DefaultHeight = (int)(NumScreenHeight.Value);
-        _project.ScreenDefaultsConfig.DefaultColorDepth = NormalizeColorDepth((string?)CmbColorDepth.SelectedItem);
-        _project.ScreenDefaultsConfig.DefaultOrientation = GetEnumValue(CmbOrientation, ScreenOrientation.Landscape);
+        // 尺寸不由用户填：型号决定面板分辨率（kinseal = 800×480）。没有型号才沿用工程里存的值。
+        var (w, h) = TargetResolution();
+        _project.ScreenDefaultsConfig.DefaultWidth = w;
+        _project.ScreenDefaultsConfig.DefaultHeight = h;
         _project.ScreenDefaultsConfig.DefaultAdaptiveMode = GetEnumValue(CmbAdaptiveMode, ScreenAdaptiveMode.Fit);
         _project.ScreenDefaultsConfig.DefaultBgColor = string.IsNullOrEmpty(TxtDefaultBgColor.Text) ? null : TxtDefaultBgColor.Text.Trim();
         _project.ScreenDefaultsConfig.DpiScale = (double)(NumDpiScale.Value);
@@ -605,37 +488,11 @@ public partial class ProjectSettingsView : ChromeWindow
         // 曾经的实现是无条件 foreach 覆盖，导致每次打开工程设置点确定都会静默重置
         // 用户逐屏手工调过的尺寸。
 
-        // ── 通讯设置
-        _project.VariableManager.DefaultScanIntervalMs = (int)(NumCommScanInterval.Value);
-        _project.VariableManager.DefaultTimeoutMs = (int)(NumCommTimeout.Value);
-        _project.VariableManager.MaxRetryCount = (int)(NumRetryCount.Value);
-        _project.VariableManager.RetryBackoffMs = (int)(NumRetryBackoff.Value);
-        _project.VariableManager.EnableWriteCoalescing = ChkWriteCoalescing.IsChecked ?? true;
-        _project.VariableManager.ConnectionRecoveryMode = GetEnumValue(CmbRecoveryMode, ConnectionRecoveryMode.AutoReconnect);
-
         // ── 运行时设置
-        _project.RuntimeConfig.ScanIntervalMs = (int)(NumRuntimeScan.Value);
-        _project.RuntimeConfig.LogLevel = GetEnumValue(CmbLogLevel, LogLevel.Warning);
-        _project.RuntimeConfig.HistoryStoragePath = string.IsNullOrEmpty(TxtHistoryPath.Text) ? null : TxtHistoryPath.Text.Trim();
-        _project.RuntimeConfig.WatchdogTimeoutMs = (int)(NumWatchdog.Value);
-        _project.RuntimeConfig.HeartbeatIntervalMs = (int)(NumHeartbeat.Value);
-        _project.RuntimeConfig.EnableCrashDump = ChkCrashDump.IsChecked ?? true;
-        _project.RuntimeConfig.CrashDumpSector = (uint)(NumCrashSector.Value);
-        _project.RuntimeConfig.MaxRuntimeTasks = (int)(NumMaxTasks.Value);
-        _project.RuntimeConfig.EnableHmiReboot = ChkEnableReboot.IsChecked ?? true;
         _project.RuntimeConfig.BootScreenId = ScreenComboToId(CmbBootScreen);
 
         // ── 导出设置
-        _project.ExportConfig.TargetLanguage = ((string)(CmbTargetLanguage.SelectedItem ?? "C")).ParseOrDefault(TargetLanguage.C);
-        _project.ExportConfig.GenerateBuildSystem = ((string)(CmbBuildSystem.SelectedItem ?? "CMake")).ParseOrDefault(BuildSystem.CMake);
         _project.ExportConfig.OutputDirectory = string.IsNullOrEmpty(TxtOutputDir.Text) ? "./export" : TxtOutputDir.Text.Trim();
-        _project.ExportConfig.CodeStyle = ((string)(CmbCodeStyle.SelectedItem ?? "Gnu99")).ParseOrDefault(CodeStyle.Gnu99);
-        _project.ExportConfig.ResourceNaming = ((string)(CmbNaming.SelectedItem ?? "SnakeCase")).ParseOrDefault(ResourceNaming.SnakeCase);
-        _project.ExportConfig.CodeGenOptimization = GetEnumValue(CmbOptimization, CodeGenOptimization.Size);
-        _project.ExportConfig.GenerateDebugSymbols = ChkDebugSymbols.IsChecked ?? false;
-        _project.ExportConfig.IncludeComments = ChkIncludeComments.IsChecked ?? true;
-        _project.ExportConfig.MergeResources = ChkMergeResources.IsChecked ?? true;
-        _project.ExportConfig.IncludeLgplDisclaimer = ChkLicense.IsChecked ?? true;
 
         // ── 安全设置
         _project.SecurityConfig.OperationMode = GetEnumValue(CmbOperationMode, OperationMode.Designer);
@@ -647,7 +504,6 @@ public partial class ProjectSettingsView : ChromeWindow
         _project.SecurityConfig.LockoutDurationMin = (int)(NumLockout.Value);
         _project.SecurityConfig.AutoLogoutEnabled = ChkAutoLogout.IsChecked ?? true;
         _project.SecurityConfig.LockScreenId = ScreenComboToId(CmbLockScreen);
-        _project.SecurityConfig.EnableTamperDetection = ChkTamper.IsChecked ?? false;
         _project.SecurityConfig.DefaultRoleId = string.IsNullOrEmpty(TxtDefaultRoleId.Text) ? "role-operator" : TxtDefaultRoleId.Text.Trim();
 
         SaveRuntimeUsers();
@@ -675,36 +531,6 @@ public partial class ProjectSettingsView : ChromeWindow
             if (item.Tag is T t && t.Equals(value)) return item;
         return cmb.Items.OfType<ComboBoxItem>().FirstOrDefault();
     }
-
-    /// <summary>
-    /// 把工程里存的色深字符串解析成下拉项。
-    /// <para>
-    /// 存的值不在枚举里（老工程手改过 JSON、或枚举成员被删除）时回退到第一项，
-    /// 而不是留 <c>SelectedItem = null</c> —— 后者会让下一次保存把无效值静默改写成默认值。
-    /// </para>
-    /// </summary>
-    private string ResolveColorDepthItem(string? stored)
-    {
-        var items = CmbColorDepth.Items.OfType<string>().ToArray();
-        if (items.Length == 0) return "";
-        return stored is not null && items.Contains(stored, StringComparer.Ordinal)
-            ? stored
-            : items[0];
-    }
-
-    /// <summary>
-    /// 把下拉选中的色深规范成 <c>Hmi.Hardware.Contracts.ColorDepth</c> 的成员名。
-    /// 非法值（含 null）回退到 <c>RGB565</c> —— 与 <c>ConfigDrivenTarget.ParseColorDepth</c> 同一兜底。
-    /// <para>
-    /// 这里必须带 <see cref="Enum.IsDefined{T}(T)"/>：<c>Enum.TryParse</c> 对数字串也返回 true
-    /// （例如 <c>"7"</c> 会变成一个未定义的枚举值），只靠 TryParse 会把 <c>"7"</c> 原样存进工程。
-    /// </para>
-    /// </summary>
-    private static string NormalizeColorDepth(string? selected) =>
-        Enum.TryParse<Hmi.Hardware.Contracts.ColorDepth>(selected, out var parsed)
-        && Enum.IsDefined(parsed)
-            ? parsed.ToString()
-            : nameof(Hmi.Hardware.Contracts.ColorDepth.RGB565);
 
     /// <summary>
     /// 通用：从 ComboBox 的 SelectedItem 中读取 Tag 作为枚举值。
@@ -736,37 +562,21 @@ public partial class ProjectSettingsView : ChromeWindow
         // 名字决定「板上工程 id 留空时」的推导结果 ⇒ 打字时就刷新提示
         TxtProjectName.TextChanged += (_, _) => ValidateBoardProjectId();
         AttachChangeHandler(TxtDefaultBgColor);
-        AttachChangeHandler(TxtHistoryPath);
         AttachChangeHandler(TxtOutputDir);
         AttachChangeHandler(TxtAuditPath);
         AttachChangeHandler(TxtDefaultRoleId);
         AttachChangeHandler(CmbLvglVersion);
         AttachChangeHandler(CmbHardwareTarget);
-        CmbHardwareTarget.SelectionChanged += (_, _) => ValidateHardwareTarget();
-        AttachChangeHandler(CmbColorDepth);
-        AttachChangeHandler(CmbOrientation);
+        CmbHardwareTarget.SelectionChanged += (_, _) =>
+        {
+            ValidateHardwareTarget();
+            // 换型号 ⇒ 分辨率跟着变（面板上那行只读文本必须与保存后的工程一致）
+            UpdateResolutionText();
+        };
         AttachChangeHandler(CmbAdaptiveMode);
-        AttachChangeHandler(CmbRecoveryMode);
-        AttachChangeHandler(CmbLogLevel);
-        AttachChangeHandler(CmbTargetLanguage);
-        AttachChangeHandler(CmbBuildSystem);
-        AttachChangeHandler(CmbCodeStyle);
-        AttachChangeHandler(CmbNaming);
-        AttachChangeHandler(CmbOptimization);
         AttachChangeHandler(CmbOperationMode);
         AttachChangeHandler(CmbBootScreen);
         AttachChangeHandler(CmbLockScreen);
-        AttachChangeHandler(NumScreenWidth);
-        AttachChangeHandler(NumScreenHeight);
-        AttachChangeHandler(NumCommScanInterval);
-        AttachChangeHandler(NumCommTimeout);
-        AttachChangeHandler(NumRetryCount);
-        AttachChangeHandler(NumRetryBackoff);
-        AttachChangeHandler(NumRuntimeScan);
-        AttachChangeHandler(NumWatchdog);
-        AttachChangeHandler(NumHeartbeat);
-        AttachChangeHandler(NumCrashSector);
-        AttachChangeHandler(NumMaxTasks);
         AttachChangeHandler(NumDpiScale);
         AttachChangeHandler(NumSessionTimeout);
         AttachChangeHandler(NumPwdMinLen);
@@ -774,16 +584,8 @@ public partial class ProjectSettingsView : ChromeWindow
         NumPwdMinLen.ValueChanged += (_, _) => UpdateRuntimeUserPasswordHint();
         AttachChangeHandler(NumMaxAttempts);
         AttachChangeHandler(NumLockout);
-        AttachChangeHandler(ChkWriteCoalescing);
-        AttachChangeHandler(ChkCrashDump);
-        AttachChangeHandler(ChkEnableReboot);
-        AttachChangeHandler(ChkDebugSymbols);
-        AttachChangeHandler(ChkIncludeComments);
-        AttachChangeHandler(ChkMergeResources);
-        AttachChangeHandler(ChkLicense);
         AttachChangeHandler(ChkAuditLog);
         AttachChangeHandler(ChkAutoLogout);
-        AttachChangeHandler(ChkTamper);
 
         // ── 运行时用户表：集合编辑，不走 AttachChangeHandler（那条路只标 _hasChanges，
         //    而这里每次编辑还要同步写回草稿 + 刷新列表/问题显示）
@@ -831,22 +633,6 @@ public partial class ProjectSettingsView : ChromeWindow
     private void AttachChangeHandler<T>(T ctl, EventHandler<RoutedEventArgs> h) where T : Control
     {
         // no-op stub for category list —— doesn't need change tracking
-    }
-
-    private void CmbScreenPreset_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_isUpdating) return;
-        if (CmbScreenPreset.SelectedItem is ComboBoxItem item && item.Tag is (int w, int h, _))
-        {
-            if (w > 0 && h > 0)
-            {
-                _isUpdating = true;
-                NumScreenWidth.Value = w;
-                NumScreenHeight.Value = h;
-                _isUpdating = false;
-                _hasChanges = true;
-            }
-        }
     }
 
     private void OnOkClicked(object? sender, RoutedEventArgs e)

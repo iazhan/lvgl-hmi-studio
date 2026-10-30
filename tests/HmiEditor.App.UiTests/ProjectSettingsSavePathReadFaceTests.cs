@@ -35,35 +35,9 @@ public class ProjectSettingsSavePathReadFaceTests
 
     private static readonly Spec[] Specs =
     {
-        // ── 屏幕默认值 ──
-        new("NumScreenWidth", "ScreenDefaultsConfig.DefaultWidth",
-            p => p.ScreenDefaultsConfig.DefaultWidth.ToString(CultureInfo.InvariantCulture), 1280, "1280"),
-        new("NumScreenHeight", "ScreenDefaultsConfig.DefaultHeight",
-            p => p.ScreenDefaultsConfig.DefaultHeight.ToString(CultureInfo.InvariantCulture), 720, "720"),
+        // ── 屏幕默认值（宽高由型号决定，面板上已无输入框）──
         new("NumDpiScale", "ScreenDefaultsConfig.DpiScale",
             p => p.ScreenDefaultsConfig.DpiScale.ToString(CultureInfo.InvariantCulture), 2, "2"),
-
-        // ── 通讯默认值（VariableManager）──
-        new("NumCommScanInterval", "VariableManager.DefaultScanIntervalMs",
-            p => p.VariableManager.DefaultScanIntervalMs.ToString(CultureInfo.InvariantCulture), 250, "250"),
-        new("NumCommTimeout", "VariableManager.DefaultTimeoutMs",
-            p => p.VariableManager.DefaultTimeoutMs.ToString(CultureInfo.InvariantCulture), 1200, "1200"),
-        new("NumRetryCount", "VariableManager.MaxRetryCount",
-            p => p.VariableManager.MaxRetryCount.ToString(CultureInfo.InvariantCulture), 7, "7"),
-        new("NumRetryBackoff", "VariableManager.RetryBackoffMs",
-            p => p.VariableManager.RetryBackoffMs.ToString(CultureInfo.InvariantCulture), 2500, "2500"),
-
-        // ── 运行期（RuntimeConfig）──
-        new("NumRuntimeScan", "RuntimeConfig.ScanIntervalMs",
-            p => p.RuntimeConfig.ScanIntervalMs.ToString(CultureInfo.InvariantCulture), 300, "300"),
-        new("NumWatchdog", "RuntimeConfig.WatchdogTimeoutMs",
-            p => p.RuntimeConfig.WatchdogTimeoutMs.ToString(CultureInfo.InvariantCulture), 8000, "8000"),
-        new("NumHeartbeat", "RuntimeConfig.HeartbeatIntervalMs",
-            p => p.RuntimeConfig.HeartbeatIntervalMs.ToString(CultureInfo.InvariantCulture), 2000, "2000"),
-        new("NumCrashSector", "RuntimeConfig.CrashDumpSector",
-            p => p.RuntimeConfig.CrashDumpSector.ToString(CultureInfo.InvariantCulture), 5, "5"),
-        new("NumMaxTasks", "RuntimeConfig.MaxRuntimeTasks",
-            p => p.RuntimeConfig.MaxRuntimeTasks.ToString(CultureInfo.InvariantCulture), 64, "64"),
 
         // ── 安全（SecurityConfig）──
         new("NumSessionTimeout", "SecurityConfig.SessionTimeoutMin",
@@ -89,7 +63,7 @@ public class ProjectSettingsSavePathReadFaceTests
             UiTestHost.Pump(5);
             try
             {
-                // 前提自检①：15 个框回填的都是**模型里的**值（结构面已经证过"有人读"，这里证"回填对"）
+                // 前提自检①：4 个框回填的都是**模型里的**值（结构面已经证过"有人读"，这里证"回填对"）
                 foreach (var spec in Specs)
                 {
                     var current = ControlWiringFace.NumberValue(view, spec.Name);
@@ -108,12 +82,12 @@ public class ProjectSettingsSavePathReadFaceTests
                     ControlWiringFace.WriteNumber(view, spec.Name, spec.Value, pump: 1);
                 }
 
-                // 保存前不落盘：这 15 个框**没有**接线，值只活在控件里
+                // 保存前不落盘：这 4 个框**没有**接线，值只活在控件里
                 foreach (var spec in Specs)
                     Assert.True(!string.Equals(spec.Expected, spec.Read(project), StringComparison.Ordinal),
                         $"{spec.Name} 在点「应用」之前就落进模型了 —— 说明它其实有接线（该归接线面）");
 
-                // ── 点一次「应用」：`SaveToProject()` 一次性读走全部 15 个框 ──
+                // ── 点一次「应用」：`SaveToProject()` 一次性读走全部 4 个框 ──
                 ControlWiringFace.Find<Button>(view, "BtnApply")
                     .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 UiTestHost.Pump(2);
@@ -136,20 +110,20 @@ public class ProjectSettingsSavePathReadFaceTests
     }
 
     /// <summary>
-    /// **表内自检**：15 条手势的值**互不相同**、字段路径**互不相同** ——
+    /// **表内自检**：4 条手势的值**互不相同**、字段路径**互不相同** ——
     /// 前者保证"一格的读数能唯一归因到某个框"，后者保证表本身没抄重（产品侧抄错由上面那条判据抓）。
     /// </summary>
     [Fact]
     public void Specs_AreDistinct()
     {
-        Assert.Equal(15, Specs.Length);
+        Assert.Equal(4, Specs.Length);
         Assert.Equal(Specs.Length, Specs.Select(s => s.Value).Distinct().Count());
         Assert.Equal(Specs.Length, Specs.Select(s => s.Field).Distinct().Count());
         Assert.Equal(Specs.Length, Specs.Select(s => s.Name).Distinct().Count());
     }
 
     /// <summary>
-    /// **这 15 个框确实都"没接线"**（否则该归接线面，本面就重复了）：
+    /// **这 4 个框确实都"没接线"**（否则该归接线面，本面就重复了）：
     /// 与 `ProjectSettingsNumberBoxWiringTests` 的 `withoutWiring` 登记表**同一份事实**，
     /// 这里用扫描再核一遍（表与代码哪边漂了都红）。
     /// </summary>

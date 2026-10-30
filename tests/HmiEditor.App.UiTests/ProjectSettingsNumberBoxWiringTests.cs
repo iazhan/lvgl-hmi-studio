@@ -23,7 +23,7 @@ namespace HmiEditor.App.UiTests;
 /// `if (_hasChanges) ApplyInternal();`，而它写进工程的那一格正是 `PasswordMinLength`）。</item>
 /// </list>
 ///
-/// <para><b>「没（直接）接线」的 15 个数字框</b>（DPI / 通讯 / 运行期那些）走
+/// <para><b>「没（直接）接线」的 4 个数字框</b>（DPI / 会话与登录策略）走
 /// `SaveToProject()` 一次性读取 —— 不是缺口，但要显式登记（见 <c>WithoutWiring</c>）。</para>
 /// </summary>
 // DataRootSandbox 会改进程级数据根，必须与大队串行（见 LocalizationRefreshUiTests 的集合定义）
@@ -43,23 +43,13 @@ public class ProjectSettingsNumberBoxWiringTests
     private static readonly string[] AnonymousWired = { "nud", "fanumber" };
 
     /// <summary>
-    /// **「没有（直接）接线」登记表**：这 15 个框由 `SaveToProject()` 在点「确定/应用」时
+    /// **「没有（直接）接线」登记表**：这 4 个框由 `SaveToProject()` 在点「确定/应用」时
     /// 一次性读取 —— 没有直接的 `ValueChanged` 接线，不是缺口。
+    /// （2.31.0 起通讯/运行期那 9 个框、以及屏幕宽高两个框已随控件下架退场 —— 尺寸由型号决定。）
     /// </summary>
     private static readonly Dictionary<string, string> WithoutWiring = new(StringComparer.Ordinal)
     {
-        ["NumScreenWidth"] = "屏幕尺寸：由 `SaveToProject()` 一次性读取（点确定/应用），没有直接 ValueChanged 接线",
-        ["NumScreenHeight"] = "同上（屏幕尺寸）",
         ["NumDpiScale"] = "同上（DPI 缩放）",
-        ["NumCommScanInterval"] = "同上（通讯扫描间隔）",
-        ["NumCommTimeout"] = "同上（通讯超时）",
-        ["NumRetryCount"] = "同上（重试次数）",
-        ["NumRetryBackoff"] = "同上（重试退避）",
-        ["NumRuntimeScan"] = "同上（运行期扫描间隔）",
-        ["NumWatchdog"] = "同上（看门狗超时）",
-        ["NumHeartbeat"] = "同上（心跳间隔）",
-        ["NumCrashSector"] = "同上（崩溃转储扇区）",
-        ["NumMaxTasks"] = "同上（最大任务数）",
         ["NumSessionTimeout"] = "同上（会话超时）",
         ["NumMaxAttempts"] = "同上（最大登录尝试）",
         ["NumLockout"] = "同上（锁定时长）",

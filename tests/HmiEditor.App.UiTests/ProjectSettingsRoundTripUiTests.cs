@@ -29,7 +29,7 @@ namespace HmiEditor.App.UiTests;
 /// </summary>
 public class ProjectSettingsRoundTripUiTests
 {
-    private const int SecurityCategoryIndex = 5;
+    private const int SecurityCategoryIndex = 4;   // 通讯设置分类已下架
 
     // ────────────────────────── 夹具 ──────────────────────────
 
@@ -183,19 +183,19 @@ public class ProjectSettingsRoundTripUiTests
 
         WithPanel(project, view =>
         {
-            view.FindControl<FANumberBox>("NumCommTimeout")!.Value = 7777;
+            view.FindControl<FANumberBox>("NumSessionTimeout")!.Value = 7;
             Click(view, "BtnApply");
         });
 
-        Assert.Equal(7777, project.VariableManager.DefaultTimeoutMs);
+        Assert.Equal(7, project.SecurityConfig.SessionTimeoutMin);
 
         var changed = LineDiff(before, ProjectSerializer.Serialize(project));
         var lines = changed.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         Assert.True(lines.Length == 2,
-            "除 DefaultTimeoutMs 外还有字段发生变化（期望恰好一删一增）：\n" + changed);
-        Assert.Contains("defaultTimeoutMs", changed);
-        Assert.Contains("7777", changed);
+            "除 SessionTimeoutMin 外还有字段发生变化（期望恰好一删一增）：\n" + changed);
+        Assert.Contains("sessionTimeoutMin", changed);
+        Assert.Contains("7", changed);
     }
 
     /// <summary>
@@ -210,9 +210,6 @@ public class ProjectSettingsRoundTripUiTests
         WithPanel(project, view =>
         {
             view.FindControl<TextBox>("TxtAuthor")!.Text = "改过的作者";
-            view.FindControl<FANumberBox>("NumScreenWidth")!.Value = 640;
-            view.FindControl<FANumberBox>("NumRetryBackoff")!.Value = 1250;
-            view.FindControl<FANumberBox>("NumMaxTasks")!.Value = 3;
             view.FindControl<TextBox>("TxtOutputDir")!.Text = "./changed";
             view.FindControl<FANumberBox>("NumSessionTimeout")!.Value = 7;
 
@@ -220,9 +217,6 @@ public class ProjectSettingsRoundTripUiTests
         });
 
         Assert.Equal("改过的作者", project.Author);
-        Assert.Equal(640, project.ScreenDefaultsConfig.DefaultWidth);
-        Assert.Equal(1250, project.VariableManager.RetryBackoffMs);
-        Assert.Equal(3, project.RuntimeConfig.MaxRuntimeTasks);
         Assert.Equal("./changed", project.ExportConfig.OutputDirectory);
         Assert.Equal(7, project.SecurityConfig.SessionTimeoutMin);
     }
@@ -239,16 +233,13 @@ public class ProjectSettingsRoundTripUiTests
         var project = RichProject();
         var mainBefore = (project.Screens[0].Width, project.Screens[0].Height);
         var spareBefore = (project.Screens[1].Width, project.Screens[1].Height);
+        var defaultsBefore = (project.ScreenDefaultsConfig.DefaultWidth, project.ScreenDefaultsConfig.DefaultHeight);
 
-        WithPanel(project, view =>
-        {
-            view.FindControl<FANumberBox>("NumScreenWidth")!.Value = 480;
-            view.FindControl<FANumberBox>("NumScreenHeight")!.Value = 320;
-            Click(view, "BtnApply");
-        });
+        WithPanel(project, view => Click(view, "BtnApply"));
 
-        Assert.Equal(480, project.ScreenDefaultsConfig.DefaultWidth);
-        Assert.Equal(320, project.ScreenDefaultsConfig.DefaultHeight);
+        // 夹具没有硬件型号 ⇒ 默认尺寸沿用工程里存的值（有型号时这里会落成型号分辨率）
+        Assert.Equal(defaultsBefore,
+            (project.ScreenDefaultsConfig.DefaultWidth, project.ScreenDefaultsConfig.DefaultHeight));
         // 已有屏幕保持原样
         Assert.Equal(mainBefore, (project.Screens[0].Width, project.Screens[0].Height));
         Assert.Equal(spareBefore, (project.Screens[1].Width, project.Screens[1].Height));
@@ -266,13 +257,11 @@ public class ProjectSettingsRoundTripUiTests
 
         WithPanel(project, view =>
         {
-            view.FindControl<TextBox>("TxtHistoryPath")!.Text = "";
             view.FindControl<TextBox>("TxtAuditPath")!.Text = "";
             view.FindControl<TextBox>("TxtDefaultBgColor")!.Text = "";
             Click(view, "BtnApply");
         });
 
-        Assert.Null(project.RuntimeConfig.HistoryStoragePath);
         Assert.Null(project.SecurityConfig.AuditLogStoragePath);
         Assert.Null(project.ScreenDefaultsConfig.DefaultBgColor);
     }
@@ -417,31 +406,4 @@ public class ProjectSettingsRoundTripUiTests
             Click(view, "BtnApply");
         });
 
-    /// <summary>
-    /// **表外的色深值不得留下"空白下拉 + 仍然落盘一个值"**（登记表 §4 第 19 项）。
-    ///
-    /// <para>`ResolveColorDepthItem` 的文档写明了这个理由（回退到第一项而不是留 `SelectedItem = null`
-    /// —— 后者会让下一次保存把无效值静默改写成默认值），但它此前**从未被调用**：
-    /// 装载走的是裸赋值，于是下拉显示空白、保存却仍写入一个色深，用户无从知道最终落到哪个值。
-    /// 本用例把该 helper 的意图钉住：界面必须显示一个**具体**的候选，落盘的必须是枚举内成员。</para>
-    /// </summary>
-    [Fact]
-    public void InvalidStoredColorDepth_ShowsConcreteSelection_AndSavesValidEnumMember()
-    {
-        var project = RichProject();
-        project.ScreenDefaultsConfig.DefaultColorDepth = "NoSuchDepth";
-
-        WithPanel(project, view =>
-        {
-            var selected = view.FindControl<ComboBox>("CmbColorDepth")!.SelectedItem as string;
-            Assert.False(string.IsNullOrEmpty(selected),
-                "无效色深时下拉显示空白 —— 界面在撒谎（保存仍会写一个值）");
-
-            Click(view, "BtnApply");
-        });
-
-        Assert.NotEqual("NoSuchDepth", project.ScreenDefaultsConfig.DefaultColorDepth);
-        Assert.Contains(project.ScreenDefaultsConfig.DefaultColorDepth,
-            Enum.GetNames<Hmi.Hardware.Contracts.ColorDepth>());
-    }
 }

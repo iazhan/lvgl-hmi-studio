@@ -82,7 +82,8 @@ public class ConfigFieldInventoryTests
     public void Inventory_IsNotEmptyEnoughToBeMeaningful()
     {
         // 扫描面自检：清单推导/登记若失效，下面那些"逐条断言"会变成空跑。
-        Assert.True(ConfigFieldInventory.NotWired.Count >= 25,
+        // 2.31.0 起只剩应用级 14 条（工程级那 16 条随控件下架一起退场）。
+        Assert.True(ConfigFieldInventory.NotWired.Count >= 14,
             $"受管清单只有 {ConfigFieldInventory.NotWired.Count} 条，可能被清空了");
     }
 
@@ -137,7 +138,8 @@ public class ConfigFieldInventoryTests
         var sources = AppSourceScanner.ScanAppSources();
 
         Check(ConfigFieldInventory.AppSurface, "Views/SettingsDialog.axaml.cs", "Views/SettingsDialog.axaml");
-        Check(ConfigFieldInventory.ProjectSurface, "Views/ProjectSettingsView.axaml.cs", "Views/ProjectSettingsView.axaml");
+        // 工程设置那一族标注随 2.31.0 的清理一起退场（控件下架，不再有"灰显占位"）——
+        // 只剩应用级这一面要守住清单 ↔ 标注的对应关系。
 
         void Check(string surface, string codePath, string xamlPath)
         {
@@ -201,7 +203,7 @@ public class ConfigFieldInventoryTests
 
         var entries = ConfigFieldInventory.NotWired;
         // 自检：清单被清空或反射不到时，下面的循环会变成空跑恒绿
-        Assert.True(entries.Count >= 25, $"清单只有 {entries.Count} 条，断言可能已经空跑");
+        Assert.True(entries.Count >= 14, $"清单只有 {entries.Count} 条，断言可能已经空跑");
 
         var missing = new List<string>();
         foreach (var entry in entries)
@@ -231,7 +233,7 @@ public class ConfigFieldInventoryTests
         var sources = AppSourceScanner.ScanAppSources();
         var callSites = 0;
 
-        foreach (var codePath in new[] { "Views/SettingsDialog.axaml.cs", "Views/ProjectSettingsView.axaml.cs" })
+        foreach (var codePath in new[] { "Views/SettingsDialog.axaml.cs" })
         {
             var code = sources.Single(s => s.Relative == codePath).Text;
             foreach (Match m in Regex.Matches(code, @"NotYetEffective\.Mark\(([^;]*?)\);"))
@@ -241,8 +243,8 @@ public class ConfigFieldInventoryTests
             }
         }
 
-        // 两个面板各一处；少了说明扫描失效，多了说明有新调用点没被这条判据覆盖
-        Assert.True(callSites >= 2, $"只扫到 {callSites} 处 NotYetEffective.Mark 调用");
+        // 应用设置面板一处；少了说明扫描失效，多了说明有新调用点没被这条判据覆盖
+        Assert.True(callSites >= 1, $"只扫到 {callSites} 处 NotYetEffective.Mark 调用");
     }
 
     [Fact]

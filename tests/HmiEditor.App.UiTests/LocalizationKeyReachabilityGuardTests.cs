@@ -342,7 +342,9 @@ public class LocalizationKeyReachabilityGuardTests
         ("M1-Lang 常量", 600),
         ("M2-axaml res:Loc", 900),
         ("M3-插件族派生", 25),   // 组成：驱动名 4 + 驱动描述 4 + 配置字段 16 + 硬件校验码 2
-        ("M4-cfg.note 清单", 20),
+        // 14 = 清单现有条目数（2.31.0 起工程设置那 16 条随控件下架一起退场，
+        // 面从 30 掉到 14；下界跟着面走，否则它守的是已经不存在的清单）。
+        ("M4-cfg.note 清单", 14),
         // 14 = LuaSyntaxValidator 的 9 个 `*Code` 常量（8 条语法码前缀族 + 校验不可用）
         //      + LuaDialect 的 2 个 + Core 源码里的 3 个 `Code = "…"` 字面量
         //      （EMPTY_NAME / EMPTY_CODE / NO_FUNCTION）。

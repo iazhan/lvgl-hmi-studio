@@ -74,7 +74,7 @@ public class ProjectSettingsTextBoxWiringTests
     };
 
     /// <summary>
-    /// **「没有接线」登记表**：8 个框的 `TextChanged` 是**辅助函数注入**的
+    /// **「没有接线」登记表**：7 个框的 `TextChanged` 是**辅助函数注入**的
     /// （`AttachChangeHandler(TxtAuthor)` 那条线，面 B），由 `TxtAuthor` 那条手势**代表见证**
     /// （见 <see cref="AuthorEdit_MarksDirty_AndOkPersistsIt"/>）——本面不为每个框各写一条手势。
     /// `TxtRuntimeUserPassword` 是**真的**没有接线（由「设置口令」按钮读取）。
@@ -87,7 +87,6 @@ public class ProjectSettingsTextBoxWiringTests
         ["TxtDescription"] = "同上（工程描述）",
         ["TxtOutputDir"] = "同上（导出目录，另有目录选择器按钮）",
         ["TxtAuditPath"] = "同上（审计路径）",
-        ["TxtHistoryPath"] = "同上（历史存储路径）",
         ["TxtDefaultBgColor"] = "同上（默认画布底色）",
         ["TxtDefaultRoleId"] = "同上（默认角色 Id）",
         ["TxtRuntimeUserPassword"] = "口令框：由「设置口令」按钮读取（`BtnSetRuntimeUserPassword`），**真的**没有 TextChanged 接线",
@@ -260,7 +259,7 @@ public class ProjectSettingsTextBoxWiringTests
 
     /// <summary>
     /// **单文件双向差集**：两个运行时用户框有**直接**接线与驱动条目；
-    /// 其余 10 个（含辅助函数注入的 9 个 ＋ 真没接线的口令框）在登记表里；
+    /// 其余 9 个（含辅助函数注入的 8 个 ＋ 真没接线的口令框）在登记表里；
     /// 辅助函数注入的那条线（面 B 的 `txt`）单独认账。
     /// </summary>
     [Fact]
