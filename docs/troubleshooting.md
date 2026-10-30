@@ -95,6 +95,23 @@
 - **处置**：确认文件来自本编辑器的「保存项目」；跨版本工程用创建它的编辑器打开。
 - **依据**：`src/HmiEditor.Core/Serialization/HmiPackageService.cs` 的 `Unpack`。
 
+### 2.6 绑定变量的那一刻画布变成一片空白
+
+- **原因**：设计画布的真机帧来自子进程宿主，而**变量表（`tags.json`）只在会话启动时推一次**，
+  后续改属性走的是"推一页页面 JSON"的通道（`J` 命令），带不了 tag 定义。页面里的绑定按
+  **tag 序号**寻址，序号来自导出时变量表的顺序 —— 会话启动后新加的变量在宿主里根本不存在，
+  建页期判"绑定的 tag N 不存在"；而建页是**先拆后建**，于是屏幕上什么都不剩。
+- **判据**：宿主 stderr 里这一对连着的行 ——
+  `page: 用推送的 JSON 重建 <页> 失败：控件 <id>: 绑定的 tag N 不存在`，紧跟着
+  `preview-host: J epoch=.. len=.. rc=-1`。编辑器日志（前缀 `[design]`）会抄一段 `host says:`。
+- **处置**：变量表一变（新增/删除/改名/换序）编辑器就整会话重启宿主，不需要人再点两次
+  「设计画布用真机渲染」；宿主侧对这类被拒的页面会回落到工程快照，画面不会停在空白。
+- **依据**：`src/HmiEditor.App/Services/DesignHostPreview.cs` 的 `VariableSignature` /
+  `RestartHostAsync`，运行时的 `chenge-runtime/src/ui/ui_page.c`（`page_mgr_reload_json`）
+  与 `src/preview_host.c` 的 `J` 分支。
+- **日志在哪**：Linux 终端直接可见；Windows 上编辑器没有控制台，全部落盘到
+  `%APPDATA%\chenge-hmi\logs\app-yyyyMMdd.log`（`[design]` 是编辑器，`[host]` 是宿主 stderr）。
+
 ## 3. 设备侧生效
 
 ### 3.1 拷了工程但板子还是老界面

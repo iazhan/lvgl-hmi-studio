@@ -319,8 +319,8 @@ public partial class ChengeLivePreviewView : ChromeWindow
         if (fps < 25 && nowMs - _fpsWarnedMs >= 5000)
         {
             _fpsWarnedMs = nowMs;
-            Console.WriteLine($"[live] 帧率偏低 paint={fps:0.0}/s ver={ver:0.0}/s " +
-                              $"pump={pump:0.0}/s ui={uiMs:0.0}ms backend={_backend}");
+            EditorLog.Line($"[live] 帧率偏低 paint={fps:0.0}/s ver={ver:0.0}/s " +
+                           $"pump={pump:0.0}/s ui={uiMs:0.0}ms backend={_backend}");
         }
 
         _renderCount = 0;

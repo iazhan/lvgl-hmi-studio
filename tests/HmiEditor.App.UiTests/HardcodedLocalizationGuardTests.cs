@@ -24,7 +24,10 @@ namespace HmiEditor.App.UiTests;
 ///
 /// <para><b>排除项与理由（逐条可审）</b>：</para>
 /// <list type="bullet">
-/// <item><c>Debug.WriteLine</c> / <c>Console.</c> / <c>Trace.</c> / <c>DiagnosticLog</c>：调试输出，用户看不到。
+/// <item><c>Debug.WriteLine</c> / <c>Console.</c> / <c>Trace.</c> / <c>DiagnosticLog</c> / <c>EditorLog</c>：调试输出，用户看不到。
+/// <c>EditorLog</c> 与它们同类：写终端 + 文件日志（<c>Services/EditorLog.cs</c>），不进任何界面控件。
+/// 设计画布/宿主的诊断用它 —— 在 Windows 上 Console 不可见，所以它必须落盘，
+/// 但落盘不等于"用户可见文案"，翻译这些行只会让日志搜不到。</item>
 /// <b><c>DiagnosticLog</c> 是实测补上的</b>：<c>PreviewRuntimeService</c> 的诊断出口默认写
 /// <c>Debug.WriteLine</c>，而 <c>MainWindow</c> **不注入**它 ⇒ 应用里它只进 Debug；
 /// 但 sink 的定义在**属性初始化器**里（不在调用点那一行），按行判定看不见它，
@@ -102,7 +105,7 @@ public class HardcodedLocalizationGuardTests
     private static readonly Regex LocalizationCall = new(@"AppLocalization|LocService", RegexOptions.Compiled);
 
     private static readonly Regex ExcludedStatement = new(
-        @"Debug\.WriteLine|Console\.|Trace\.|DiagnosticLog|Regex|throw new|Exception\(|AppLocalization|LocService",
+        @"Debug\.WriteLine|Console\.|Trace\.|DiagnosticLog|EditorLog|Regex|throw new|Exception\(|AppLocalization|LocService",
         RegexOptions.Compiled);
 
     // ────────────────────────── 扫描 ──────────────────────────

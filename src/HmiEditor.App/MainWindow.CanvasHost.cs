@@ -98,7 +98,7 @@ public partial class MainWindow
             if (_designHost != null)
             {
                 if (screenId != _designHostScreenId)
-                    Console.WriteLine($"[design] 切屏 {_designHostScreenId} → {screenId}：重启宿主");
+                    EditorLog.Line($"[design] 切屏 {_designHostScreenId} → {screenId}：重启宿主");
                 _designHost.Dispose();          /* Dispose 内部先 Stop：帧源回退再释放位图 */
                 _designHost = null;
             }
@@ -114,8 +114,8 @@ public partial class MainWindow
             {
                 var why = host.LastError;
                 var tail = host.HostLogTail;
-                Console.WriteLine($"[design] host start failed (attempt {attempt}) screen={screenId}: " +
-                                  $"{why} | hostLog={tail}");
+                EditorLog.Line($"[design] host start failed (attempt {attempt}) screen={screenId}: " +
+                               $"{why} | hostLog={tail}");
                 host.Dispose();
                 failed = true;
                 StatusText.Text = why;
@@ -124,8 +124,8 @@ public partial class MainWindow
 
             _designHost = host;
             _designHostScreenId = screenId;
-            Console.WriteLine($"[design] host ready screen={screenId} " +
-                              $"epoch={_designHost.GetHashCode():x8} firstFrame={host.HasFirstFrame}");
+            EditorLog.Line($"[design] host ready screen={screenId} " +
+                           $"epoch={_designHost.GetHashCode():x8} firstFrame={host.HasFirstFrame}");
             StatusText.Text = AppLocalization.Service["canvas.host.on"];
         }
         catch (Exception ex)

@@ -67,8 +67,17 @@ public sealed class DesignHostPreview : IDisposable
     private AssetLibrary? _assets;
     private string? _projectDirectory;
     private ChengeExportOptions? _options;
+    private SettingsService? _settings;
     private string _pageId = "";
     private string _screenId = "";
+
+    /// <summary>
+    /// 启动那一刻的变量表指纹。宿主里的 <c>tags.json</c> 只在 <c>OpenWithBlob</c> 时
+    /// 推过一次（<c>tagdb_init(tags_count)</c>），后续设计画布只推页面 JSON（命令 <c>J</c>），
+    /// 没有更新变量表的通路 —— 变量表一变，页面里的 <c>bind.tag</c> 在宿主里就越界，
+    /// 整页建页失败。见 <see cref="ReloadWithFreshJsonAsync"/>。
+    /// </summary>
+    private string _variableSignature = "";
 
     public bool IsRunning => _session?.IsOpen == true;
 
@@ -80,8 +89,13 @@ public sealed class DesignHostPreview : IDisposable
     {
         Stop();
         _canvas = canvas;
+        _settings = settings;
         _lastVersion = -1;
         _epoch = 0;
+        // 新会话的页面快照就是"当前这一份"，上一会话的记账作废 —— 否则重启后第一次
+        // 内容相同的 J 会被 "J skip" 挡掉（宿主里跑的是旧工程）。
+        _lastPayload = null;
+        _lastWarnText = null;
 
         var runtime = ChengeExportService.LocateRuntime(settings);
         if (runtime == null || !ChengeProcessSession.TryLocate(runtime.RuntimeDir, out var hostExe))
@@ -113,6 +127,8 @@ public sealed class DesignHostPreview : IDisposable
         _assets = assets;
         _projectDirectory = projectDirectory;
         _options = options;
+        // 这一份 tags.json 已经推给宿主了，指纹留到下次重载时对比
+        _variableSignature = VariableSignature(project);
         // 当前屏导出成了哪个页 id：只有导出器知道（PageIds），不能按字母序猜 ——
         // 猜错的话切屏后推给宿主的是别的页 JSON，画面会是另一页的内容。
         _pageId = options.StartPageId ?? "";
@@ -126,10 +142,10 @@ public sealed class DesignHostPreview : IDisposable
             if (!string.IsNullOrEmpty(key)) _pageId = Path.GetFileNameWithoutExtension(key);
         }
 
-        Console.WriteLine($"[design] start screen={currentScreenId ?? "<null>"} " +
-                          $"startScreenId={options.StartScreenId ?? "<null>"} " +
-                          $"pageIds={string.Join("|", export.PageIds.Select(kv => kv.Key + "=" + kv.Value))} " +
-                          $"page={_pageId}");
+        EditorLog.Line($"[design] start screen={currentScreenId ?? "<null>"} " +
+                       $"startScreenId={options.StartScreenId ?? "<null>"} " +
+                       $"pageIds={string.Join("|", export.PageIds.Select(kv => kv.Key + "=" + kv.Value))} " +
+                       $"page={_pageId} tags={project.VariableManager.Variables.Count}");
 
         var proc = new ChengeProcessSession(hostExe, dataDir, designMode: true);
         if (!await Task.Run(() => proc.OpenWithBlob(blobs)))
@@ -250,6 +266,20 @@ public sealed class DesignHostPreview : IDisposable
             var options = _options;
             if (project == null || options == null || _session == null) return;
 
+            // 变量表变了（新增/删除/改名/换序）只能整会话重启：宿主里的 tags.json 是
+            // 启动那一刻的快照，tagdb 按它分配；页面 JSON 里的 bind.tag 一旦指向新的
+            // 变量 id，建页期就判"绑定的 tag N 不存在"，而建页是"先拆后建" ——
+            // 结果是画布一片空白，只有重启宿主才恢复。这里把"要靠人点两次真机渲染开关"
+            // 换成一句日志 + 一次自动重启。
+            var variableSignature = VariableSignature(project);
+            if (!string.Equals(variableSignature, _variableSignature, StringComparison.Ordinal))
+            {
+                EditorLog.Line($"[design] 变量表变了（宿主那份 tags.json 已过期）→ 重启宿主 " +
+                               $"tags={project.VariableManager.Variables.Count}");
+                await RestartHostAsync();
+                return;
+            }
+
             // 只导出当前页：整包导出会把所有页面 BuildPage 一遍、还要转换图片资产，
             // 而重建单页只需要这一页的 JSON（资产在会话启动时已推给宿过）。
             var screenId = _screenId;
@@ -270,14 +300,14 @@ public sealed class DesignHostPreview : IDisposable
                 // 走的那份工程里压根不是画布上这个屏。
                 var canvasScreen = _canvas?.Screen;
                 var same = ReferenceEquals(canvasScreen, project.Screens.FirstOrDefault(s => s.Id == screenId));
-                Console.WriteLine($"[design] empty page: project={nBefore}->{nAfter} " +
-                                  $"canvas={canvasScreen?.Controls.Count.ToString() ?? "null"} " +
-                                  $"sameInstance={same} payload={json.Length}B");
+                EditorLog.Line($"[design] empty page: project={nBefore}->{nAfter} " +
+                               $"canvas={canvasScreen?.Controls.Count.ToString() ?? "null"} " +
+                               $"sameInstance={same} payload={json.Length}B");
             }
             if (json == null || _session == null)
             {
                 LastError = ChengeExportService.DescribeIssues(export);
-                Console.WriteLine($"[design] 单页导出失败：{LastError}");
+                EditorLog.Line($"[design] 单页导出失败：{LastError}");
                 return;
             }
             var bytes = json;
@@ -293,13 +323,13 @@ public sealed class DesignHostPreview : IDisposable
             // 一串递增的 bytes= 数字，看不出是谁在动。
             if (_lastPayload != null && _lastPayload.AsSpan().SequenceEqual(bytes))
             {
-                Console.WriteLine($"[design] J skip（内容与上一份相同，{bytes.Length} 字节）");
+                EditorLog.Line($"[design] J skip（内容与上一份相同，{bytes.Length} 字节）");
                 return;
             }
             if (_lastPayload != null)
             {
                 var at = FirstDiff(_lastPayload, bytes);
-                Console.WriteLine($"[design] J 内容变化 {_lastPayload.Length}→{bytes.Length} 字节 @{at}：{Snippet(bytes, at)}");
+                EditorLog.Line($"[design] J 内容变化 {_lastPayload.Length}→{bytes.Length} 字节 @{at}：{Snippet(bytes, at)}");
             }
             _lastPayload = bytes;
 
@@ -328,24 +358,24 @@ public sealed class DesignHostPreview : IDisposable
 
             _epoch++;
             _session.ReloadPageJson(_epoch, bytes);
-            Console.WriteLine($"[design] J epoch={_epoch} bytes={bytes.Length} stamp={stamp}");
+            EditorLog.Line($"[design] J epoch={_epoch} bytes={bytes.Length} stamp={stamp}");
 
-            // 宿主对这份 JSON 的裁决在它自己的 stdout 里（"工程加载失败：…"）。等一小会儿
-            // 抄一行过来：没有这行，"画布空白"就只能是猜。
+            // 宿主对这份 JSON 的裁决在它自己的 stderr 里（"用推送的 JSON 重建 home 失败：
+            // 控件 t1: 绑定的 tag 1 不存在" 紧跟着 "J epoch=.. rc=-1"）。抄**最后几行**：
+            // 只抄一行抄到的是 rc，理由在上一行 —— 而理由才是能修东西的那半句。
             await Task.Delay(120);
-            var verdict = _session?.LogTail ?? "";
-            if (verdict.Length > 0 && (_hostSay
-                                       || verdict.Contains("rc=-", StringComparison.Ordinal)
-                                       || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase)))
-                Console.WriteLine($"[design] host says: {verdict}");
+            var verdict = HostTailLines(6);
+            var rejected = verdict.Contains("rc=-", StringComparison.Ordinal)
+                           || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase);
+            if (verdict.Length > 0 && (_hostSay || rejected))
+                EditorLog.Line($"[design] host says: {verdict}");
 
             // 宿主拒了这份 JSON 就把"已发送"的记账作废：否则内容相同的下一次刷新会被
             // "J skip" 挡掉，页面永远停在坏状态（现象是白屏且怎么动都不恢复）。
-            if (verdict.Contains("rc=-", StringComparison.Ordinal)
-                || verdict.Contains("reject", StringComparison.OrdinalIgnoreCase))
+            if (rejected)
             {
                 _lastPayload = null;
-                Console.WriteLine("[design] 宿主拒了这次页面快照，已作废缓存（下次强制重发）");
+                EditorLog.Line("[design] 宿主拒了这次页面快照，已作废缓存（下次强制重发）");
             }
         }
         catch (Exception ex)
@@ -440,7 +470,7 @@ public sealed class DesignHostPreview : IDisposable
         // 把时间戳拨到已过阈值，下一拍就重建，拖动跟手只差这一轮（几十毫秒）。
         _lastChangeMs = Environment.TickCount64 - 400;
         _needsReload = true;
-        Console.WriteLine("[design] 结构变化 → 立即整页重建");
+        EditorLog.Line("[design] 结构变化 → 立即整页重建");
     }
 
     /// <summary>让宿主重绘一帧（不推进时间）。属性补丁接上之前，改完属性用它。</summary>
@@ -452,6 +482,49 @@ public sealed class DesignHostPreview : IDisposable
         if (_session == null) return false;
         _epoch++;
         return _session.ReloadPage(_epoch, null);
+    }
+
+    /// <summary>宿主最近 n 行日志（连成一行：拒绝原因与紧随其后的 rc 一起看）。</summary>
+    private string HostTailLines(int n)
+    {
+        var log = _session?.Log;
+        if (log == null || log.Count == 0) return "";
+        return string.Join(" | ", log.Skip(Math.Max(0, log.Count - n)));
+    }
+
+    /// <summary>
+    /// 变量表指纹：宿主里那份 <c>tags.json</c> 能不能继续用来建页，就看它变没变。
+    /// 取的是导出器实际遍历的那份顺序（变量集合 + Id/名字/类型），任何一项变动都会
+    /// 让 tag id 或它的含义变掉 —— 页面 JSON 里的 <c>bind.tag</c> 是按 id 寻址的。
+    /// 多算（某个变量其实被导出器跳过）只会多重启一次，少算就是白屏，宁可多算。
+    /// </summary>
+    private static string VariableSignature(HmiProject project)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var v in project.VariableManager.Variables)
+            sb.Append(v.Id).Append('\u001f').Append(v.Name).Append('\u001f')
+              .Append(v.DataType).Append('\u001f').Append(v.IsUdtInstance ? '1' : '0').Append('\n');
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 整会话重启：重新导出整包（含新的 tags.json）→ 新宿主 → 等首帧。
+    /// 设计画布只有这一条路能换掉宿主里的变量表（页面 JSON 通道带不了 tag 定义）。
+    /// 失败保持原样并记日志：画布会停在上一帧，不要再叠加一个空白会话。
+    /// </summary>
+    private async Task RestartHostAsync()
+    {
+        var project = _project;
+        var assets = _assets;
+        var dir = _projectDirectory;
+        var options = _options;
+        var canvas = _canvas;
+        var screen = _screenId;
+        if (project == null || options == null || canvas == null) return;
+
+        var ok = await StartAsync(project, assets, dir, options, _settings, screen, canvas);
+        if (ok) EditorLog.Line($"[design] 重启完成 screen={screen} tags={project.VariableManager.Variables.Count}");
+        else EditorLog.Line($"[design] 重启宿主失败：{LastError}");
     }
 
     public void Stop()

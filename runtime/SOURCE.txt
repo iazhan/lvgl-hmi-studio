@@ -1,7 +1,7 @@
 来源目录：/home/chenge/f1c100s-project/chenge-hmi/chenge-runtime
-运行时版本：0.61.0
-取用时间：2026-10-29 16:06:39
-来源提交：b60eeea chenge-common: 触摸校准失败当场重来，未校准在主页告警（config 0.2.2）
+运行时版本：0.61.1
+取用时间：2026-10-30 11:10:29
+来源提交：730a7e7 chenge-runtime: 预览宿主被拒的页面回落快照，stderr 不缓冲（0.61.1）
 
 更新方式（在主仓库里先编出产物，再取一份过来）：
   make -C <主仓库>/chenge-hmi/chenge-runtime PREVIEW=1 HOST=1    # 画布宿主

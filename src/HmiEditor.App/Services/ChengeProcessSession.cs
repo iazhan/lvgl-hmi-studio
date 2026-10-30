@@ -233,11 +233,17 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     {
         try
         {
+            // 编码必须显式给 UTF-8：不指定时 .NET 按 Console.OutputEncoding 解码子进程输出，
+            // Windows 上那是控制台代码页（中文机 = GBK），而宿主一律写 UTF-8 ——
+            // 表现就是实时预览的日志区全是乱码/问号（等价于"看不到日志"），
+            // 变量回报（V 行）里的中文变量名也会对不上。
             var psi = new ProcessStartInfo(_exePath)
             {
                 RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
+                StandardOutputEncoding = new UTF8Encoding(false),
+                StandardErrorEncoding = new UTF8Encoding(false),
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
@@ -416,12 +422,15 @@ public sealed class ChengeProcessSession : IChengePreviewSession
     /// <summary>标准输出只承载变量回报：`V <名字> <值> <质量>`。</summary>
     private void ReadValues()
     {
+        var stdout = _proc?.StandardOutput;
+        if (stdout == null) return;
         try
         {
-            while (_proc != null && !_proc.StandardOutput.EndOfStream)
+            // 判 EOF 只看 ReadLine 返回 null，不先问 EndOfStream：后者要"探"一次缓冲，
+            // Windows 的匿名管道上可能提前给出 true —— 线程就此静默退出，界面上表现为
+            // "变量监视/日志永远是空的"，而宿主明明在输出。
+            while (stdout.ReadLine() is { } line)
             {
-                var line = _proc.StandardOutput.ReadLine();
-                if (line == null) break;
                 MarkAlive();   // 任何一行都算"宿主还活着"
                 if (line.Length < 3 || line[0] != 'V' || line[1] != ' ') continue;
 
@@ -432,9 +441,15 @@ public sealed class ChengeProcessSession : IChengePreviewSession
                 lock (_tags) _tags[parts[0]] = shown;
             }
         }
+        catch (Exception ex) when (ex is not (ObjectDisposedException or IOException))
+        {
+            // 宿主退出/被 Dispose 时流会断，属正常；其它异常必须留痕 ——
+            // 此前这里是空 catch，"日志一片空白"连原因都查不到。
+            EditorLog.File($"[host] 变量回报通道异常：{ex.GetType().Name}: {ex.Message}");
+        }
         catch
         {
-            // 进程退出时流会断，正常
+            // 正常收尾
         }
     }
 
@@ -486,23 +501,37 @@ public sealed class ChengeProcessSession : IChengePreviewSession
             }
         }
 
+        var stderr = _proc?.StandardError;
+        if (stderr == null)
+        {
+            sink?.Dispose();
+            return;
+        }
+
         try
         {
-            while (_proc != null && !_proc.StandardError.EndOfStream)
+            // 同 ReadValues：EOF 只认 ReadLine 返回 null（Windows 匿名管道上
+            // EndOfStream 的探测会提前结束循环，宿主日志就整段丢掉）。
+            while (stderr.ReadLine() is { } line)
             {
-                var line = _proc.StandardError.ReadLine();
-                if (line == null) break;
                 lock (_log)
                 {
                     _log.Add(line);
                     if (_log.Count > 400) _log.RemoveAt(0);
                 }
+                // 同时落盘：Windows 上编辑器没有控制台，界面上那几行日志一旦被新会话冲掉
+                // （崩溃重启会换进程），现场就没了。文件位置见 FileLogger。
+                EditorLog.File("[host] " + line);
                 try { sink?.WriteLine(line); } catch { /* 磁盘满/被删：诊断不能拖垮预览 */ }
             }
         }
+        catch (Exception ex) when (ex is not (ObjectDisposedException or IOException))
+        {
+            EditorLog.File($"[host] 日志通道异常：{ex.GetType().Name}: {ex.Message}");
+        }
         catch
         {
-            // 进程退出时流会断，正常
+            // 宿主退出/被 Dispose 时流会断，属正常
         }
         finally
         {
