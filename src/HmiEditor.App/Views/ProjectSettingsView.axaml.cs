@@ -307,7 +307,10 @@ public partial class ProjectSettingsView : ChromeWindow
         var raw = TxtBoardProjectId.Text?.Trim() ?? "";
         if (raw.Length == 0)
         {
-            var derived = ChengeNames.DeriveBoardProjectId(_project?.Name);
+            // 推导取**框里当前的名字**，不是 _project.Name：用户打完字还没点确定时，
+            // 提示必须回答"我现在填的这个名字会变成什么 id"，否则改名的所见与所得对不上。
+            var typed = TxtProjectName?.Text?.Trim();
+            var derived = ChengeNames.DeriveBoardProjectId(string.IsNullOrEmpty(typed) ? _project?.Name : typed);
             TxtBoardProjectIdState.Text = AppLocalization.Service.Format(Lang.ProjectSettingsBoardIdAuto, derived);
             TxtBoardProjectIdState.Foreground = (IBrush)Application.Current!.Resources["HmiTextSecondaryBrush"]!;
             return;
@@ -438,6 +441,7 @@ public partial class ProjectSettingsView : ChromeWindow
     private void BindToProject()
     {
         // ── 基本信息
+        TxtProjectName.Text = _project.Name ?? "";
         TxtDescription.Text = _project.Description ?? "";
         TxtAuthor.Text = _project.Author ?? "";
         TxtCompany.Text = _project.Company ?? "";
@@ -575,11 +579,14 @@ public partial class ProjectSettingsView : ChromeWindow
     private void SaveToProject()
     {
         // ── 基本信息
+        // 工程名是窗口标题与（板上工程 id 留空时）id 推导的源头；清空就回到默认名，不留空串。
+        _project.Name = string.IsNullOrWhiteSpace(TxtProjectName.Text) ? "Untitled" : TxtProjectName.Text.Trim();
         _project.Description = string.IsNullOrEmpty(TxtDescription.Text) ? null : TxtDescription.Text.Trim();
         _project.Author = string.IsNullOrEmpty(TxtAuthor.Text) ? null : TxtAuthor.Text.Trim();
         _project.Company = string.IsNullOrEmpty(TxtCompany.Text) ? null : TxtCompany.Text.Trim();
         _project.ProjectVersion = string.IsNullOrEmpty(TxtProjectVersion.Text) ? "1.0.0" : TxtProjectVersion.Text.Trim();
         _project.ProjectId = string.IsNullOrWhiteSpace(TxtBoardProjectId.Text) ? null : TxtBoardProjectId.Text.Trim();
+        ValidateBoardProjectId();
         _project.LvglVersion = string.IsNullOrEmpty(CmbLvglVersion.SelectedItem as string) ? "9.5" : (string)CmbLvglVersion.SelectedItem!;
         _project.HardwareTargetId = GetHardwareTargetId();
 
@@ -722,9 +729,12 @@ public partial class ProjectSettingsView : ChromeWindow
         AttachChangeHandler(TxtAuthor);
         AttachChangeHandler(TxtCompany);
         AttachChangeHandler(TxtProjectVersion);
+        AttachChangeHandler(TxtProjectName);
         AttachChangeHandler(TxtBoardProjectId);
         // 即时校验走自己的 handler：带回调的 AttachChangeHandler 重载是空实现（只服务于分类列表）
         TxtBoardProjectId.TextChanged += (_, _) => ValidateBoardProjectId();
+        // 名字决定「板上工程 id 留空时」的推导结果 ⇒ 打字时就刷新提示
+        TxtProjectName.TextChanged += (_, _) => ValidateBoardProjectId();
         AttachChangeHandler(TxtDefaultBgColor);
         AttachChangeHandler(TxtHistoryPath);
         AttachChangeHandler(TxtOutputDir);

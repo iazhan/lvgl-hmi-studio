@@ -92,6 +92,15 @@
                                 <Border Padding="20,16">
                                     <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                                           ColumnDefinitions="140,*,140,*">
+                                        <!-- 工程名 = 窗口标题与（板上工程 id 留空时）id 推导的源头；
+                                             板上 id 一旦固化就不再跟着改名走，见下方 hint。 -->
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="{res:Loc project.settings.basic.name}"
+                                                   Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>
+                                        <TextBox x:Name="TxtProjectName" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                                                 Background="{StaticResource HmiBgInputBrush}" Foreground="{StaticResource HmiTextPrimaryBrush}" CornerRadius="4"
+                                                 BorderBrush="{StaticResource HmiInputBorderBrush}" BorderThickness="1" Padding="8,6"
+                                                 Margin="0,0,0,10"/>
                                         <TextBlock Grid.Row="1" Grid.Column="0"
                                                    Text="{res:Loc project.settings.basic.desc}"
                                                    Foreground="{StaticResource HmiTextPrimarySoftBrush}" VerticalAlignment="Center"/>

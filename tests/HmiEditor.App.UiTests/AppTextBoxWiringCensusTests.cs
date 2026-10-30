@@ -73,7 +73,7 @@ public class AppTextBoxWiringCensusTests
         // ── 阶段 193：面 A 收口（11 个文件全部 driven）──
         new("CommunicationConfigView.axaml", 4, "driven", "CommunicationConfigTextBoxWiringTests.cs"),
         new("Editors/VariablePicker.axaml", 1, "driven", "VariablePickerTextBoxWiringTests.cs"),
-        new("ProjectSettingsView.axaml", 3, "driven", "ProjectSettingsTextBoxWiringTests.cs"),
+        new("ProjectSettingsView.axaml", 4, "driven", "ProjectSettingsTextBoxWiringTests.cs"),
         new("PropertyPanelView.axaml", 1, "driven", "PropertyPanelTextBoxWiringTests.cs"),
         new("RecipeEditorView.axaml", 6, "driven", "RecipeEditorTextBoxWiringTests.cs"),
     };

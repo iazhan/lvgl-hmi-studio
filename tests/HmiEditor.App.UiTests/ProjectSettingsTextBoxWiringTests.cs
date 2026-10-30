@@ -57,6 +57,15 @@ public class ProjectSettingsTextBoxWiringTests
 
         // 板上工程 id：这条 TextChanged 只做**只读的即时校验提示**（不写任何状态），真值在点
         // 「确定」时由 SaveToProject 读取 —— 所以判据是"提示跟着输入变"，不是草稿值。
+        // 工程名：同样只刷新「板上 id 留空时」的推导提示（真值在点「确定」时写回）。
+        // ⚠ 必须排在 TxtBoardProjectId 那条**之前**：那条会把 id 框写成非法值 "Active"，
+        // 之后提示就落在"不合法"分支、再也读不到推导结果。
+        new("TxtProjectName", "工程名 → 板上 id 推导提示",
+            v => ControlWiringFace.Find<TextBlock>(v, "TxtBoardProjectIdState").Text
+                         ?.Contains("new_name", StringComparison.Ordinal) == true
+                ? "hit" : "miss",
+            "new_name", "hit"),
+
         new("TxtBoardProjectId", "ProjectId 的即时校验提示",
             v => ControlWiringFace.Find<TextBlock>(v, "TxtBoardProjectIdState").Text
                  == AppLocalization.Service[Lang.ProjectSettingsBoardIdInvalid]
@@ -193,6 +202,53 @@ public class ProjectSettingsTextBoxWiringTests
                 UiTestHost.Pump(2);
 
                 Assert.Equal("新作者", project.Author);
+            }
+            finally
+            {
+                view.Close();
+                UiTestHost.Pump();
+            }
+        });
+    }
+
+    /// <summary>
+    /// **工程名可改**：打字只刷新「板上 id 留空时」的推导提示、模型不动；点「确定」才把名字
+    /// （Trim 后）写回工程 —— 标题由 `ProjectSettingsChanged` 的接收方按 `Name` 重刷。
+    /// </summary>
+    [Fact]
+    public void ProjectNameEdit_DrivesBoardIdHint_AndOkPersistsIt()
+    {
+        using var sandbox = new DataRootSandbox("projectsettings-name");
+
+        UiTestHost.Run(() =>
+        {
+            var depot = new WindowDepot(sandbox.DataRoot);
+            var project = new HmiProject { Name = "旧工程" };
+            project.Screens.Add(ScreenFactory.Create(project, name: "主画面"));
+
+            var view = new ProjectSettingsView(project);
+            view.Show();
+            UiTestHost.Pump(5);
+            try
+            {
+                // 前提自检：名字框在第一张面板上，回填的是工程里的名字（不是「未命名」占位）
+                Assert.True(ControlWiringFace.Find<Panel>(view, "PanelBasicInfo").IsVisible);
+                Assert.Equal("旧工程", ControlWiringFace.Find<TextBox>(view, "TxtProjectName").Text);
+
+                ControlWiringFace.Write(view, "TxtProjectName", "  new_name  ");
+
+                // 打字阶段：id 框留空 ⇒ 提示按**当前输入**推导（"new_name" 本身就是合法 id）
+                var hint = ControlWiringFace.Find<TextBlock>(view, "TxtBoardProjectIdState").Text;
+                Assert.Contains("new_name", hint, StringComparison.Ordinal);
+
+                // 还没点确定：模型里的名字不动
+                Assert.Equal("旧工程", project.Name);
+
+                ControlWiringFace.Find<Button>(view, "BtnOk")
+                    .RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                UiTestHost.Pump(2);
+
+                Assert.Equal("new_name", project.Name);
             }
             finally
             {

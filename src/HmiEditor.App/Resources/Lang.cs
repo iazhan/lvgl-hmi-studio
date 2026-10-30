@@ -740,6 +740,11 @@ public static class Lang
     public const string ProjectSave           = "project.save";
     public const string ProjectLoad           = "project.load";
     public const string ProjectNew            = "project.new";
+    // ── 新建工程对话框：校验提示（就地显示，不弹二级框）──
+    public const string NewProjectErrName     = "new.project.err.name";
+    public const string NewProjectErrLocation = "new.project.err.location";
+    public const string NewProjectErrExists   = "new.project.err.exists";
+    public const string NewProjectLocation    = "new.project.location";
     public const string ProjectOpen           = "project.open";
     public const string ProjectExit           = "project.exit";
     public const string ProjectUndo           = "project.undo";
@@ -750,7 +755,6 @@ public static class Lang
     public const string ProjectZoomReset      = "project.zoom.reset";
     public const string ProjectAbout          = "project.about";
     public const string ProjectVersion        = "project.version";
-    public const string ProjectUntitled       = "project.untitled";
     public const string ProjectStatusReady    = "project.status.ready";
     public const string ProjectStatusSaved    = "project.status.saved";
     public const string ProjectToolbox        = "project.toolbox";

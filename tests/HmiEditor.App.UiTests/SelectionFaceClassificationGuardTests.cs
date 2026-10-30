@@ -250,6 +250,11 @@ public class SelectionFaceClassificationGuardTests
         //   所以它不在面内、也不在面外账本里。⚠ 阶段 128 的历史仍值得记住：它一度被升格成宿主、
         //   判据全绿，随后核对才发现 `new VariableBrowserView()` 全仓零构造、事件零订阅 ⇒ 是**死面板**
         //   （见登记表 §50.1）；「判一个用户到不了的面板」正是阶段 135 那条可达性守卫要防的事。
+        //
+        // `NewProjectView`：新建工程对话框，唯一带接线的选择控件是 `CmbTarget`（换型号即刷新
+        // 「型号参数」摘要）。它是一次性模态框、没有后端状态可读（返回值只有三个字段），
+        // 升格成宿主的收益仅是复述 `UpdateSummary`，故如实登记个数。
+        ("NewProjectView", 1),
     };
 
     private static string AppProjectDirectory => Path.Combine(SourceScanner.RepoRoot, "src", "HmiEditor.App");

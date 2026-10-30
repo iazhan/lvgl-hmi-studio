@@ -1046,8 +1046,24 @@ public partial class MainWindow : Window
             }
         }
 
-        // 新工程默认绑 kinseal：缺省会丢目标 ⇒ 生成物 // Target: generic、仪表盘无 32 MiB 预算
-        _currentProject = new HmiProject { Name = "Untitled", LvglVersion = "9.5", HardwareTargetId = AllwinnerF1C100STarget.TargetId };
+        // 名字/存储位置/型号在建工程前一次问清：名字同时决定默认文件名与板上 id 推导，
+        // 型号决定分辨率与内存预算 —— 建完再改要连带改文件名，代价大得多。
+        // 预选当前工程的型号：连着建几个同类工程时不必每次重选。
+        var dialog = new Views.NewProjectView(DefaultNewProjectLocation(), _currentProject.HardwareTargetId);
+        await dialog.ShowDialog(this);
+        if (dialog.Result is not { } request)
+        {
+            StatusText.Text = LocService["status.project.cancelled"];
+            return;
+        }
+
+        _currentProject = new HmiProject
+        {
+            Name = request.Name,
+            LvglVersion = "9.5",
+            HardwareTargetId = request.HardwareTargetId
+        };
+        ApplyTargetDisplayDefaults(_currentProject);
         // 应用工程安全配置到认证服务（会话超时/密码策略/锁定策略）
         _authService.ApplySecurityConfig(_currentProject.SecurityConfig);
         _currentScreen = ScreenFactory.Create(_currentProject, name: "Screen 1");
@@ -1057,9 +1073,9 @@ public partial class MainWindow : Window
         _assetLibrary = new AssetLibrary();
         _assetDirectory = CreateWorkspaceDirectory(_currentProject);
 
-        // 新工程与任何目录无关：清空旧目录引用，避免 git 状态误指向旧工程
+        // 新工程还没有 .hmi：目录引用等落盘成功后再由 SaveToPath 接管
         _projectDirectory = null;
-        _currentHmiPath = null;   // 新工程需手动另存后才启用自动保存
+        _currentHmiPath = null;
         RefreshGitState();
 
         // 重新绑定模板管理器到新项目，并注入预置模板
@@ -1072,8 +1088,11 @@ public partial class MainWindow : Window
         ProjectExplorerPanel.LoadProject(_currentProject, _currentScreen);
         LoadProjectIntoPanels();
         SetUnsavedChanges(false);
-        Title = LocService["app.title"] + " — " + LocService["project.untitled"];
+        Title = LocService["app.title"] + $" — {_currentProject.Name}";
         UpdateStatusBar();
+
+        // 名字与目录是刚填的：立刻落盘，否则关掉编辑器这一份就没了（也才会进「最近打开」）
+        await SaveToPath(request.FilePath, Path.GetFileName(request.FilePath));
         StatusText.Text = LocService["status.project.created"];
     }
 
@@ -1226,11 +1245,39 @@ public partial class MainWindow : Window
         return create ? AppPaths.NewTempSubdir(name) : AppPaths.NewTempSubdirPath(name);
     }
 
-    private static string SanitizeFileName(string name)
+    internal static string SanitizeFileName(string name)
     {
         foreach (var c in Path.GetInvalidFileNameChars())
             name = name.Replace(c, '_');
         return string.IsNullOrWhiteSpace(name) ? "project" : name;
+    }
+
+    /// <summary>
+    /// 新建工程的默认存储目录：优先用「最近打开工程」所在目录（同类工程通常放在一起），
+    /// 否则用系统「文档」目录 —— 不把工程默认塞进安装目录或临时目录。
+    /// </summary>
+    private string DefaultNewProjectLocation()
+    {
+        var recent = _settingsService.RecentProjects.List.FirstOrDefault();
+        var dir = string.IsNullOrWhiteSpace(recent) ? null : Path.GetDirectoryName(recent);
+        if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) return dir;
+
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return string.IsNullOrEmpty(documents) || !Directory.Exists(documents)
+            ? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            : documents;
+    }
+
+    /// <summary>
+    /// 新建工程时把型号的默认分辨率写进工程默认值 —— 不写就会落到 800×480 兜底，
+    /// 换一个型号后屏幕上摆好的控件与实机像素对不上。
+    /// </summary>
+    private void ApplyTargetDisplayDefaults(HmiProject project)
+    {
+        var target = ResolveCurrentHardwareTarget();
+        if (target == null) return;
+        project.ScreenDefaultsConfig.DefaultWidth = target.Display.DefaultWidth;
+        project.ScreenDefaultsConfig.DefaultHeight = target.Display.DefaultHeight;
     }
 
     /// <summary>将 .hmi 包内图库合并进全局图库（按名称去重）。</summary>
